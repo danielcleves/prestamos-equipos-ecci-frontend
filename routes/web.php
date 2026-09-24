@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\UsuarioWebController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -23,6 +24,20 @@ Route::middleware(['web'])->group(function () {
 });
 
 
-// Route::get('/login', function () {
-//     return view('auth.login');
-// })->name('login');
+
+// Rutas protegidas por sesión
+Route::middleware(['web'])->group(function () {
+    // HU-02: Gestión de Usuarios (Exclusivo Administrador)
+    Route::get('/usuarios', [UsuarioWebController::class, 'index'])->name('usuarios.index');
+    Route::post('/usuarios', [UsuarioWebController::class, 'store'])->name('usuarios.store');
+    Route::post('/usuarios/update', [UsuarioWebController::class, 'update'])->name('usuarios.update');
+    Route::patch('/usuarios/{id}/{accion}', [UsuarioWebController::class, 'toggleStatus'])->name('usuarios.toggle');
+
+    // HU-03: Catálogo de Equipos (Para solicitantes, docentes y administradores)
+    Route::get('/equipos', function () {
+        if (!session()->has('auth_token')) {
+            return redirect()->route('login');
+        }
+        return view('equipos.index');
+    })->name('equipos.index');
+});
