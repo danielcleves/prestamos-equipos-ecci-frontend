@@ -5,89 +5,127 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Route;
 
 class LoginController extends Controller
 {
+    /**
+     * Muestra el formulario de inicio de sesión.
+     */
     public function showLoginForm()
     {
+        if (session()->has('api_token')) {
+            return $this->redirectByRole(session('user'));
+        }
+
         return view('auth.login');
     }
 
+    /**
+     * Procesa la autenticación contra la API del backend.
+     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8'],
         ]);
 
+        $apiUrl = config('services.backend.url');
+
         try {
-            // Se conecta al backend por la red interna de Docker
-            $response = Http::acceptJson()->post('http://backend:8000/api/login', [
+            $response = Http::acceptJson()->post("{$apiUrl}/login", [
                 'email' => $credentials['email'],
                 'password' => $credentials['password'],
             ]);
+        } catch (\Exception $e) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => 'No fue posible comunicarse con el servicio de autenticación.']);
+        }
 
-            if ($response->status() === 429) {
-                throw ValidationException::withMessages([
-                    'email' => ['Demasiados intentos de acceso. Espera un minuto antes de reintentar.'],
-                ]);
-            }
-
-            if ($response->failed()) {
-                $error = $response->json('message') ?? 'Las credenciales ingresadas son incorrectas o el usuario está inactivo.';
-                throw ValidationException::withMessages([
-                    'email' => [$error],
-                ]);
-            }
-
+        if ($response->successful()) {
             $data = $response->json();
-            
-            // Extraer el token de Sanctum (según cómo lo retorne AuthController: token o access_token)
-            $token = $data['token'] ?? $data['access_token'] ?? null;
-            $user = $data['user'] ?? null;
 
-            // Si el backend no devolvió el usuario completo en el login, lo consultamos con /api/me
-            if ($token && !$user) {
-                $meResponse = Http::withToken($token)->acceptJson()->get('http://backend:8000/api/me');
-                if ($meResponse->successful()) {
-                    $user = $meResponse->json();
-                }
+            // Validar que la respuesta contenga el token
+            if (empty($data['token'])) {
+                return back()->withInput($request->only('email'))
+                    ->withErrors(['email' => 'Respuesta de autenticación inválida del servidor.']);
             }
 
-            // Guardar en la sesión del cliente web
+            // Extraer el usuario limpio
+            $user = $data['user'] ?? $data;
+
+            // Guardar en la sesión de Laravel
             session([
-                'auth_token' => $token,
+                'api_token' => $data['token'],
                 'user' => $user,
             ]);
 
             $request->session()->regenerate();
 
-            return redirect()->intended('/usuarios');
-
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            throw ValidationException::withMessages([
-                'email' => ['No se pudo establecer conexión con el servicio backend.'],
-            ]);
+            return $this->redirectByRole($user);
         }
+
+        // Manejo de errores de credenciales devueltos por el backend (401, 422)
+        $errorMessage = $response->json('message') ?? 'Las credenciales ingresadas son incorrectas.';
+
+        return back()->withInput($request->only('email'))
+            ->withErrors(['email' => $errorMessage]);
     }
 
+    /**
+     * Cierra la sesión revocando el token en el backend.
+     */
     public function logout(Request $request)
     {
-        $token = session('auth_token');
+        $token = session('api_token');
+        $apiUrl = config('services.backend.url');
 
         if ($token) {
             try {
-                Http::withToken($token)->acceptJson()->post('http://backend:8000/api/logout');
+                Http::withToken($token)
+                    ->acceptJson()
+                    ->post("{$apiUrl}/logout");
             } catch (\Exception $e) {
-                // Si el backend no responde, se limpia la sesión local igualmente
+                // Registrar log si es necesario, continuar con el logout local
             }
         }
 
-        session()->forget(['auth_token', 'user']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('login')->with('success', 'Sesión cerrada correctamente.');
+    }
+
+    /**
+     * Redirige al usuario según su rol de manera segura.
+     */
+private function redirectByRole(?array $user)   
+    {
+        // El backend devuelve los roles como array en $user['roles']
+        $roles = $user['roles'] ?? [];
+        $rol = is_array($roles) ? ($roles[0] ?? null) : ($user['role'] ?? $user['rol'] ?? null);
+
+        // Administrador: Gestión de usuarios
+        if ($rol === 'admin' && Route::has('usuarios.index')) {
+            return redirect()->route('usuarios.index');
+        }
+
+        // Encargado: Gestión de préstamos
+        if ($rol === 'encargado' && Route::has('prestamos.gestion')) {
+            return redirect()->route('prestamos.gestion');
+        }
+
+        // Estudiante / Solicitante: Catálogo de equipos
+        if (Route::has('equipos.index')) {
+            return redirect()->route('equipos.index');
+        }
+
+        if (Route::has('prestamos.catalogo')) {
+            return redirect()->route('prestamos.catalogo');
+        }
+
+        // Fallback por defecto si no existen las otras rutas aún
+        return redirect()->route('usuarios.index');
     }
 }
