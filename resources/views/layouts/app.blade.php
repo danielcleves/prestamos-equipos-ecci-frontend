@@ -6,7 +6,8 @@
     <title>{{ $title ?? 'Préstamo de Equipos ECCI' }}</title>
 
     {{-- CDN oficial de Tailwind CSS para aplicar los estilos de inmediato --}}
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind Play CDN fijado a una versión estable (dependencia reproducible; migrar a Vite cuando se compile en CI) -->
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -29,7 +30,7 @@
     </style>
 
     {{-- Alpine.js para filtros y modales --}}
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
 <body class="h-full flex overflow-hidden text-slate-800 antialiased">
 

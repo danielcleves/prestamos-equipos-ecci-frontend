@@ -11,9 +11,6 @@
     openEdit(user) {
         this.editUser = { ...user };
         this.openModalEdit = true;
-    },
-    submitEdit(event) {
-        event.target.action = '{{ url('/usuarios') }}/' + this.editUser.id;
     }
 }" class="space-y-6">
 
@@ -94,6 +91,7 @@
             <select x-model="roleFilter" class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B2559]">
                 <option value="">Filtrar por rol</option>
                 <option value="admin">Administrador</option>
+                <option value="encargado">Personal de préstamo</option>
                 <option value="usuario">Solicitante</option>
             </select>
 
@@ -142,9 +140,9 @@
                             };
                         @endphp
                         <tr
-                            x-show="(search === '' || '{{ strtolower($user['name']) }}'.includes(search.toLowerCase()) || '{{ strtolower($user['email']) }}'.includes(search.toLowerCase())) &&
-                                    (roleFilter === '' || '{{ $rol }}' === roleFilter) &&
-                                    (statusFilter === '' || '{{ (int)$user['is_active'] }}' === statusFilter)"
+                            x-show="(search === '' || @js(strtolower($user['name'])).includes(search.toLowerCase()) || @js(strtolower($user['email'])).includes(search.toLowerCase())) &&
+                                    (roleFilter === '' || @js($rol) === roleFilter) &&
+                                    (statusFilter === '' || @js((string) (int) $user['is_active']) === statusFilter)"
                             class="hover:bg-slate-50/80 transition"
                         >
                             <td class="py-3.5 px-6 font-medium text-slate-900 flex items-center gap-2.5">
@@ -174,7 +172,7 @@
                             <td class="py-3.5 px-6 text-right space-x-2">
                                 <button
                                     type="button"
-                                    @click="openEdit({ id: {{ $user['id'] }}, name: '{{ addslashes($user['name']) }}', email: '{{ $user['email'] }}', role: '{{ $rol }}' })"
+                                    @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol]))"
                                     class="text-slate-500 hover:text-blue-700 font-medium transition"
                                 >
                                     Editar
@@ -202,7 +200,6 @@
         </div>
     </div>
 
-    <!-- desde aqui crud para usuarios -->
     {{-- MODAL CREAR USUARIO --}}
     <div x-show="openModalCreate" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div @click.away="openModalCreate = false" class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
@@ -224,12 +221,13 @@
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Rol en el Sistema</label>
                     <select name="role" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none bg-white">
                         <option value="usuario">Solicitante</option>
+                        <option value="encargado">Personal de préstamo</option>
                         <option value="admin">Administrador</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Contraseña Inicial</label>
-                    <input type="password" name="password" required minlength="6" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none">
+                    <input type="password" name="password" required minlength="8" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" @click="openModalCreate = false" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs rounded-lg hover:bg-slate-50 transition">Cancelar</button>
@@ -247,10 +245,9 @@
                 <button @click="openModalEdit = false" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
             </div>
 
-            <form action="{{ route('usuarios.update') }}" method="POST" class="p-6 space-y-4">
+            <form :action="'{{ url('/usuarios') }}/' + editUser.id" method="POST" class="p-6 space-y-4">
                 @csrf
-                {{-- ID del usuario en campo oculto --}}
-                <input type="hidden" name="user_id" x-model="editUser.id">
+                @method('PUT')
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo</label>
