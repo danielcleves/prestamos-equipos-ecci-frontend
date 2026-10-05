@@ -34,10 +34,12 @@ class LoginController extends Controller
         $apiUrl = config('services.backend.url');
 
         try {
-            $response = Http::acceptJson()->post("{$apiUrl}/login", [
-                'email' => $credentials['email'],
-                'password' => $credentials['password'],
-            ]);
+            $response = Http::timeout(10)
+                ->acceptJson()
+                ->post("{$apiUrl}/login", [
+                    'email' => $credentials['email'],
+                    'password' => $credentials['password'],
+                ]);
         } catch (\Exception $e) {
             return back()->withInput($request->only('email'))
                 ->withErrors(['email' => 'No fue posible comunicarse con el servicio de autenticación.']);
@@ -83,11 +85,12 @@ class LoginController extends Controller
 
         if ($token) {
             try {
-                Http::withToken($token)
+                Http::timeout(5)
+                    ->withToken($token)
                     ->acceptJson()
                     ->post("{$apiUrl}/logout");
             } catch (\Exception $e) {
-                // Registrar log si es necesario, continuar con el logout local
+                // Registro silencioso o log; continúa con el logout local
             }
         }
 
@@ -100,7 +103,7 @@ class LoginController extends Controller
     /**
      * Redirige al usuario según su rol de manera segura.
      */
-private function redirectByRole(?array $user)   
+    private function redirectByRole(?array $user)
     {
         // El backend devuelve los roles como array en $user['roles']
         $roles = $user['roles'] ?? [];

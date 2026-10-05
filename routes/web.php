@@ -19,11 +19,10 @@ Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Rutas protegidas
-Route::middleware(['web'])->group(function () {
     // HU-02: Gestión de Usuarios (Exclusivo Administrador)
     Route::get('/usuarios', [UsuarioWebController::class, 'index'])->name('usuarios.index');
     Route::post('/usuarios', [UsuarioWebController::class, 'store'])->name('usuarios.store');
-    Route::post('/usuarios/update', [UsuarioWebController::class, 'update'])->name('usuarios.update');
+    Route::put('/usuarios/{usuario}', [UsuarioWebController::class, 'update'])->name('usuarios.update');
     Route::patch('/usuarios/{id}/{accion}', [UsuarioWebController::class, 'toggleStatus'])->name('usuarios.toggle');
 
     // HU-03: Catálogo de Equipos
@@ -34,4 +33,4 @@ Route::middleware(['web'])->group(function () {
 
         return view('equipos.index');
     })->name('equipos.index');
-});
+

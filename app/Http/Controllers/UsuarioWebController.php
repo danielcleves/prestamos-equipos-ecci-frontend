@@ -12,24 +12,55 @@ class UsuarioWebController extends Controller
         return config('services.backend.url');
     }
 
-    public function index(Request $request)
+    /**
+     * Valida que exista sesión activa y que el usuario tenga rol de administrador.
+     */
+    private function checkAdminAuth()
     {
         $token = session('api_token');
         if (! $token) {
             return redirect()->route('login');
         }
 
+        $user = session('user', []);
+        $roles = $user['roles'] ?? [];
+        $rol = is_array($roles) ? ($roles[0] ?? null) : ($user['role'] ?? $user['rol'] ?? null);
+
+        if ($rol !== 'admin') {
+            abort(403, 'Acceso denegado: Se requieren permisos de administrador.');
+        }
+
+        return null;
+    }
+
+    public function index(Request $request)
+    {
+        if ($redirect = $this->checkAdminAuth()) {
+            return $redirect;
+        }
+
+        $token = session('api_token');
         $apiUrl = $this->getApiUrl();
 
-        // Consultar listado
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->get("{$apiUrl}/usuarios?per_page=100");
+        try {
+            $response = Http::timeout(10)
+                ->withToken($token)
+                ->acceptJson()
+                ->get("{$apiUrl}/usuarios?per_page=100");
+        } catch (\Exception $e) {
+            return back()->withErrors(['store_error' => 'No fue posible conectar con el servicio de usuarios.']);
+        }
 
-        if ($response->status() === 401 || $response->status() === 403) {
+        // Si el token es inválido o expiró (401), se reinicia sesión
+        if ($response->status() === 401) {
             session()->forget(['api_token', 'user']);
 
-            return redirect()->route('login')->withErrors(['email' => 'Sesión expirada o permisos insuficientes.']);
+            return redirect()->route('login')->withErrors(['email' => 'Su sesión ha expirado. Por favor ingrese de nuevo.']);
+        }
+
+        // Si es 403, no se destruye la sesión: se devuelve error de autorización
+        if ($response->status() === 403) {
+            abort(403, 'No tiene permisos para consultar este recurso.');
         }
 
         $usuarios = $response->json('data') ?? [];
@@ -44,6 +75,10 @@ class UsuarioWebController extends Controller
 
     public function store(Request $request)
     {
+        if ($redirect = $this->checkAdminAuth()) {
+            return $redirect;
+        }
+
         $token = session('api_token');
 
         $request->validate([
@@ -55,9 +90,14 @@ class UsuarioWebController extends Controller
 
         $apiUrl = $this->getApiUrl();
 
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->post("{$apiUrl}/usuarios", $request->only('name', 'email', 'password', 'role'));
+        try {
+            $response = Http::timeout(10)
+                ->withToken($token)
+                ->acceptJson()
+                ->post("{$apiUrl}/usuarios", $request->only('name', 'email', 'password', 'role'));
+        } catch (\Exception $e) {
+            return back()->withErrors(['store_error' => 'Error de conexión al registrar usuario.'])->withInput();
+        }
 
         if ($response->failed()) {
             $errorMsg = $response->json('message') ?? 'Error al crear el usuario.';
@@ -68,19 +108,20 @@ class UsuarioWebController extends Controller
         return redirect()->route('usuarios.index')->with('success', 'Usuario registrado exitosamente.');
     }
 
-    public function update(Request $request)
+    public function update($usuario, Request $request)
     {
+        if ($redirect = $this->checkAdminAuth()) {
+            return $redirect;
+        }
+
         $token = session('api_token');
 
         $request->validate([
-            'user_id' => 'required|integer',
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'role' => 'required|in:admin,encargado,usuario',
             'password' => 'nullable|min:8',
         ]);
-
-        $id = $request->input('user_id');
 
         $payload = [
             'name' => $request->input('name'),
@@ -94,9 +135,14 @@ class UsuarioWebController extends Controller
 
         $apiUrl = $this->getApiUrl();
 
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->put("{$apiUrl}/usuarios/{$id}", $payload);
+        try {
+            $response = Http::timeout(10)
+                ->withToken($token)
+                ->acceptJson()
+                ->put("{$apiUrl}/usuarios/{$usuario}", $payload);
+        } catch (\Exception $e) {
+            return back()->withErrors(['update_error' => 'Error de conexión al actualizar usuario.']);
+        }
 
         if ($response->failed()) {
             return back()->withErrors(['update_error' => $response->json('message') ?? 'Error al actualizar usuario.']);
@@ -107,14 +153,23 @@ class UsuarioWebController extends Controller
 
     public function toggleStatus($id, $accion)
     {
+        if ($redirect = $this->checkAdminAuth()) {
+            return $redirect;
+        }
+
         $token = session('api_token');
 
         $endpoint = $accion === 'activar' ? 'activar' : 'desactivar';
         $apiUrl = $this->getApiUrl();
 
-        $response = Http::withToken($token)
-            ->acceptJson()
-            ->patch("{$apiUrl}/usuarios/{$id}/{$endpoint}");
+        try {
+            $response = Http::timeout(10)
+                ->withToken($token)
+                ->acceptJson()
+                ->patch("{$apiUrl}/usuarios/{$id}/{$endpoint}");
+        } catch (\Exception $e) {
+            return back()->withErrors(['status_error' => 'Error de conexión al cambiar el estado.']);
+        }
 
         if ($response->failed()) {
             return back()->withErrors(['status_error' => $response->json('message') ?? 'No se pudo cambiar el estado.']);

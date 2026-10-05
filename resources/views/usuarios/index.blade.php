@@ -11,9 +11,6 @@
     openEdit(user) {
         this.editUser = { ...user };
         this.openModalEdit = true;
-    },
-    submitEdit(event) {
-        event.target.action = '{{ url('/usuarios') }}/' + this.editUser.id;
     }
 }" class="space-y-6">
 
@@ -41,7 +38,7 @@
                 <p class="text-xs font-semibold text-slate-600">Usuarios registrados</p>
                 <p class="text-[11px] text-slate-400">Total en el sistema</p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-[#0B2559] flex items-center justify-center">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-[#0B3D91] flex items-center justify-center">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
             </div>
         </div>
@@ -76,7 +73,7 @@
                 <h3 class="font-bold text-slate-900 text-base">Usuarios registrados</h3>
                 <p class="text-xs text-slate-400 mt-0.5">{{ $total }} usuarios en total</p>
             </div>
-            <button @click="openModalCreate = true" class="bg-[#0B2559] hover:bg-blue-900 text-white font-medium text-xs px-4 py-2.5 rounded-lg flex items-center gap-2 transition shadow-sm">
+            <button @click="openModalCreate = true" class="bg-[#0B3D91] hover:bg-[#1D5FD0] text-white font-medium text-xs px-4 py-2.5 rounded-lg flex items-center gap-2 transition shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>Nuevo usuario</span>
             </button>
@@ -88,16 +85,17 @@
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </span>
-                <input x-model="search" type="text" placeholder="Buscar usuario..." class="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0B2559]">
+                <input x-model="search" type="text" placeholder="Buscar usuario..." class="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
             </div>
 
-            <select x-model="roleFilter" class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B2559]">
+            <select x-model="roleFilter" class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Filtrar por rol</option>
                 <option value="admin">Administrador</option>
+                <option value="encargado">Personal de préstamo</option>
                 <option value="usuario">Solicitante</option>
             </select>
 
-            <select x-model="statusFilter" class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B2559]">
+            <select x-model="statusFilter" class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Filtrar por estado</option>
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
@@ -124,7 +122,7 @@
                             $username = $emailParts[0];
                             $nameWords = explode(' ', trim($user['name']));
                             $iniciales = strtoupper(substr($nameWords[0], 0, 1) . (isset($nameWords[1]) ? substr($nameWords[1], 0, 1) : ''));
-                            $rol = !empty($user['roles']) ? (is_array($user['roles'][0]) ? $user['roles'][0]['name'] : $user['roles'][0]) : 'usuario';
+                            $rol = !empty($user['roles']) ? (is_array($user['roles'][0]) ? ($user['roles'][0]['name'] ?? 'usuario') : $user['roles'][0]) : ($user['role'] ?? 'usuario');
                             $rolLabel = match($rol) {
                                 'admin' => 'Administrador',
                                 'encargado' => 'Personal de préstamo',
@@ -136,15 +134,15 @@
                                 default => 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
                             };
                             $avatarColor = match($rol) {
-                                'admin' => 'bg-blue-700',
+                                'admin' => 'bg-[#0B3D91]',
                                 'encargado' => 'bg-indigo-600',
                                 default => 'bg-emerald-600'
                             };
                         @endphp
                         <tr 
-                            x-show="(search === '' || '{{ strtolower($user['name']) }}'.includes(search.toLowerCase()) || '{{ strtolower($user['email']) }}'.includes(search.toLowerCase())) &&
-                                    (roleFilter === '' || '{{ $rol }}' === roleFilter) &&
-                                    (statusFilter === '' || '{{ (int)$user['is_active'] }}' === statusFilter)"
+                            x-show="(search === '' || (@js(strtolower($user['name']))).includes(search.toLowerCase()) || (@js(strtolower($user['email']))).includes(search.toLowerCase())) &&
+                                    (roleFilter === '' || @js($rol) === roleFilter) &&
+                                    (statusFilter === '' || @js((string)(int)$user['is_active']) === statusFilter)"
                             class="hover:bg-slate-50/80 transition"
                         >
                             <td class="py-3.5 px-6 font-medium text-slate-900 flex items-center gap-2.5">
@@ -174,8 +172,8 @@
                             <td class="py-3.5 px-6 text-right space-x-2">
                                 <button 
                                     type="button"
-                                    @click="openEdit({ id: {{ $user['id'] }}, name: '{{ addslashes($user['name']) }}', email: '{{ $user['email'] }}', role: '{{ $rol }}' })" 
-                                    class="text-slate-500 hover:text-blue-700 font-medium transition"
+                                    @click="openEdit({ id: @js($user['id']), name: @js($user['name']), email: @js($user['email']), role: @js($rol) })" 
+                                    class="text-slate-500 hover:text-[#0B3D91] font-medium transition"
                                 >
                                     Editar
                                 </button>
@@ -202,7 +200,6 @@
         </div>
     </div>
     
-    <!-- desde aqui crud para usuarios -->
     {{-- MODAL CREAR USUARIO --}}
     <div x-show="openModalCreate" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div @click.away="openModalCreate = false" class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
@@ -214,32 +211,33 @@
                 @csrf
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo</label>
-                    <input type="text" name="name" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none">
+                    <input type="text" name="name" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Correo Electrónico (@ecci.edu.co)</label>
-                    <input type="email" name="email" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none">
+                    <input type="email" name="email" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Rol en el Sistema</label>
-                    <select name="role" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none bg-white">
+                    <select name="role" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B3D91] outline-none bg-white">
                         <option value="usuario">Solicitante</option>
+                        <option value="encargado">Personal de préstamo</option>
                         <option value="admin">Administrador</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Contraseña Inicial</label>
-                    <input type="password" name="password" required minlength="6" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none">
+                    <input type="password" name="password" required minlength="8" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" @click="openModalCreate = false" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs rounded-lg hover:bg-slate-50 transition">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-[#0B2559] text-white text-xs font-semibold rounded-lg hover:bg-blue-900 transition">Guardar Usuario</button>
+                    <button type="submit" class="px-4 py-2 bg-[#0B3D91] text-white text-xs font-semibold rounded-lg hover:bg-[#1D5FD0] transition">Guardar Usuario</button>
                 </div>
             </form>
         </div>
     </div>
 
-{{-- MODAL EDITAR USUARIO --}}
+    {{-- MODAL EDITAR USUARIO --}}
     <div x-show="openModalEdit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div @click.away="openModalEdit = false" class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -247,22 +245,21 @@
                 <button @click="openModalEdit = false" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
             </div>
             
-            <form action="{{ route('usuarios.update') }}" method="POST" class="p-6 space-y-4">
+            <form :action="'{{ url('/usuarios') }}/' + editUser.id" method="POST" class="p-6 space-y-4">
                 @csrf
-                {{-- ID del usuario en campo oculto --}}
-                <input type="hidden" name="user_id" x-model="editUser.id">
+                @method('PUT')
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo</label>
-                    <input type="text" name="name" x-model="editUser.name" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none">
+                    <input type="text" name="name" x-model="editUser.name" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Correo Electrónico</label>
-                    <input type="email" name="email" x-model="editUser.email" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none">
+                    <input type="email" name="email" x-model="editUser.email" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Rol</label>
-                    <select name="role" x-model="editUser.role" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none bg-white">
+                    <select name="role" x-model="editUser.role" required class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B3D91] outline-none bg-white">
                         <option value="usuario">Solicitante</option>
                         <option value="encargado">Personal de préstamo</option>
                         <option value="admin">Administrador</option>
@@ -270,11 +267,11 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Nueva Contraseña (opcional)</label>
-                    <input type="password" name="password" placeholder="Dejar en blanco para no cambiarla" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B2559] outline-none">
+                    <input type="password" name="password" minlength="8" placeholder="Dejar en blanco para no cambiarla" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" @click="openModalEdit = false" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs rounded-lg hover:bg-slate-50 transition">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-[#0B2559] text-white text-xs font-semibold rounded-lg hover:bg-blue-900 transition">Actualizar</button>
+                    <button type="submit" class="px-4 py-2 bg-[#0B3D91] text-white text-xs font-semibold rounded-lg hover:bg-[#1D5FD0] transition">Actualizar</button>
                 </div>
             </form>
         </div>
