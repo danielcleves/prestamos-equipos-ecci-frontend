@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
@@ -21,9 +22,10 @@ class LoginController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        $apiUrl = config('services.backend.url');
+
         try {
-            // Se conecta al backend por la red interna de Docker
-            $response = Http::acceptJson()->post('http://backend:8000/api/login', [
+            $response = Http::acceptJson()->timeout(10)->post("{$apiUrl}/login", [
                 'email' => $credentials['email'],
                 'password' => $credentials['password'],
             ]);
@@ -42,16 +44,24 @@ class LoginController extends Controller
             }
 
             $data = $response->json();
-            
+
             // Extraer el token de Sanctum (según cómo lo retorne AuthController: token o access_token)
             $token = $data['token'] ?? $data['access_token'] ?? null;
             $user = $data['user'] ?? null;
 
-            // Si el backend no devolvió el usuario completo en el login, lo consultamos con /api/me
-            if ($token && !$user) {
-                $meResponse = Http::withToken($token)->acceptJson()->get('http://backend:8000/api/me');
+            if (! $token) {
+                throw ValidationException::withMessages([
+                    'email' => ['Respuesta de autenticación inválida del servidor.'],
+                ]);
+            }
+
+            // Si el backend no devolvió el usuario en el login, lo consultamos con /api/me
+            if (! $user) {
+                $meResponse = Http::withToken($token)->acceptJson()->timeout(10)->get("{$apiUrl}/me");
+
                 if ($meResponse->successful()) {
-                    $user = $meResponse->json();
+                    // El backend responde { user: {...} }; se guarda solo el usuario
+                    $user = $meResponse->json('user') ?? $meResponse->json();
                 }
             }
 
@@ -64,8 +74,7 @@ class LoginController extends Controller
             $request->session()->regenerate();
 
             return redirect()->intended('/usuarios');
-
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             throw ValidationException::withMessages([
                 'email' => ['No se pudo establecer conexión con el servicio backend.'],
             ]);
@@ -78,8 +87,11 @@ class LoginController extends Controller
 
         if ($token) {
             try {
-                Http::withToken($token)->acceptJson()->post('http://backend:8000/api/logout');
-            } catch (\Exception $e) {
+                Http::withToken($token)
+                    ->acceptJson()
+                    ->timeout(10)
+                    ->post(config('services.backend.url').'/logout');
+            } catch (ConnectionException|\Exception $e) {
                 // Si el backend no responde, se limpia la sesión local igualmente
             }
         }

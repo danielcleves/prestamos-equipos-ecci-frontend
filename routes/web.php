@@ -1,28 +1,25 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Hu-01: Rutas de Auth
+// HU-01: Rutas de autenticación
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-//ruta luego de Logearse
+// Rutas protegidas por sesión
 Route::middleware(['web'])->group(function () {
+    // HU-02: Gestión de usuarios (vista del dashboard)
     Route::get('/usuarios', function () {
-        if (!session()->has('auth_token')) {
+        if (! session()->has('auth_token')) {
             return redirect()->route('login');
         }
+
         return view('usuarios.index');
     })->name('usuarios.index');
 });
-
-
-// Route::get('/login', function () {
-//     return view('auth.login');
-// })->name('login');
