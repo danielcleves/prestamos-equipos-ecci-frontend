@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="min-h-screen flex flex-col justify-between">
-        
+
         {{-- Barra superior institucional --}}
         <header class="w-full py-3 px-6 bg-white/95 backdrop-blur border-b border-slate-200 flex justify-between items-center text-xs text-slate-600">
             <div class="flex items-center gap-2">
@@ -19,7 +19,7 @@
 
         {{-- Contenedor Principal --}}
         <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 max-w-7xl w-full mx-auto p-4 lg:p-8 gap-8 items-center">
-            
+
             {{-- Columna Izquierda: Banner & Equipos --}}
             <section class="lg:col-span-7 flex flex-col justify-center text-white space-y-6">
                 <div>
@@ -86,13 +86,13 @@
                             Usuario Institucional
                         </label>
                         <div class="relative">
-                            <input 
-                                id="email" 
-                                type="email" 
-                                name="email" 
-                                value="{{ old('email') }}" 
-                                required 
-                                autofocus 
+                            <input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                required
+                                autofocus
                                 placeholder="ejemplo@universidad.edu"
                                 class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#0B2559] focus:border-transparent outline-none transition"
                             />
@@ -103,11 +103,11 @@
                         <label for="password" class="block text-xs font-bold text-slate-700 tracking-wider uppercase mb-1">
                             Contraseña
                         </label>
-                        <input 
-                            id="password" 
-                            type="password" 
-                            name="password" 
-                            required 
+                        <input
+                            id="password"
+                            type="password"
+                            name="password"
+                            required
                             placeholder="••••••••••••"
                             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#0B2559] focus:border-transparent outline-none transition"
                         />
@@ -121,22 +121,12 @@
                         <a href="#" class="text-blue-700 hover:underline">¿Olvidaste tu contraseña?</a>
                     </div>
 
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         class="w-full py-3 px-4 bg-[#0B2559] hover:bg-blue-900 text-white font-medium rounded-lg text-sm shadow-md shadow-blue-950/20 transition duration-150">
                         Iniciar sesión
                     </button>
                 </form>
-
-                {{-- Demo Access helper según el Mockup --}}
-                <div class="mt-6 pt-4 border-t border-slate-100">
-                    <p class="text-[10px] text-center text-slate-400 mb-2">CLIK para continuar</p>
-                    <div class="grid grid-cols-3 gap-2 text-[10px] text-center font-mono text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                        <div><span class="text-slate-400">Est:</span> est123</div>
-                        <div><span class="text-slate-400">Doc:</span> doc123</div>
-                        <div><span class="text-slate-400">Adm:</span> admin123</div>
-                    </div>
-                </div>
             </section>
         </main>
 

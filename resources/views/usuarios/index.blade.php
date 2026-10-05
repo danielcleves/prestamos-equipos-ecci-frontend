@@ -141,7 +141,7 @@
                                 default => 'bg-emerald-600'
                             };
                         @endphp
-                        <tr 
+                        <tr
                             x-show="(search === '' || '{{ strtolower($user['name']) }}'.includes(search.toLowerCase()) || '{{ strtolower($user['email']) }}'.includes(search.toLowerCase())) &&
                                     (roleFilter === '' || '{{ $rol }}' === roleFilter) &&
                                     (statusFilter === '' || '{{ (int)$user['is_active'] }}' === statusFilter)"
@@ -172,19 +172,19 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-6 text-right space-x-2">
-                                <button 
+                                <button
                                     type="button"
-                                    @click="openEdit({ id: {{ $user['id'] }}, name: '{{ addslashes($user['name']) }}', email: '{{ $user['email'] }}', role: '{{ $rol }}' })" 
+                                    @click="openEdit({ id: {{ $user['id'] }}, name: '{{ addslashes($user['name']) }}', email: '{{ $user['email'] }}', role: '{{ $rol }}' })"
                                     class="text-slate-500 hover:text-blue-700 font-medium transition"
                                 >
                                     Editar
                                 </button>
-                                
+
                                 <form action="{{ route('usuarios.toggle', ['id' => $user['id'], 'accion' => $user['is_active'] ? 'desactivar' : 'activar']) }}" method="POST" class="inline">
                                     @csrf
                                     @method('PATCH')
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         class="{{ $user['is_active'] ? 'text-rose-600 hover:text-rose-800' : 'text-emerald-600 hover:text-emerald-800' }} font-medium transition"
                                     >
                                         {{ $user['is_active'] ? 'Desactivar' : 'Activar' }}
@@ -201,7 +201,7 @@
             </table>
         </div>
     </div>
-    
+
     <!-- desde aqui crud para usuarios -->
     {{-- MODAL CREAR USUARIO --}}
     <div x-show="openModalCreate" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
@@ -246,7 +246,7 @@
                 <h3 class="font-bold text-slate-800 text-sm">Editar Usuario</h3>
                 <button @click="openModalEdit = false" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
             </div>
-            
+
             <form action="{{ route('usuarios.update') }}" method="POST" class="p-6 space-y-4">
                 @csrf
                 {{-- ID del usuario en campo oculto --}}
