@@ -2,84 +2,137 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 class UsuarioWebController extends Controller
 {
-    private function getApiUrl(): string
+    /** Tope de páginas de 100 usuarios que se recorren en la consulta (1000 usuarios). */
+    private const MAX_PAGINAS = 10;
+
+    private function apiUrl(): string
     {
         return config('services.backend.url');
     }
 
-    /**
-     * Valida que exista sesión activa y que el usuario tenga rol de administrador.
-     */
-    private function checkAdminAuth()
+    private function getToken(): ?string
     {
-        $token = session('api_token');
-        if (! $token) {
+        return session('api_token') ?? session('auth_token');
+    }
+
+    /**
+     * Guardia de la sección: requiere sesión activa y rol administrador.
+     * Devuelve el redirect correspondiente o null si el acceso está permitido.
+     */
+    private function guardia(): ?RedirectResponse
+    {
+        if (! $this->getToken()) {
             return redirect()->route('login');
         }
 
-        $user = session('user', []);
-        $roles = $user['roles'] ?? [];
-        $rol = is_array($roles) ? ($roles[0] ?? null) : ($user['role'] ?? $user['rol'] ?? null);
+        if (! $this->esAdmin()) {
+            if (\Illuminate\Support\Facades\Route::has('equipos.index')) {
+                return redirect()->route('equipos.index')
+                    ->withErrors(['error' => 'Esta sección es exclusiva para administradores.']);
+            }
 
-        if ($rol !== 'admin') {
             abort(403, 'Acceso denegado: Se requieren permisos de administrador.');
         }
 
         return null;
     }
 
-    public function index(Request $request)
+    private function esAdmin(): bool
     {
-        if ($redirect = $this->checkAdminAuth()) {
-            return $redirect;
+        $user = session('user') ?? [];
+        $roles = $user['roles'] ?? [];
+
+        if (is_array($roles[0] ?? null)) {
+            $rol = $roles[0]['name'] ?? null;
+        } else {
+            $rol = $roles[0] ?? $user['role'] ?? $user['rol'] ?? null;
         }
 
-        $token = session('api_token');
-        $apiUrl = $this->getApiUrl();
+        return $rol === 'admin';
+    }
 
-        try {
-            $response = Http::timeout(10)
-                ->withToken($token)
-                ->acceptJson()
-                ->get("{$apiUrl}/usuarios?per_page=100");
-        } catch (\Exception $e) {
-            return back()->withErrors(['store_error' => 'No fue posible conectar con el servicio de usuarios.']);
+    /**
+     * Traduce 401 (sesión expirada) y 403 (sin permisos) a los redirects del flujo web.
+     * Devuelve null cuando la respuesta no corresponde a esos casos.
+     */
+    private function redirigirPorStatus(int $status): ?RedirectResponse
+    {
+        if ($status === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Tu sesión expiró, vuelve a iniciar sesión.']);
         }
 
-        // Si el token es inválido o expiró (401), se reinicia sesión
-        if ($response->status() === 401) {
-            session()->forget(['api_token', 'user']);
+        if ($status === 403) {
+            if (\Illuminate\Support\Facades\Route::has('equipos.index')) {
+                return redirect()->route('equipos.index')
+                    ->withErrors(['error' => 'No tienes permisos para realizar esta acción.']);
+            }
 
-            return redirect()->route('login')->withErrors(['email' => 'Su sesión ha expirado. Por favor ingrese de nuevo.']);
+            abort(403, 'No tienes permisos para realizar esta acción.');
         }
 
-        // Si es 403, no se destruye la sesión: se devuelve error de autorización
-        if ($response->status() === 403) {
-            abort(403, 'No tiene permisos para consultar este recurso.');
+        return null;
+    }
+
+    public function index()
+    {
+        if ($redirigido = $this->guardia()) {
+            return $redirigido;
         }
 
-        $usuarios = $response->json('data') ?? [];
+        $token = $this->getToken();
 
-        // Cálculo de métricas
-        $total = count($usuarios);
+        // Paginación: se recorren todas las páginas para no truncar métricas
+        $usuarios = [];
+        $pagina = 1;
+        $total = 0;
+
+        do {
+            try {
+                $response = Http::withToken($token)
+                    ->acceptJson()
+                    ->timeout(10)
+                    ->get($this->apiUrl().'/usuarios', ['per_page' => 100, 'page' => $pagina]);
+            } catch (ConnectionException $e) {
+                return back()->withErrors(['index_error' => 'No se pudo conectar con el servicio backend.']);
+            }
+
+            if ($redirigido = $this->redirigirPorStatus($response->status())) {
+                return $redirigido;
+            }
+
+            if ($response->failed()) {
+                return back()->withErrors([
+                    'index_error' => $response->json('message') ?? 'No fue posible cargar los usuarios.',
+                ]);
+            }
+
+            $usuarios = array_merge($usuarios, $response->json('data') ?? []);
+            $total = (int) ($response->json('meta.total') ?? count($usuarios));
+            $ultimaPagina = (int) ($response->json('meta.last_page') ?? $pagina);
+            $pagina++;
+        } while ($pagina <= $ultimaPagina && $pagina <= self::MAX_PAGINAS);
+
         $activos = collect($usuarios)->where('is_active', true)->count();
-        $inactivos = collect($usuarios)->where('is_active', false)->count();
+        $inactivos = count($usuarios) - $activos;
 
         return view('usuarios.index', compact('usuarios', 'total', 'activos', 'inactivos'));
     }
 
     public function store(Request $request)
     {
-        if ($redirect = $this->checkAdminAuth()) {
-            return $redirect;
+        if ($redirigido = $this->guardia()) {
+            return $redirigido;
         }
-
-        $token = session('api_token');
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -88,33 +141,35 @@ class UsuarioWebController extends Controller
             'role' => 'required|in:admin,encargado,usuario',
         ]);
 
-        $apiUrl = $this->getApiUrl();
+        $token = $this->getToken();
 
         try {
-            $response = Http::timeout(10)
-                ->withToken($token)
+            $response = Http::withToken($token)
                 ->acceptJson()
-                ->post("{$apiUrl}/usuarios", $request->only('name', 'email', 'password', 'role'));
-        } catch (\Exception $e) {
-            return back()->withErrors(['store_error' => 'Error de conexión al registrar usuario.'])->withInput();
+                ->timeout(10)
+                ->post($this->apiUrl().'/usuarios', $request->only('name', 'email', 'password', 'role'));
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['store_error' => 'No se pudo conectar con el servicio backend.'])->withInput();
+        }
+
+        if ($redirigido = $this->redirigirPorStatus($response->status())) {
+            return $redirigido;
         }
 
         if ($response->failed()) {
-            $errorMsg = $response->json('message') ?? 'Error al crear el usuario.';
-
-            return back()->withErrors(['store_error' => $errorMsg])->withInput();
+            return back()
+                ->withErrors(['store_error' => $response->json('message') ?? 'Error al crear el usuario.'])
+                ->withInput();
         }
 
         return redirect()->route('usuarios.index')->with('success', 'Usuario registrado exitosamente.');
     }
 
-    public function update($usuario, Request $request)
+    public function update(Request $request, string $user)
     {
-        if ($redirect = $this->checkAdminAuth()) {
-            return $redirect;
+        if ($redirigido = $this->guardia()) {
+            return $redirigido;
         }
-
-        $token = session('api_token');
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -122,6 +177,8 @@ class UsuarioWebController extends Controller
             'role' => 'required|in:admin,encargado,usuario',
             'password' => 'nullable|min:8',
         ]);
+
+        $id = (int) $user;
 
         $payload = [
             'name' => $request->input('name'),
@@ -133,15 +190,19 @@ class UsuarioWebController extends Controller
             $payload['password'] = $request->input('password');
         }
 
-        $apiUrl = $this->getApiUrl();
+        $token = $this->getToken();
 
         try {
-            $response = Http::timeout(10)
-                ->withToken($token)
+            $response = Http::withToken($token)
                 ->acceptJson()
-                ->put("{$apiUrl}/usuarios/{$usuario}", $payload);
-        } catch (\Exception $e) {
-            return back()->withErrors(['update_error' => 'Error de conexión al actualizar usuario.']);
+                ->timeout(10)
+                ->put($this->apiUrl()."/usuarios/{$id}", $payload);
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['update_error' => 'No se pudo conectar con el servicio backend.']);
+        }
+
+        if ($redirigido = $this->redirigirPorStatus($response->status())) {
+            return $redirigido;
         }
 
         if ($response->failed()) {
@@ -153,22 +214,24 @@ class UsuarioWebController extends Controller
 
     public function toggleStatus($id, $accion)
     {
-        if ($redirect = $this->checkAdminAuth()) {
-            return $redirect;
+        if ($redirigido = $this->guardia()) {
+            return $redirigido;
         }
 
-        $token = session('api_token');
-
         $endpoint = $accion === 'activar' ? 'activar' : 'desactivar';
-        $apiUrl = $this->getApiUrl();
+        $token = $this->getToken();
 
         try {
-            $response = Http::timeout(10)
-                ->withToken($token)
+            $response = Http::withToken($token)
                 ->acceptJson()
-                ->patch("{$apiUrl}/usuarios/{$id}/{$endpoint}");
-        } catch (\Exception $e) {
-            return back()->withErrors(['status_error' => 'Error de conexión al cambiar el estado.']);
+                ->timeout(10)
+                ->patch($this->apiUrl()."/usuarios/{$id}/{$endpoint}");
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['status_error' => 'No se pudo conectar con el servicio backend.']);
+        }
+
+        if ($redirigido = $this->redirigirPorStatus($response->status())) {
+            return $redirigido;
         }
 
         if ($response->failed()) {

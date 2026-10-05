@@ -5,16 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'Préstamo de Equipos ECCI' }}</title>
 
+    {{-- Tipografía Inter (guía UI/UX), con fallback al system-ui --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     {{-- CDN oficial de Tailwind CSS para aplicar los estilos de inmediato --}}
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind Play CDN fijado a una versión estable (dependencia reproducible; migrar a Vite cuando se compile en CI) -->
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         ecci: {
-                            sidebar: '#0B2559',
-                            footer: '#081d45',
+                            sidebar: '#0B3D91',
+                            footer: '#082E6D',
                         }
                     }
                 }
@@ -25,18 +31,23 @@
     {{-- Ocultar modales hasta que Alpine cargue --}}
     <style>
         [x-cloak] { display: none !important; }
-        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+        body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
     </style>
 
     {{-- Alpine.js para filtros y modales --}}
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
-<body class="h-full flex overflow-hidden text-slate-800 antialiased">
+<body x-data="{ menuAbierto: false }" class="h-full flex overflow-hidden text-slate-800 antialiased">
 
-    {{-- Sidebar lateral izquierdo (Exacto al Mockup) --}}
-    <aside class="w-64 bg-[#0B2559] text-white flex flex-col justify-between shrink-0 h-screen z-20 select-none">
+    {{-- Overlay del menú en móvil (guía UI/UX: navegación compacta ≤767 px) --}}
+    <div x-show="menuAbierto" @click="menuAbierto = false" x-cloak class="fixed inset-0 bg-slate-900/50 z-30 md:hidden"></div>
+
+    {{-- Sidebar lateral izquierdo (colores según guía UI/UX; oculto en móvil hasta abrir el menú) --}}
+    <aside
+        :class="menuAbierto ? 'translate-x-0' : 'max-md:-translate-x-full'"
+        class="fixed md:static inset-y-0 left-0 w-64 bg-[#0B3D91] text-white flex flex-col justify-between shrink-0 h-screen z-40 select-none transition-transform duration-200">
         <div class="flex flex-col flex-1 overflow-y-auto">
-            
+
             {{-- Header Sidebar --}}
             <div class="h-16 flex flex-col justify-center px-6 border-b border-blue-900/60 shrink-0">
                 <span class="text-sm font-bold tracking-tight text-white leading-tight">Sistema de Préstamo</span>
@@ -48,7 +59,7 @@
                 <div>
                     <span class="px-3 text-[10px] font-bold uppercase tracking-wider text-blue-300/70">Menú Principal</span>
                     <nav class="mt-2 space-y-1 text-xs font-medium">
-                        
+
                         <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-200 hover:bg-white/10 hover:text-white transition">
                             <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                             <span>Inicio</span>
@@ -70,7 +81,7 @@
                         </a>
 
                         {{-- Item Activo Usuarios --}}
-                        <a href="{{ route('usuarios.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-blue-600 text-white font-semibold shadow-sm">
+                        <a href="{{ route('usuarios.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#1D5FD0] text-white font-semibold shadow-sm">
                             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                             <span>Usuarios</span>
                         </a>
@@ -86,7 +97,7 @@
         </div>
 
         {{-- Footer Sidebar: Perfil de Administrador --}}
-        <div class="p-4 border-t border-blue-900/60 flex items-center justify-between bg-[#081d45] shrink-0">
+        <div class="p-4 border-t border-blue-900/60 flex items-center justify-between bg-[#082E6D] shrink-0">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-8 h-8 rounded-full bg-blue-500/40 border border-blue-400/40 flex items-center justify-center font-bold text-xs text-white shrink-0">
                     {{ strtoupper(substr(session('user')['name'] ?? 'AD', 0, 2)) }}
@@ -107,26 +118,29 @@
 
     {{-- Área Principal de Trabajo --}}
     <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F8FAFC]">
-        
+
         {{-- Barra Superior (Topbar del Mockup con Campana y Avatar) --}}
-        <header class="h-14 bg-white border-b border-slate-200/80 px-8 flex justify-between items-center shrink-0 z-10">
-            <div class="flex items-center gap-2 text-xs text-slate-400">
-                <span>Sistema</span>
-                <span>&gt;</span>
-                <span class="text-slate-700 font-medium">Gestión de usuarios</span>
+        <header class="h-14 bg-white border-b border-slate-200/80 px-4 md:px-8 flex justify-between items-center shrink-0 z-10">
+            <div class="flex items-center gap-3 text-xs text-slate-400 min-w-0">
+                <button type="button" @click="menuAbierto = !menuAbierto" class="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700 transition" title="Abrir menú" aria-label="Abrir menú">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <span class="hidden sm:inline">Sistema</span>
+                <span class="hidden sm:inline">&gt;</span>
+                <span class="text-slate-700 font-medium truncate">{{ $title ?? 'Gestión de usuarios' }}</span>
             </div>
             <div class="flex items-center gap-4">
                 <button type="button" class="text-slate-400 hover:text-slate-600 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                 </button>
-                <div class="w-7 h-7 rounded-full bg-[#0B2559] text-white flex items-center justify-center font-bold text-[10px]">
+                <div class="w-7 h-7 rounded-full bg-[#0B3D91] text-white flex items-center justify-center font-bold text-[10px]">
                     {{ strtoupper(substr(session('user')['name'] ?? 'AD', 0, 2)) }}
                 </div>
             </div>
         </header>
 
         {{-- Contenedor con Scroll --}}
-        <main class="flex-1 overflow-y-auto px-8 py-6">
+        <main class="flex-1 overflow-y-auto px-4 md:px-8 py-6">
             <div class="max-w-[1400px] mx-auto w-full">
                 @yield('content')
             </div>

@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="min-h-screen flex flex-col justify-between">
-        
+
         {{-- Barra superior institucional --}}
         <header class="w-full py-3 px-6 bg-white/95 backdrop-blur border-b border-[#D9DEE7] flex justify-between items-center text-xs text-[#6B7280]">
             <div class="flex items-center gap-2">
@@ -19,7 +19,7 @@
 
         {{-- Contenedor Principal --}}
         <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 max-w-7xl w-full mx-auto p-4 lg:p-8 gap-8 items-center">
-            
+
             {{-- Columna Izquierda: Banner & Equipos --}}
             <section class="lg:col-span-7 flex flex-col justify-center text-white space-y-6">
                 <div>
@@ -86,15 +86,15 @@
                             Usuario Institucional
                         </label>
                         <div class="relative">
-                            <input 
-                                id="email" 
-                                type="email" 
-                                name="email" 
-                                value="{{ old('email') }}" 
-                                required 
-                                autofocus 
+                            <input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                required
+                                autofocus
                                 placeholder="ejemplo@ecci.edu.co"
-                                class="w-full px-4 py-2.5 bg-slate-50 border border-[#D9DEE7] rounded-xl text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition"
+                                class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition"
                             />
                         </div>
                     </div>
@@ -103,13 +103,13 @@
                         <label for="password" class="block text-xs font-bold text-[#1F2937] tracking-wider uppercase mb-1">
                             Contraseña
                         </label>
-                        <input 
-                            id="password" 
-                            type="password" 
-                            name="password" 
-                            required 
+                        <input
+                            id="password"
+                            type="password"
+                            name="password"
+                            required
                             placeholder="••••••••••••"
-                            class="w-full px-4 py-2.5 bg-slate-50 border border-[#D9DEE7] rounded-xl text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition"
+                            class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition"
                         />
                     </div>
 
@@ -121,9 +121,9 @@
                         <a href="#" class="text-[#0B3D91] hover:text-[#1D5FD0] hover:underline">¿Olvidaste tu contraseña?</a>
                     </div>
 
-                    <button 
-                        type="submit" 
-                        class="w-full py-3 px-4 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white font-medium rounded-xl text-sm shadow-md transition duration-150">
+                    <button
+                        type="submit"
+                        class="w-full h-12 px-4 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white font-medium rounded-[10px] text-sm shadow-md shadow-blue-950/20 transition duration-150">
                         Iniciar sesión
                     </button>
                 </form>
