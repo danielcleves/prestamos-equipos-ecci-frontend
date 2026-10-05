@@ -12,6 +12,10 @@ class LoginController extends Controller
 {
     public function showLoginForm()
     {
+        if (session()->has('auth_token')) {
+            return redirect($this->rutaPorRol(session('user')));
+        }
+
         return view('auth.login');
     }
 
@@ -73,12 +77,29 @@ class LoginController extends Controller
 
             $request->session()->regenerate();
 
-            return redirect()->intended('/usuarios');
+            return redirect()->intended($this->rutaPorRol($user));
         } catch (ConnectionException $e) {
             throw ValidationException::withMessages([
                 'email' => ['No se pudo establecer conexión con el servicio backend.'],
             ]);
         }
+    }
+
+    /**
+     * Landing según el rol del usuario: administrador a la gestión de
+     * usuarios; encargado/solicitante a la landing general.
+     */
+    private function rutaPorRol(?array $user): string
+    {
+        $roles = $user['roles'] ?? [];
+
+        if (is_array($roles[0] ?? null)) {
+            $rol = $roles[0]['name'] ?? null;
+        } else {
+            $rol = $roles[0] ?? $user['role'] ?? $user['rol'] ?? null;
+        }
+
+        return $rol === 'admin' ? route('usuarios.index') : route('inicio');
     }
 
     public function logout(Request $request)
