@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
@@ -60,8 +59,9 @@ class LoginController extends Controller
 
             // Guardar en la sesión de Laravel
             session([
-                'api_token' => $data['token'],
-                'user' => $user,
+                'auth_token' => $data['token'],
+                'api_token'  => $data['token'],
+                'user'       => $user,
             ]);
 
             $request->session()->regenerate();
@@ -81,7 +81,7 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
-        $token = session('api_token');
+        $token = session('auth_token') ?? session('api_token');
         $apiUrl = config('services.backend.url');
 
         if ($token) {

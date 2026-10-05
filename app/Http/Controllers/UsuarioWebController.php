@@ -6,6 +6,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
 
 class UsuarioWebController extends Controller
 {
@@ -33,12 +34,8 @@ class UsuarioWebController extends Controller
         }
 
         if (! $this->esAdmin()) {
-            if (\Illuminate\Support\Facades\Route::has('equipos.index')) {
-                return redirect()->route('equipos.index')
-                    ->withErrors(['error' => 'Esta sección es exclusiva para administradores.']);
-            }
-
-            abort(403, 'Acceso denegado: Se requieren permisos de administrador.');
+            return redirect()->route('inicio')
+                ->withErrors(['inicio' => 'Esta sección es exclusiva para administradores.']);
         }
 
         return null;
@@ -72,12 +69,8 @@ class UsuarioWebController extends Controller
         }
 
         if ($status === 403) {
-            if (\Illuminate\Support\Facades\Route::has('equipos.index')) {
-                return redirect()->route('equipos.index')
-                    ->withErrors(['error' => 'No tienes permisos para realizar esta acción.']);
-            }
-
-            abort(403, 'No tienes permisos para realizar esta acción.');
+            return redirect()->route('inicio')
+                ->withErrors(['inicio' => 'No tienes permisos para realizar esta acción.']);
         }
 
         return null;
