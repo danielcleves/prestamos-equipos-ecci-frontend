@@ -23,15 +23,15 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <a href="{{ route('equipos.index') }}" class="bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B2559]">
+            <a href="{{ route('equipos.index') }}" class="bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B3D91]">
                 Catálogo de equipos
             </a>
-            <a href="{{ route('usuarios.index') }}" class="bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B2559]">
+            <a href="{{ route('usuarios.index') }}" class="bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B3D91]">
                 Gestión de usuarios
             </a>
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
-                <button type="submit" class="w-full bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B2559] text-left">
+                <button type="submit" class="w-full bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B3D91] text-left">
                     Cerrar sesión
                 </button>
             </form>

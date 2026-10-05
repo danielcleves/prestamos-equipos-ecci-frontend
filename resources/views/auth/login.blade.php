@@ -6,7 +6,7 @@
         {{-- Barra superior institucional --}}
         <header class="w-full py-3 px-6 bg-white/95 backdrop-blur border-b border-slate-200 flex justify-between items-center text-xs text-slate-600">
             <div class="flex items-center gap-2">
-                <span class="font-bold text-[#0B2559] tracking-wide">Universidad ECCI</span>
+                <span class="font-bold text-[#0B3D91] tracking-wide">Universidad ECCI</span>
                 <span class="text-slate-300">|</span>
                 <span>PRÉSTAMO DE EQUIPOS</span>
             </div>
@@ -94,7 +94,7 @@
                                 required
                                 autofocus
                                 placeholder="ejemplo@universidad.edu"
-                                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#0B2559] focus:border-transparent outline-none transition"
+                                class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition"
                             />
                         </div>
                     </div>
@@ -109,13 +109,13 @@
                             name="password"
                             required
                             placeholder="••••••••••••"
-                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#0B2559] focus:border-transparent outline-none transition"
+                            class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition"
                         />
                     </div>
 
                     <div class="flex items-center justify-between text-xs">
                         <label class="flex items-center gap-2 text-slate-600 cursor-pointer">
-                            <input type="checkbox" name="remember" class="rounded text-[#0B2559] focus:ring-[#0B2559]">
+                            <input type="checkbox" name="remember" class="rounded text-[#0B3D91] focus:ring-[#0B3D91]">
                             <span>Recordarme</span>
                         </label>
                         <a href="#" class="text-blue-700 hover:underline">¿Olvidaste tu contraseña?</a>
@@ -123,7 +123,7 @@
 
                     <button
                         type="submit"
-                        class="w-full py-3 px-4 bg-[#0B2559] hover:bg-blue-900 text-white font-medium rounded-lg text-sm shadow-md shadow-blue-950/20 transition duration-150">
+                        class="w-full h-12 px-4 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white font-medium rounded-[10px] text-sm shadow-md shadow-blue-950/20 transition duration-150">
                         Iniciar sesión
                     </button>
                 </form>
