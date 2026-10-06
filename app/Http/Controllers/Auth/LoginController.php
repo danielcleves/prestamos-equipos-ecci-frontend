@@ -60,8 +60,8 @@ class LoginController extends Controller
             // Guardar en la sesión de Laravel
             session([
                 'auth_token' => $data['token'],
-                'api_token'  => $data['token'],
-                'user'       => $user,
+                'api_token' => $data['token'],
+                'user' => $user,
             ]);
 
             $request->session()->regenerate();
@@ -106,9 +106,7 @@ class LoginController extends Controller
      */
     private function redirectByRole(?array $user)
     {
-        // El backend devuelve los roles como array en $user['roles']
-        $roles = $user['roles'] ?? [];
-        $rol = is_array($roles) ? ($roles[0] ?? null) : ($user['role'] ?? $user['rol'] ?? null);
+        $rol = $this->rolDe($user);
 
         // Administrador: Gestión de usuarios
         if ($rol === 'admin' && Route::has('usuarios.index')) {
@@ -131,5 +129,22 @@ class LoginController extends Controller
 
         // Fallback por defecto si no existen las otras rutas aún
         return redirect()->route('usuarios.index');
+    }
+
+    /**
+     * Normaliza el rol del usuario venga como venga del backend:
+     * `roles: ['admin']`, `roles: [['name' => 'admin']]`, `role` o `rol`.
+     */
+    private function rolDe(?array $user): ?string
+    {
+        $roles = $user['roles'] ?? [];
+
+        $rol = $roles[0] ?? $user['role'] ?? $user['rol'] ?? null;
+
+        if (is_array($rol)) {
+            $rol = $rol['name'] ?? null;
+        }
+
+        return is_string($rol) ? $rol : null;
     }
 }
