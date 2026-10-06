@@ -17,13 +17,18 @@ class UsuarioWebController extends Controller
         return config('services.backend.url');
     }
 
+    private function getToken(): ?string
+    {
+        return session('api_token') ?? session('auth_token');
+    }
+
     /**
      * Guardia de la sección: requiere sesión activa y rol administrador.
      * Devuelve el redirect correspondiente o null si el acceso está permitido.
      */
     private function guardia(): ?RedirectResponse
     {
-        if (! session('auth_token')) {
+        if (! $this->getToken()) {
             return redirect()->route('login');
         }
 
@@ -56,7 +61,7 @@ class UsuarioWebController extends Controller
     private function redirigirPorStatus(int $status): ?RedirectResponse
     {
         if ($status === 401) {
-            session()->forget(['auth_token', 'user']);
+            session()->forget(['api_token', 'auth_token', 'user']);
 
             return redirect()->route('login')
                 ->withErrors(['email' => 'Tu sesión expiró, vuelve a iniciar sesión.']);
@@ -76,7 +81,7 @@ class UsuarioWebController extends Controller
             return $redirigido;
         }
 
-        $token = session('auth_token');
+        $token = $this->getToken();
 
         // Paginación: se recorren todas las páginas para no truncar métricas
         $usuarios = [];
@@ -128,7 +133,7 @@ class UsuarioWebController extends Controller
             'role' => 'required|in:admin,encargado,usuario',
         ]);
 
-        $token = session('auth_token');
+        $token = $this->getToken();
 
         try {
             $response = Http::withToken($token)
@@ -177,7 +182,7 @@ class UsuarioWebController extends Controller
             $payload['password'] = $request->input('password');
         }
 
-        $token = session('auth_token');
+        $token = $this->getToken();
 
         try {
             $response = Http::withToken($token)
@@ -206,7 +211,7 @@ class UsuarioWebController extends Controller
         }
 
         $endpoint = $accion === 'activar' ? 'activar' : 'desactivar';
-        $token = session('auth_token');
+        $token = $this->getToken();
 
         try {
             $response = Http::withToken($token)

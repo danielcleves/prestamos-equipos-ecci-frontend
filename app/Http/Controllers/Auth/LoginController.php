@@ -3,124 +3,148 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Route;
 
 class LoginController extends Controller
 {
+    /**
+     * Muestra el formulario de inicio de sesión.
+     */
     public function showLoginForm()
     {
-        if (session()->has('auth_token')) {
-            return redirect($this->rutaPorRol(session('user')));
+        if (session()->has('api_token')) {
+            return $this->redirectByRole(session('user'));
         }
 
         return view('auth.login');
     }
 
+    /**
+     * Procesa la autenticación contra la API del backend.
+     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8'],
         ]);
 
         $apiUrl = config('services.backend.url');
 
         try {
-            $response = Http::acceptJson()->timeout(10)->post("{$apiUrl}/login", [
-                'email' => $credentials['email'],
-                'password' => $credentials['password'],
-            ]);
-
-            if ($response->status() === 429) {
-                throw ValidationException::withMessages([
-                    'email' => ['Demasiados intentos de acceso. Espera un minuto antes de reintentar.'],
+            $response = Http::timeout(10)
+                ->acceptJson()
+                ->post("{$apiUrl}/login", [
+                    'email' => $credentials['email'],
+                    'password' => $credentials['password'],
                 ]);
-            }
+        } catch (\Exception $e) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => 'No fue posible comunicarse con el servicio de autenticación.']);
+        }
 
-            if ($response->failed()) {
-                $error = $response->json('message') ?? 'Las credenciales ingresadas son incorrectas o el usuario está inactivo.';
-                throw ValidationException::withMessages([
-                    'email' => [$error],
-                ]);
-            }
-
+        if ($response->successful()) {
             $data = $response->json();
 
-            // Extraer el token de Sanctum (según cómo lo retorne AuthController: token o access_token)
-            $token = $data['token'] ?? $data['access_token'] ?? null;
-            $user = $data['user'] ?? null;
-
-            if (! $token) {
-                throw ValidationException::withMessages([
-                    'email' => ['Respuesta de autenticación inválida del servidor.'],
-                ]);
+            // Validar que la respuesta contenga el token
+            if (empty($data['token'])) {
+                return back()->withInput($request->only('email'))
+                    ->withErrors(['email' => 'Respuesta de autenticación inválida del servidor.']);
             }
 
-            // Si el backend no devolvió el usuario en el login, lo consultamos con /api/me
-            if (! $user) {
-                $meResponse = Http::withToken($token)->acceptJson()->timeout(10)->get("{$apiUrl}/me");
+            // Extraer el usuario limpio
+            $user = $data['user'] ?? $data;
 
-                if ($meResponse->successful()) {
-                    // El backend responde { user: {...} }; se guarda solo el usuario
-                    $user = $meResponse->json('user') ?? $meResponse->json();
-                }
-            }
-
-            // Guardar en la sesión del cliente web
+            // Guardar en la sesión de Laravel
             session([
-                'auth_token' => $token,
+                'auth_token' => $data['token'],
+                'api_token' => $data['token'],
                 'user' => $user,
             ]);
 
             $request->session()->regenerate();
 
-            return redirect()->intended($this->rutaPorRol($user));
-        } catch (ConnectionException $e) {
-            throw ValidationException::withMessages([
-                'email' => ['No se pudo establecer conexión con el servicio backend.'],
-            ]);
+            return $this->redirectByRole($user);
         }
+
+        // Manejo de errores de credenciales devueltos por el backend (401, 422)
+        $errorMessage = $response->json('message') ?? 'Las credenciales ingresadas son incorrectas.';
+
+        return back()->withInput($request->only('email'))
+            ->withErrors(['email' => $errorMessage]);
     }
 
     /**
-     * Landing según el rol del usuario: administrador a la gestión de
-     * usuarios; encargado/solicitante a la landing general.
+     * Cierra la sesión revocando el token en el backend.
      */
-    private function rutaPorRol(?array $user): string
-    {
-        $roles = $user['roles'] ?? [];
-
-        if (is_array($roles[0] ?? null)) {
-            $rol = $roles[0]['name'] ?? null;
-        } else {
-            $rol = $roles[0] ?? $user['role'] ?? $user['rol'] ?? null;
-        }
-
-        return $rol === 'admin' ? route('usuarios.index') : route('inicio');
-    }
-
     public function logout(Request $request)
     {
-        $token = session('auth_token');
+        $token = session('auth_token') ?? session('api_token');
+        $apiUrl = config('services.backend.url');
 
         if ($token) {
             try {
-                Http::withToken($token)
+                Http::timeout(5)
+                    ->withToken($token)
                     ->acceptJson()
-                    ->timeout(10)
-                    ->post(config('services.backend.url').'/logout');
-            } catch (ConnectionException|\Exception $e) {
-                // Si el backend no responde, se limpia la sesión local igualmente
+                    ->post("{$apiUrl}/logout");
+            } catch (\Exception $e) {
+                // Registro silencioso o log; continúa con el logout local
             }
         }
 
-        session()->forget(['auth_token', 'user']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('login')->with('success', 'Sesión cerrada correctamente.');
+    }
+
+    /**
+     * Redirige al usuario según su rol de manera segura.
+     */
+    private function redirectByRole(?array $user)
+    {
+        $rol = $this->rolDe($user);
+
+        // Administrador: Gestión de usuarios
+        if ($rol === 'admin' && Route::has('usuarios.index')) {
+            return redirect()->route('usuarios.index');
+        }
+
+        // Encargado: Gestión de préstamos
+        if ($rol === 'encargado' && Route::has('prestamos.gestion')) {
+            return redirect()->route('prestamos.gestion');
+        }
+
+        // Estudiante / Solicitante: Catálogo de equipos
+        if (Route::has('equipos.index')) {
+            return redirect()->route('equipos.index');
+        }
+
+        if (Route::has('prestamos.catalogo')) {
+            return redirect()->route('prestamos.catalogo');
+        }
+
+        // Fallback por defecto si no existen las otras rutas aún
+        return redirect()->route('usuarios.index');
+    }
+
+    /**
+     * Normaliza el rol del usuario venga como venga del backend:
+     * `roles: ['admin']`, `roles: [['name' => 'admin']]`, `role` o `rol`.
+     */
+    private function rolDe(?array $user): ?string
+    {
+        $roles = $user['roles'] ?? [];
+
+        $rol = $roles[0] ?? $user['role'] ?? $user['rol'] ?? null;
+
+        if (is_array($rol)) {
+            $rol = $rol['name'] ?? null;
+        }
+
+        return is_string($rol) ? $rol : null;
     }
 }

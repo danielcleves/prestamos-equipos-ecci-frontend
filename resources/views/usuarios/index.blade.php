@@ -122,7 +122,7 @@
                             $username = $emailParts[0];
                             $nameWords = explode(' ', trim($user['name']));
                             $iniciales = strtoupper(substr($nameWords[0], 0, 1) . (isset($nameWords[1]) ? substr($nameWords[1], 0, 1) : ''));
-                            $rol = !empty($user['roles']) ? (is_array($user['roles'][0]) ? $user['roles'][0]['name'] : $user['roles'][0]) : 'usuario';
+                            $rol = !empty($user['roles']) ? (is_array($user['roles'][0]) ? ($user['roles'][0]['name'] ?? 'usuario') : $user['roles'][0]) : ($user['role'] ?? 'usuario');
                             $rolLabel = match($rol) {
                                 'admin' => 'Administrador',
                                 'encargado' => 'Personal de préstamo',
@@ -134,7 +134,7 @@
                                 default => 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
                             };
                             $avatarColor = match($rol) {
-                                'admin' => 'bg-blue-700',
+                                'admin' => 'bg-[#0B3D91]',
                                 'encargado' => 'bg-indigo-600',
                                 default => 'bg-emerald-600'
                             };
@@ -173,7 +173,7 @@
                                 <button
                                     type="button"
                                     @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol]))"
-                                    class="text-slate-500 hover:text-blue-700 font-medium transition"
+                                    class="text-slate-500 hover:text-[#0B3D91] font-medium transition"
                                 >
                                     Editar
                                 </button>
@@ -208,7 +208,7 @@
                     $username = $emailParts[0];
                     $nameWords = explode(' ', trim($user['name']));
                     $iniciales = strtoupper(substr($nameWords[0], 0, 1) . (isset($nameWords[1]) ? substr($nameWords[1], 0, 1) : ''));
-                    $rol = !empty($user['roles']) ? (is_array($user['roles'][0]) ? $user['roles'][0]['name'] : $user['roles'][0]) : 'usuario';
+                    $rol = !empty($user['roles']) ? (is_array($user['roles'][0]) ? ($user['roles'][0]['name'] ?? 'usuario') : $user['roles'][0]) : ($user['role'] ?? 'usuario');
                     $rolLabel = match($rol) {
                         'admin' => 'Administrador',
                         'encargado' => 'Personal de préstamo',
@@ -220,7 +220,7 @@
                         default => 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
                     };
                     $avatarColor = match($rol) {
-                        'admin' => 'bg-blue-700',
+                        'admin' => 'bg-[#0B3D91]',
                         'encargado' => 'bg-indigo-600',
                         default => 'bg-emerald-600'
                     };
@@ -321,7 +321,7 @@
         </div>
     </div>
 
-{{-- MODAL EDITAR USUARIO --}}
+    {{-- MODAL EDITAR USUARIO --}}
     <div x-show="openModalEdit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div @click.away="openModalEdit = false" class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -351,7 +351,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Nueva Contraseña (opcional)</label>
-                    <input type="password" name="password" placeholder="Dejar en blanco para no cambiarla" class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
+                    <input type="password" name="password" minlength="8" placeholder="Dejar en blanco para no cambiarla" class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" @click="openModalEdit = false" class="h-12 px-4 border border-[#D9DEE7] text-[#0B3D91] text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition">Cancelar</button>
