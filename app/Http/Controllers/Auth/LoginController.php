@@ -60,8 +60,8 @@ class LoginController extends Controller
             // Guardar en la sesión de Laravel
             session([
                 'auth_token' => $data['token'],
-                'api_token'  => $data['token'],
-                'user'       => $user,
+                'api_token' => $data['token'],
+                'user' => $user,
             ]);
 
             $request->session()->regenerate();

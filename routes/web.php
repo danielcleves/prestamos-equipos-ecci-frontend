@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\EquipoWebController;
 use App\Http\Controllers\UsuarioWebController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,4 +46,9 @@ Route::middleware(['web'])->group(function () {
 
         return view('equipos.index');
     })->name('equipos.index');
+
+    Route::get('/equipos', [EquipoWebController::class, 'index'])->name('equipos.index');
+    Route::get('/equipos/crear', [EquipoWebController::class, 'create'])->name('equipos.create');
+    Route::post('/equipos', [EquipoWebController::class, 'store'])->name('equipos.store');
+
 });
