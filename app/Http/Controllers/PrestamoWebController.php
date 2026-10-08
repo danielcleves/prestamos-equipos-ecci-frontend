@@ -1,0 +1,120 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
+class PrestamoWebController extends Controller
+{
+    private function apiUrl(): string
+    {
+        return config('services.backend.url');
+    }
+
+    private function getToken(): ?string
+    {
+        return session('api_token') ?? session('auth_token');
+    }
+
+    /**
+     * Muestra el formulario para solicitar préstamo de un equipo (HU-06).
+     */
+    public function create(Request $request, string $equipoId)
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->get($this->apiUrl() . "/equipos/{$equipoId}");
+        } catch (ConnectionException $e) {
+            return redirect()->route('equipos.index', ['vista' => 'catalogo'])
+                ->withErrors(['index_error' => 'No fue posible conectar con el servidor para consultar el equipo.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->status() === 404) {
+            return redirect()->route('equipos.index', ['vista' => 'catalogo'])
+                ->withErrors(['error' => 'El equipo seleccionado no existe o no se encuentra disponible.']);
+        }
+
+        $equipo = $response->json('data') ?? [];
+
+        // Validar regla de negocio: Solo equipos disponibles pueden solicitarse (HU-06)
+        $estado = strtolower($equipo['estado'] ?? 'disponible');
+        if ($estado !== 'disponible') {
+            return redirect()->route('equipos.index', ['vista' => 'catalogo'])
+                ->withErrors(['error' => 'No se puede solicitar un equipo que se encuentre en mantenimiento, prestado o dado de baja.']);
+        }
+
+        $usuario = session('user') ?? [];
+
+        return view('prestamos.create', compact('equipo', 'usuario'));
+    }
+
+    /**
+     * Procesa y registra la solicitud de préstamo (HU-06 / KAN-76).
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        $request->validate([
+            'equipo_id'        => 'required',
+            'fecha_inicio'     => 'required|date|after_or_equal:today',
+            'fecha_devolucion' => 'required|date|after:fecha_inicio',
+            'motivo'           => 'nullable|string|max:500',
+        ], [
+            'fecha_inicio.required'     => 'La fecha de inicio es requerida.',
+            'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior a hoy.',
+            'fecha_devolucion.required' => 'La fecha de devolución es requerida.',
+            'fecha_devolucion.after'    => 'La fecha de devolución debe ser posterior a la fecha de inicio.',
+        ]);
+
+        $payload = [
+            'equipo_id'        => (int) $request->input('equipo_id'),
+            'fecha_inicio'     => $request->input('fecha_inicio'),
+            'fecha_devolucion' => $request->input('fecha_devolucion'),
+            'motivo'           => $request->input('motivo'),
+            'observaciones'    => $request->input('motivo'),
+        ];
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->post($this->apiUrl() . '/prestamos', $payload);
+        } catch (ConnectionException $e) {
+            return back()->withInput()->withErrors(['prestamo_error' => 'No fue posible conectar con el servicio backend.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->failed()) {
+            $mensaje = $response->json('message') ?? 'Error al procesar la solicitud de préstamo.';
+            $errores = $response->json('errors') ?? [];
+
+            return back()->withInput()->withErrors($errores ?: ['prestamo_error' => $mensaje]);
+        }
+
+        return redirect()->route('equipos.index', ['vista' => 'catalogo'])
+            ->with('success', '¡Solicitud de préstamo registrada con éxito! El estado inicial es "Solicitado".');
+    }
+}
