@@ -41,3 +41,4 @@ Route::patch('/usuarios/{id}/{accion}', [UsuarioWebController::class, 'toggleSta
 Route::get('/equipos', [EquipoWebController::class, 'index'])->name('equipos.index');
 Route::get('/equipos/crear', [EquipoWebController::class, 'create'])->name('equipos.create');
 Route::post('/equipos', [EquipoWebController::class, 'store'])->name('equipos.store');
+Route::patch('/equipos/{id}/estado', [EquipoWebController::class, 'updateEstado'])->name('equipos.updateEstado');

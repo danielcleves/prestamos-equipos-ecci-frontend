@@ -20,7 +20,7 @@ class EquipoWebController extends Controller
     }
 
     /**
-     * Muestra el catálogo de equipos consultando la API del backend.
+     * Muestra el catálogo/inventario de equipos con métricas de HU-04.
      */
     public function index(Request $request)
     {
@@ -35,7 +35,7 @@ class EquipoWebController extends Controller
                 ->timeout(10)
                 ->get($this->apiUrl().'/equipos?per_page=100');
         } catch (ConnectionException $e) {
-            return back()->withErrors(['index_error' => 'No fue posible conectar con el catálogo de equipos.']);
+            return back()->withErrors(['index_error' => 'No fue posible conectar con el inventario de equipos.']);
         }
 
         if ($response->status() === 401) {
@@ -47,7 +47,26 @@ class EquipoWebController extends Controller
         $equipos = $response->json('data') ?? [];
         $esAdmin = $this->esAdmin();
 
-        return view('equipos.index', compact('equipos', 'esAdmin'));
+        // Métricas calculadas para las tarjetas superiores (HU-04)
+        $metricas = [
+            'disponibles' => 0,
+            'prestados' => 0,
+            'mantenimiento' => 0,
+            'total' => count($equipos),
+        ];
+
+        foreach ($equipos as $item) {
+            $estado = strtolower($item['estado'] ?? 'disponible');
+            if ($estado === 'disponible') {
+                $metricas['disponibles']++;
+            } elseif (in_array($estado, ['prestado', 'en_prestamo', 'en préstamo'])) {
+                $metricas['prestados']++;
+            } elseif (in_array($estado, ['mantenimiento', 'en mantenimiento', 'en_mantenimiento'])) {
+                $metricas['mantenimiento']++;
+            }
+        }
+
+        return view('equipos.index', compact('equipos', 'esAdmin', 'metricas'));
     }
 
     /**
@@ -82,7 +101,7 @@ class EquipoWebController extends Controller
     }
 
     /**
-     * Muestra el formulario para registrar un nuevo equipo.
+     * Muestra el formulario para registrar un nuevo equipo (HU-03).
      */
     public function create()
     {
@@ -90,7 +109,6 @@ class EquipoWebController extends Controller
             return $redirigido;
         }
 
-        // Categorías base según CategoriaSeeder
         $categorias = [
             ['id' => 1, 'nombre' => 'Portátil'],
             ['id' => 2, 'nombre' => 'Tablet'],
@@ -101,7 +119,7 @@ class EquipoWebController extends Controller
     }
 
     /**
-     * Envía la solicitud de creación al backend.
+     * Envía la solicitud de creación al backend (HU-03).
      */
     public function store(Request $request): RedirectResponse
     {
@@ -154,5 +172,52 @@ class EquipoWebController extends Controller
         }
 
         return redirect()->route('equipos.index')->with('success', 'Equipo registrado exitosamente.');
+    }
+
+    /**
+     * Actualiza el estado de un equipo (HU-04 / KAN-65).
+     */
+    public function updateEstado(Request $request, string $id): RedirectResponse
+    {
+        if ($redirigido = $this->guardia()) {
+            return $redirigido;
+        }
+
+        $request->validate([
+            'estado' => 'required|string|in:disponible,en_prestamo,mantenimiento,dado_de_baja',
+        ]);
+
+        $token = $this->getToken();
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->patch($this->apiUrl()."/equipos/{$id}/estado", [
+                    'estado' => $request->input('estado'),
+                ]);
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['estado_error' => 'No fue posible conectar con el backend.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró, vuelve a iniciar sesión.']);
+        }
+
+        if ($response->status() === 403) {
+            return redirect()->route('inicio')->withErrors(['inicio' => 'No tienes permisos para actualizar el estado del equipo.']);
+        }
+
+        if ($response->failed()) {
+            $errorMsg = $response->json('message')
+                ?? $response->json('errors.estado.0')
+                ?? 'Error al actualizar el estado del equipo.';
+
+            return back()->withErrors(['estado_error' => $errorMsg]);
+        }
+
+        return redirect()->route('equipos.index')->with('success', 'Estado del equipo actualizado correctamente.');
     }
 }
