@@ -57,4 +57,8 @@ Route::middleware(['web'])->group(function () {
     Route::get('/prestamos/solicitar/{equipoId}', [PrestamoWebController::class, 'create'])->name('prestamos.solicitar');
     Route::post('/prestamos/solicitar', [PrestamoWebController::class, 'store'])->name('prestamos.store');
 
+    //Entregas de equipos (Personal autorizado / Admin)
+    Route::get('/entregas-pendientes', [PrestamoWebController::class, 'entregasIndex'])->name('prestamos.entregas');
+    Route::post('/prestamos/{id}/entrega', [PrestamoWebController::class, 'registrarEntrega'])->name('prestamos.registrarEntrega');
+
 });
