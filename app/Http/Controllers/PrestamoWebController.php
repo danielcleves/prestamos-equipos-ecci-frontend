@@ -66,7 +66,7 @@ class PrestamoWebController extends Controller
     /**
      * Procesa y registra la solicitud de préstamo (HU-06 / KAN-76).
      */
-    public function store(Request $request): RedirectResponse
+public function store(Request $request): RedirectResponse
     {
         $token = $this->getToken();
         if (! $token) {
@@ -75,22 +75,37 @@ class PrestamoWebController extends Controller
 
         $request->validate([
             'equipo_id'        => 'required',
-            'fecha_inicio'     => 'required|date|after_or_equal:today',
-            'fecha_devolucion' => 'required|date|after:fecha_inicio',
+            'fecha_inicio'     => 'required|date',
+            'fecha_devolucion' => 'required|date|after_or_equal:fecha_inicio',
             'motivo'           => 'nullable|string|max:500',
         ], [
             'fecha_inicio.required'     => 'La fecha de inicio es requerida.',
-            'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior a hoy.',
             'fecha_devolucion.required' => 'La fecha de devolución es requerida.',
-            'fecha_devolucion.after'    => 'La fecha de devolución debe ser posterior a la fecha de inicio.',
+            'fecha_devolucion.after_or_equal' => 'La fecha de devolución debe ser igual o posterior a la fecha de inicio.',
         ]);
 
+        $fechaInicioRaw = $request->input('fecha_inicio');
+        $fechaDevolucionRaw = $request->input('fecha_devolucion');
+
+        // Formatear a fecha y hora completa que exige el backend (Y-m-d H:i:s)
+        // Si el input date solo trae 'Y-m-d', le asignamos una hora de inicio y fin laboral estándar
+        $fechaInicio = str_contains($fechaInicioRaw, ':')
+            ? date('Y-m-d H:i:s', strtotime($fechaInicioRaw))
+            : date('Y-m-d 08:00:00', strtotime($fechaInicioRaw));
+
+        $fechaDevolucion = str_contains($fechaDevolucionRaw, ':')
+            ? date('Y-m-d H:i:s', strtotime($fechaDevolucionRaw))
+            : date('Y-m-d 18:00:00', strtotime($fechaDevolucionRaw));
+
+        $motivo = $request->input('motivo');
+
+        // Payload exacto según el contrato de StorePrestamoRequest del backend
         $payload = [
-            'equipo_id'        => (int) $request->input('equipo_id'),
-            'fecha_inicio'     => $request->input('fecha_inicio'),
-            'fecha_devolucion' => $request->input('fecha_devolucion'),
-            'motivo'           => $request->input('motivo'),
-            'observaciones'    => $request->input('motivo'),
+            'equipo_id'                 => (int) $request->input('equipo_id'),
+            'fecha_inicio'              => $fechaInicio,
+            'fecha_devolucion_estimada' => $fechaDevolucion,
+            'motivo'                    => $motivo,
+            'observaciones'             => $motivo,
         ];
 
         try {
@@ -111,10 +126,22 @@ class PrestamoWebController extends Controller
             $mensaje = $response->json('message') ?? 'Error al procesar la solicitud de préstamo.';
             $errores = $response->json('errors') ?? [];
 
-            return back()->withInput()->withErrors($errores ?: ['prestamo_error' => $mensaje]);
+            // Si el backend responde con mensajes en errores anidados, aplanarlos para mostrarlos al usuario
+            $mensajesAplanados = [];
+            foreach ($errores as $campo => $msgs) {
+                if (is_array($msgs)) {
+                    foreach ($msgs as $m) {
+                        $mensajesAplanados[] = $m;
+                    }
+                } else {
+                    $mensajesAplanados[] = $msgs;
+                }
+            }
+
+            return back()->withInput()->withErrors($mensajesAplanados ?: ['prestamo_error' => $mensaje]);
         }
 
         return redirect()->route('equipos.index', ['vista' => 'catalogo'])
-            ->with('success', '¡Solicitud de préstamo registrada con éxito! El estado inicial es "Solicitado".');
+            ->with('success', '¡Solicitud de préstamo registrada con éxito! El estado inicial de la solicitud es "Solicitado".');
     }
 }
