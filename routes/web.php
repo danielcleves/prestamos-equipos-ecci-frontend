@@ -47,3 +47,7 @@ Route::patch('/equipos/{id}/estado', [EquipoWebController::class, 'updateEstado'
 // Solicitud de préstamo de equipos (HU-06)
 Route::get('/prestamos/solicitar/{equipoId}', [PrestamoWebController::class, 'create'])->name('prestamos.solicitar');
 Route::post('/prestamos/solicitar', [PrestamoWebController::class, 'store'])->name('prestamos.store');
+
+// Entregas de equipos (HU-09 / personal autorizado)
+Route::get('/entregas-pendientes', [PrestamoWebController::class, 'entregasIndex'])->name('prestamos.entregas');
+Route::post('/prestamos/{id}/entrega', [PrestamoWebController::class, 'registrarEntrega'])->name('prestamos.registrarEntrega');
