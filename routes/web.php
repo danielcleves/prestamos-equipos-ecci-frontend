@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\EquipoWebController;
 use App\Http\Controllers\UsuarioWebController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,11 +37,7 @@ Route::patch('/usuarios/{id}/{accion}', [UsuarioWebController::class, 'toggleSta
     ->whereIn('accion', ['activar', 'desactivar'])
     ->name('usuarios.toggle');
 
-// HU-03: Catálogo de equipos
-Route::get('/equipos', function () {
-    if (! session()->has('auth_token')) {
-        return redirect()->route('login');
-    }
-
-    return view('equipos.index');
-})->name('equipos.index');
+// HU-03/HU-05: Catálogo y gestión de equipos
+Route::get('/equipos', [EquipoWebController::class, 'index'])->name('equipos.index');
+Route::get('/equipos/crear', [EquipoWebController::class, 'create'])->name('equipos.create');
+Route::post('/equipos', [EquipoWebController::class, 'store'])->name('equipos.store');
