@@ -54,9 +54,8 @@
             <select x-model="statusFilter" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Todos los estados</option>
                 <option value="disponible">Disponible</option>
-                <option value="en_prestamo">En préstamo</option>
                 <option value="mantenimiento">En mantenimiento</option>
-                <option value="dado_de_baja">Dado de baja</option>
+                <option value="no_disponible">No disponible</option>
             </select>
         </div>
 
@@ -84,17 +83,13 @@
 
                             $estadoBadge = match($estado) {
                                 'disponible' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                'en_prestamo' => 'bg-blue-50 text-blue-700 border-blue-200',
                                 'mantenimiento' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                'dado_de_baja' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                default => 'bg-slate-50 text-slate-700 border-slate-200'
+                                default => 'bg-rose-50 text-rose-700 border-rose-200'
                             };
                             $estadoLabel = match($estado) {
                                 'disponible' => 'Disponible',
-                                'en_prestamo' => 'En préstamo',
                                 'mantenimiento' => 'En mantenimiento',
-                                'dado_de_baja' => 'Dado de baja',
-                                default => 'Sin estado'
+                                default => 'No disponible'
                             };
                         @endphp
                         <tr 

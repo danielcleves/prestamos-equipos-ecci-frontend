@@ -2,9 +2,9 @@
 
 @section('content')
 <div class="space-y-6 max-w-7xl mx-auto" x-data="{
-    codigo: @js(old('codigo', '')),
-    nombre: @js(old('nombre', '')),
-    categoriaId: @js(old('categoria_id', ''))
+    codigo: '{{ old('codigo', '') }}',
+    nombre: '{{ old('nombre', '') }}',
+    categoriaId: '{{ old('categoria_id', '') }}'
 }">
     {{-- Breadcrumb y Título --}}
     <div>
