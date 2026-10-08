@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\EquipoWebController;
 use App\Http\Controllers\UsuarioWebController;
+use App\Http\Controllers\PrestamoWebController;
 use Illuminate\Support\Facades\Route;
 
 // Raíz: según sesión/rol
@@ -51,5 +52,9 @@ Route::middleware(['web'])->group(function () {
     Route::get('/equipos/crear', [EquipoWebController::class, 'create'])->name('equipos.create');
     Route::post('/equipos', [EquipoWebController::class, 'store'])->name('equipos.store');
     Route::patch('/equipos/{id}/estado', [EquipoWebController::class, 'updateEstado'])->name('equipos.updateEstado');
+
+    // Solicitud de préstamo de equipos
+    Route::get('/prestamos/solicitar/{equipoId}', [PrestamoWebController::class, 'create'])->name('prestamos.solicitar');
+    Route::post('/prestamos/solicitar', [PrestamoWebController::class, 'store'])->name('prestamos.store');
 
 });

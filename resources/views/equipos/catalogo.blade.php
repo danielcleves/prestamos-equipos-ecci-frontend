@@ -224,9 +224,9 @@
                     </button>
 
                     <template x-if="selectedEquipo.estado === 'disponible'">
-                        <button type="button" class="h-10 px-5 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white text-xs font-semibold rounded-[10px] transition shadow-sm">
+                        <a :href="'{{ url('/prestamos/solicitar') }}/' + selectedEquipo.id" class="h-10 px-5 bg-[#1D5FD0] hover:bg-[#184ea8] text-white text-xs font-semibold rounded-[10px] transition shadow-sm flex items-center justify-center">
                             Solicitar préstamo
-                        </button>
+                        </a>
                     </template>
                 </div>
             </div>
