@@ -22,7 +22,7 @@ class EquipoWebController extends Controller
     /**
      * Muestra el catálogo/inventario de equipos con métricas de HU-04.
      */
-public function index(Request $request)
+    public function index(Request $request)
     {
         $token = $this->getToken();
         if (! $token) {
@@ -33,7 +33,7 @@ public function index(Request $request)
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->get($this->apiUrl() . '/equipos?per_page=100');
+                ->get($this->apiUrl().'/equipos?per_page=100');
         } catch (ConnectionException $e) {
             return back()->withErrors(['index_error' => 'No fue posible conectar con el inventario de equipos.']);
         }
@@ -49,10 +49,10 @@ public function index(Request $request)
 
         // Métricas calculadas para las tarjetas superiores (HU-04)
         $metricas = [
-            'disponibles'   => 0,
-            'prestados'     => 0,
+            'disponibles' => 0,
+            'prestados' => 0,
             'mantenimiento' => 0,
-            'total'         => count($equipos),
+            'total' => count($equipos),
         ];
 
         foreach ($equipos as $item) {
@@ -128,18 +128,18 @@ public function index(Request $request)
         }
 
         $request->validate([
-            'codigo'        => 'required|string|max:255',
-            'nombre'        => 'required|string|max:255',
-            'categoria_id'  => 'required|integer',
-            'descripcion'   => 'nullable|string',
+            'codigo' => 'required|string|max:255',
+            'nombre' => 'required|string|max:255',
+            'categoria_id' => 'required|integer',
+            'descripcion' => 'nullable|string',
             'observaciones' => 'nullable|string',
         ]);
 
         $payload = [
-            'codigo'        => $request->input('codigo'),
-            'nombre'        => $request->input('nombre'),
-            'categoria_id'  => (int) $request->input('categoria_id'),
-            'descripcion'   => $request->input('descripcion'),
+            'codigo' => $request->input('codigo'),
+            'nombre' => $request->input('nombre'),
+            'categoria_id' => (int) $request->input('categoria_id'),
+            'descripcion' => $request->input('descripcion'),
             'observaciones' => $request->input('observaciones'),
         ];
 
@@ -177,7 +177,7 @@ public function index(Request $request)
     /**
      * Actualiza el estado de un equipo (HU-04 / KAN-65).
      */
-public function updateEstado(Request $request, string $id): RedirectResponse
+    public function updateEstado(Request $request, string $id): RedirectResponse
     {
         if ($redirigido = $this->guardia()) {
             return $redirigido;
@@ -193,7 +193,7 @@ public function updateEstado(Request $request, string $id): RedirectResponse
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->patch($this->apiUrl() . "/equipos/{$id}/estado", [
+                ->patch($this->apiUrl()."/equipos/{$id}/estado", [
                     'estado' => $request->input('estado'),
                 ]);
         } catch (ConnectionException $e) {
@@ -211,8 +211,8 @@ public function updateEstado(Request $request, string $id): RedirectResponse
         }
 
         if ($response->failed()) {
-            $errorMsg = $response->json('message') 
-                ?? $response->json('errors.estado.0') 
+            $errorMsg = $response->json('message')
+                ?? $response->json('errors.estado.0')
                 ?? 'Error al actualizar el estado del equipo.';
 
             return back()->withErrors(['estado_error' => $errorMsg]);
@@ -220,5 +220,4 @@ public function updateEstado(Request $request, string $id): RedirectResponse
 
         return redirect()->route('equipos.index')->with('success', 'Estado del equipo actualizado correctamente.');
     }
-
 }
