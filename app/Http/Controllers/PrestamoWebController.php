@@ -327,4 +327,119 @@ class PrestamoWebController extends Controller
 
         return redirect()->route('prestamos.devoluciones')->with('success', $mensajeExito);
     }
+
+
+    /**
+     * Muestra la bandeja de gestión de solicitudes (HU-08 / KAN-94).
+     */
+    public function solicitudesIndex(Request $request)
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->get($this->apiUrl() . '/prestamos?per_page=100');
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        $todos = $response->json('data') ?? [];
+
+        return view('prestamos.solicitudes', [
+            'solicitudes' => $todos,
+        ]);
+    }
+
+    /**
+     * Aprueba una solicitud de préstamo (HU-08).
+     */
+    public function aprobarSolicitud(Request $request, string $id): RedirectResponse
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        try {
+            //  patch 
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->patch($this->apiUrl() . "/prestamos/{$id}/aprobar");
+
+            if ($response->status() === 404 || $response->status() === 405) {
+                $response = Http::withToken($token)
+                    ->acceptJson()
+                    ->timeout(10)
+                    ->patch($this->apiUrl() . "/prestamos/{$id}/estado", [
+                        'estado' => 'aprobado',
+                    ]);
+            }
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el backend.']);
+        }
+
+        if ($response->failed()) {
+            $msg = $response->json('message') ?? 'No se pudo aprobar la solicitud.';
+            return back()->withErrors(['error' => $msg]);
+        }
+
+        return redirect()->route('prestamos.solicitudes')
+            ->with('success', '¡Solicitud #' . $id . ' aprobada exitosamente! Ahora se encuentra lista para entrega física.');
+    }
+
+    /**
+     * Rechaza una solicitud de préstamo (HU-08).
+     */
+    public function rechazarSolicitud(Request $request, string $id): RedirectResponse
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        $request->validate([
+            'motivo_rechazo' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->patch($this->apiUrl() . "/prestamos/{$id}/rechazar", [
+                    'motivo_rechazo' => $request->input('motivo_rechazo'),
+                ]);
+
+            if ($response->status() === 404 || $response->status() === 405) {
+                $response = Http::withToken($token)
+                    ->acceptJson()
+                    ->timeout(10)
+                    ->patch($this->apiUrl() . "/prestamos/{$id}/estado", [
+                        'estado' => 'rechazado',
+                        'observaciones' => $request->input('motivo_rechazo'),
+                    ]);
+            }
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el backend.']);
+        }
+
+        if ($response->failed()) {
+            $msg = $response->json('message') ?? 'No se pudo rechazar la solicitud.';
+            return back()->withErrors(['error' => $msg]);
+        }
+
+        return redirect()->route('prestamos.solicitudes')
+            ->with('success', 'La solicitud #' . $id . ' ha sido rechazada.');
+    }
+
 }

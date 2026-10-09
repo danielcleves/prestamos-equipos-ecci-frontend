@@ -65,4 +65,9 @@ Route::middleware(['web'])->group(function () {
     Route::get('/devoluciones', [PrestamoWebController::class, 'devolucionesIndex'])->name('prestamos.devoluciones');
     Route::post('/prestamos/{id}/devolucion', [PrestamoWebController::class, 'registrarDevolucion'])->name('prestamos.registrarDevolucion');
 
+    // Gestión y Detalle de Solicitudes
+    Route::get('/solicitudes', [PrestamoWebController::class, 'solicitudesIndex'])->name('prestamos.solicitudes');
+    Route::patch('/prestamos/{id}/aprobar', [PrestamoWebController::class, 'aprobarSolicitud'])->name('prestamos.aprobar');
+    Route::patch('/prestamos/{id}/rechazar', [PrestamoWebController::class, 'rechazarSolicitud'])->name('prestamos.rechazar');
+
 });
