@@ -51,7 +51,6 @@ class PrestamoWebController extends Controller
 
         $equipo = $response->json('data') ?? [];
 
-        // Validar regla de negocio: Solo equipos disponibles pueden solicitarse (HU-06)
         $estado = strtolower($equipo['estado'] ?? 'disponible');
         if ($estado !== 'disponible') {
             return redirect()->route('equipos.index', ['vista' => 'catalogo'])
@@ -66,7 +65,7 @@ class PrestamoWebController extends Controller
     /**
      * Procesa y registra la solicitud de préstamo (HU-06 / KAN-76).
      */
-public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $token = $this->getToken();
         if (! $token) {
@@ -87,8 +86,6 @@ public function store(Request $request): RedirectResponse
         $fechaInicioRaw = $request->input('fecha_inicio');
         $fechaDevolucionRaw = $request->input('fecha_devolucion');
 
-        // Formatear a fecha y hora completa que exige el backend (Y-m-d H:i:s)
-        // Si el input date solo trae 'Y-m-d', le asignamos una hora de inicio y fin laboral estándar
         $fechaInicio = str_contains($fechaInicioRaw, ':')
             ? date('Y-m-d H:i:s', strtotime($fechaInicioRaw))
             : date('Y-m-d 08:00:00', strtotime($fechaInicioRaw));
@@ -99,7 +96,6 @@ public function store(Request $request): RedirectResponse
 
         $motivo = $request->input('motivo');
 
-        // Payload exacto según el contrato de StorePrestamoRequest del backend
         $payload = [
             'equipo_id'                 => (int) $request->input('equipo_id'),
             'fecha_inicio'              => $fechaInicio,
@@ -126,7 +122,6 @@ public function store(Request $request): RedirectResponse
             $mensaje = $response->json('message') ?? 'Error al procesar la solicitud de préstamo.';
             $errores = $response->json('errors') ?? [];
 
-            // Si el backend responde con mensajes en errores anidados, aplanarlos para mostrarlos al usuario
             $mensajesAplanados = [];
             foreach ($errores as $campo => $msgs) {
                 if (is_array($msgs)) {
@@ -144,8 +139,9 @@ public function store(Request $request): RedirectResponse
         return redirect()->route('equipos.index', ['vista' => 'catalogo'])
             ->with('success', '¡Solicitud de préstamo registrada con éxito! El estado inicial de la solicitud es "Solicitado".');
     }
+
     /**
-     * bandeja de solicitudes listas para entrega
+     * Bandeja de solicitudes aprobadas listas para entrega física (HU-09 / KAN-82).
      */
     public function entregasIndex(Request $request)
     {
@@ -170,10 +166,9 @@ public function store(Request $request): RedirectResponse
 
         $todosPrestamos = $response->json('data') ?? [];
 
-        // Filtra los préstamos aprobados 
+        // Filtra solicitudes aprobadas que están listas para que el equipo sea entregado
         $entregasPendientes = array_filter($todosPrestamos, function ($p) {
-            $estado = strtolower($p['estado'] ?? '');
-            return in_array($estado, ['aprobado', 'solicitado']);
+            return strtolower($p['estado'] ?? '') === 'aprobado';
         });
 
         return view('prestamos.entregas', [
@@ -183,7 +178,7 @@ public function store(Request $request): RedirectResponse
     }
 
     /**
-     * Registra la entrega del equipo al solicitante (HU-09).
+     * Registra la entrega física del equipo al solicitante (HU-09).
      */
     public function registrarEntrega(Request $request, string $id): RedirectResponse
     {
@@ -227,5 +222,109 @@ public function store(Request $request): RedirectResponse
 
         return redirect()->route('prestamos.entregas')
             ->with('success', '¡Entrega registrada exitosamente! El préstamo pasó a estado "Entregado" y el equipo ahora está "En préstamo".');
+    }
+
+    /**
+     * Muestra el módulo de devoluciones (HU-11 / KAN-88).
+     */
+    public function devolucionesIndex(Request $request)
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->get($this->apiUrl() . '/prestamos?per_page=100');
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        $todos = $response->json('data') ?? [];
+
+        // Préstamos con equipo entregado pendientes de ser devueltos
+        $pendientesDevolucion = array_values(array_filter($todos, function ($p) {
+            return strtolower($p['estado'] ?? '') === 'entregado';
+        }));
+
+        // Historial de devoluciones cerradas
+        $historialDevueltos = array_values(array_filter($todos, function ($p) {
+            return strtolower($p['estado'] ?? '') === 'devuelto';
+        }));
+
+        return view('prestamos.devoluciones', [
+            'pendientes'      => $pendientesDevolucion,
+            'historial'       => $historialDevueltos,
+            'totalPendientes' => count($pendientesDevolucion),
+            'totalDevueltos'  => count($historialDevueltos),
+        ]);
+    }
+
+    /**
+     * Registra la devolución física del equipo (HU-11).
+     */
+    public function registrarDevolucion(Request $request, string $id): RedirectResponse
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        $condicion = $request->input('condicion_devolucion');
+
+        $reglas = [
+            'condicion_devolucion' => 'required|string|in:bueno,con_danos,requiere_mantenimiento',
+            'observaciones'        => ($condicion !== 'bueno') ? 'required|string|min:5|max:2000' : 'nullable|string|max:2000',
+        ];
+
+        $mensajes = [
+            'condicion_devolucion.required' => 'Debes indicar la condición en que se recibe el equipo.',
+            'observaciones.required'        => 'Las observaciones son obligatorias cuando el equipo presenta daños o requiere mantenimiento.',
+            'observaciones.min'             => 'Describe con mayor detalle el daño o mantenimiento requerido.',
+        ];
+
+        $request->validate($reglas, $mensajes);
+
+        $payload = [
+            'condicion_devolucion' => $condicion,
+            'observaciones'        => $request->input('observaciones'),
+        ];
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->post($this->apiUrl() . "/prestamos/{$id}/devolucion", $payload);
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el servidor backend.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->status() === 403) {
+            return back()->withErrors(['error' => 'No tienes permisos para registrar la devolución de equipos.']);
+        }
+
+        if ($response->failed()) {
+            $errorMsg = $response->json('message') ?? 'Error al procesar la devolución del equipo.';
+            return back()->withErrors(['error' => $errorMsg]);
+        }
+
+        $mensajeExito = ($condicion === 'bueno')
+            ? '¡Devolución registrada con éxito! El equipo ha regresado al estado "Disponible".'
+            : '¡Devolución registrada con éxito! Debido a la condición reportada, el equipo ha pasado a "En mantenimiento".';
+
+        return redirect()->route('prestamos.devoluciones')->with('success', $mensajeExito);
     }
 }

@@ -61,4 +61,8 @@ Route::middleware(['web'])->group(function () {
     Route::get('/entregas-pendientes', [PrestamoWebController::class, 'entregasIndex'])->name('prestamos.entregas');
     Route::post('/prestamos/{id}/entrega', [PrestamoWebController::class, 'registrarEntrega'])->name('prestamos.registrarEntrega');
 
+    //Devolución de equipos (Personal autorizado / Admin)
+    Route::get('/devoluciones', [PrestamoWebController::class, 'devolucionesIndex'])->name('prestamos.devoluciones');
+    Route::post('/prestamos/{id}/devolucion', [PrestamoWebController::class, 'registrarDevolucion'])->name('prestamos.registrarDevolucion');
+
 });
