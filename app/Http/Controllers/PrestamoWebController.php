@@ -53,7 +53,6 @@ class PrestamoWebController extends Controller
 
         $equipo = $response->json('data') ?? [];
 
-        // Validar regla de negocio: Solo equipos disponibles pueden solicitarse (HU-06)
         $estado = strtolower($equipo['estado'] ?? 'disponible');
         if ($estado !== 'disponible') {
             return redirect()->route('equipos.index', ['vista' => 'catalogo'])
@@ -149,7 +148,6 @@ class PrestamoWebController extends Controller
             $mensaje = $response->json('message') ?? 'Error al procesar la solicitud de préstamo.';
             $errores = $response->json('errors') ?? [];
 
-            // Si el backend responde con mensajes en errores anidados, aplanarlos para mostrarlos al usuario
             $mensajesAplanados = [];
             foreach ($errores as $campo => $msgs) {
                 if (is_array($msgs)) {
@@ -266,5 +264,119 @@ class PrestamoWebController extends Controller
 
         return redirect()->route('prestamos.entregas')
             ->with('success', '¡Entrega registrada exitosamente! El préstamo pasó a estado "Entregado" y el equipo ahora está "En préstamo".');
+    }
+
+    /**
+     * Muestra el módulo de devoluciones (HU-11 / KAN-88).
+     */
+    public function devolucionesIndex(Request $request)
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->get($this->apiUrl() . '/prestamos?per_page=100');
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        $todos = $response->json('data') ?? [];
+
+        // Préstamos con equipo entregado pendientes de ser devueltos
+        $pendientesDevolucion = array_values(array_filter($todos, function ($p) {
+            return strtolower($p['estado'] ?? '') === 'entregado';
+        }));
+
+        // Historial de devoluciones cerradas
+        $historialDevueltos = array_values(array_filter($todos, function ($p) {
+            return strtolower($p['estado'] ?? '') === 'devuelto';
+        }));
+
+        return view('prestamos.devoluciones', [
+            'pendientes'      => $pendientesDevolucion,
+            'historial'       => $historialDevueltos,
+            'totalPendientes' => count($pendientesDevolucion),
+            'totalDevueltos'  => count($historialDevueltos),
+        ]);
+    }
+
+    /**
+     * Registra la devolución física del equipo (HU-11).
+     */
+    public function registrarDevolucion(Request $request, string $id): RedirectResponse
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        $condicion = $request->input('condicion_devolucion');
+
+        $reglas = [
+            'condicion_devolucion' => 'required|string|in:bueno,con_danos,requiere_mantenimiento',
+            'observaciones'        => ($condicion !== 'bueno') ? 'required|string|min:5|max:2000' : 'nullable|string|max:2000',
+        ];
+
+        $mensajes = [
+            'condicion_devolucion.required' => 'Debes indicar la condición en que se recibe el equipo.',
+            'observaciones.required'        => 'Las observaciones son obligatorias cuando el equipo presenta daños o requiere mantenimiento.',
+            'observaciones.min'             => 'Describe con mayor detalle el daño o mantenimiento requerido.',
+        ];
+
+        $request->validate($reglas, $mensajes);
+
+        $payload = [
+            'condicion_devolucion' => $condicion,
+            'observaciones'        => $request->input('observaciones'),
+        ];
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->post($this->apiUrl() . "/prestamos/{$id}/devolucion", $payload);
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el servidor backend.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->status() === 403) {
+            return back()->withErrors(['error' => 'No tienes permisos para registrar la devolución de equipos.']);
+        }
+
+        if ($response->failed()) {
+            $errorMsg = $response->json('message') ?? 'Error al procesar la devolución del equipo.';
+            $errores = $response->json('errors') ?? [];
+
+            // Aplanar los errores de validación del backend (422) para mostrarlos al usuario
+            $mensajesAplanados = [];
+            foreach ($errores as $msgs) {
+                foreach ((array) $msgs as $m) {
+                    $mensajesAplanados[] = $m;
+                }
+            }
+
+            return back()->withErrors($mensajesAplanados ?: ['error' => $errorMsg]);
+        }
+
+        $mensajeExito = ($condicion === 'bueno')
+            ? '¡Devolución registrada con éxito! El equipo ha regresado al estado "Disponible".'
+            : '¡Devolución registrada con éxito! Debido a la condición reportada, el equipo ha pasado a "En mantenimiento".';
+
+        return redirect()->route('prestamos.devoluciones')->with('success', $mensajeExito);
     }
 }
