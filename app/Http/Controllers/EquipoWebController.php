@@ -46,6 +46,8 @@ class EquipoWebController extends Controller
 
         $equipos = $response->json('data') ?? [];
         $esAdmin = $this->esAdmin();
+        // Captura el modo de vista (?vista=catalogo) para alternar entre catálogo (HU-05) y gestión (HU-04)
+        $vistaModo = $request->query('vista');
 
         // Métricas calculadas para las tarjetas superiores (HU-04)
         $metricas = [
@@ -65,8 +67,13 @@ class EquipoWebController extends Controller
                 $metricas['mantenimiento']++;
             }
         }
+        // Si es administrador HU04
+        if ($esAdmin && $vistaModo !== 'catalogo') {
+            return view('equipos.index', compact('equipos', 'esAdmin', 'metricas'));
+        }
 
-        return view('equipos.index', compact('equipos', 'esAdmin', 'metricas'));
+        // si es solicitante HU05
+        return view('equipos.catalogo', compact('equipos', 'esAdmin', 'metricas'));
     }
 
     /**
