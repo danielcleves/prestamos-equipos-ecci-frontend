@@ -381,4 +381,141 @@ class PrestamoWebController extends Controller
 
         return redirect()->route('prestamos.devoluciones')->with('success', $mensajeExito);
     }
+
+    /**
+     * Muestra la bandeja de gestión de solicitudes (HU-08 / KAN-94).
+     */
+    public function solicitudesIndex(Request $request)
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->get($this->apiUrl().'/prestamos?per_page=100');
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        $todos = $response->json('data') ?? [];
+
+        return view('prestamos.solicitudes', [
+            'solicitudes' => $todos,
+        ]);
+    }
+
+    /**
+     * Aprueba una solicitud de préstamo (HU-08).
+     * Contrato del backend: POST /api/prestamos/{prestamo}/aprobacion (sin body).
+     */
+    public function aprobarSolicitud(Request $request, string $id): RedirectResponse
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->post($this->apiUrl()."/prestamos/{$id}/aprobacion");
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el backend.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->status() === 403) {
+            return back()->withErrors(['error' => 'No tienes permisos para aprobar solicitudes.']);
+        }
+
+        if ($response->failed()) {
+            $msg = $response->json('message') ?? 'No se pudo aprobar la solicitud.';
+            $errores = $response->json('errors') ?? [];
+
+            $mensajesAplanados = [];
+            foreach ($errores as $msgs) {
+                foreach ((array) $msgs as $m) {
+                    $mensajesAplanados[] = $m;
+                }
+            }
+
+            return back()->withErrors($mensajesAplanados ?: ['error' => $msg]);
+        }
+
+        return redirect()->route('prestamos.solicitudes')
+            ->with('success', '¡Solicitud #'.$id.' aprobada exitosamente! Ahora se encuentra lista para entrega física.');
+    }
+
+    /**
+     * Rechaza una solicitud de préstamo (HU-08).
+     * Contrato del backend: POST /api/prestamos/{prestamo}/rechazo con {motivo} required (max:1000).
+     */
+    public function rechazarSolicitud(Request $request, string $id): RedirectResponse
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        $request->validate([
+            'motivo' => 'required|string|max:1000',
+        ], [
+            'motivo.required' => 'Debes indicar el motivo del rechazo.',
+            'motivo.max' => 'El motivo no puede superar los 1000 caracteres.',
+        ]);
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->post($this->apiUrl()."/prestamos/{$id}/rechazo", [
+                    'motivo' => $request->input('motivo'),
+                ]);
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el backend.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->status() === 403) {
+            return back()->withErrors(['error' => 'No tienes permisos para rechazar solicitudes.']);
+        }
+
+        if ($response->failed()) {
+            $msg = $response->json('message') ?? 'No se pudo rechazar la solicitud.';
+            $errores = $response->json('errors') ?? [];
+
+            $mensajesAplanados = [];
+            foreach ($errores as $msgs) {
+                foreach ((array) $msgs as $m) {
+                    $mensajesAplanados[] = $m;
+                }
+            }
+
+            return back()->withErrors($mensajesAplanados ?: ['error' => $msg]);
+        }
+
+        return redirect()->route('prestamos.solicitudes')
+            ->with('success', 'La solicitud #'.$id.' ha sido rechazada.');
+    }
 }

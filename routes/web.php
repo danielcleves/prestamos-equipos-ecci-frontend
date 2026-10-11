@@ -55,3 +55,8 @@ Route::post('/prestamos/{id}/entrega', [PrestamoWebController::class, 'registrar
 // Devolución de equipos (HU-11 / personal autorizado)
 Route::get('/devoluciones', [PrestamoWebController::class, 'devolucionesIndex'])->name('prestamos.devoluciones');
 Route::post('/prestamos/{id}/devolucion', [PrestamoWebController::class, 'registrarDevolucion'])->name('prestamos.registrarDevolucion');
+
+// Gestión y detalle de solicitudes (HU-08 / personal autorizado)
+Route::get('/solicitudes', [PrestamoWebController::class, 'solicitudesIndex'])->name('prestamos.solicitudes');
+Route::patch('/prestamos/{id}/aprobar', [PrestamoWebController::class, 'aprobarSolicitud'])->name('prestamos.aprobar');
+Route::patch('/prestamos/{id}/rechazar', [PrestamoWebController::class, 'rechazarSolicitud'])->name('prestamos.rechazar');
