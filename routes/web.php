@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\EquipoWebController;
+use App\Http\Controllers\PrestamoWebController;
 use App\Http\Controllers\UsuarioWebController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,3 +43,7 @@ Route::get('/equipos', [EquipoWebController::class, 'index'])->name('equipos.ind
 Route::get('/equipos/crear', [EquipoWebController::class, 'create'])->name('equipos.create');
 Route::post('/equipos', [EquipoWebController::class, 'store'])->name('equipos.store');
 Route::patch('/equipos/{id}/estado', [EquipoWebController::class, 'updateEstado'])->name('equipos.updateEstado');
+
+// Solicitud de préstamo de equipos (HU-06)
+Route::get('/prestamos/solicitar/{equipoId}', [PrestamoWebController::class, 'create'])->name('prestamos.solicitar');
+Route::post('/prestamos/solicitar', [PrestamoWebController::class, 'store'])->name('prestamos.store');
