@@ -78,8 +78,8 @@ class PrestamoWebController extends Controller
             'fecha_devolucion' => 'required|date|after_or_equal:fecha_inicio',
             'motivo'           => 'nullable|string|max:500',
         ], [
-            'fecha_inicio.required'     => 'La fecha de inicio es requerida.',
-            'fecha_devolucion.required' => 'La fecha de devolución es requerida.',
+            'fecha_inicio.required'           => 'La fecha de inicio es requerida.',
+            'fecha_devolucion.required'       => 'La fecha de devolución es requerida.',
             'fecha_devolucion.after_or_equal' => 'La fecha de devolución debe ser igual o posterior a la fecha de inicio.',
         ]);
 
@@ -123,7 +123,7 @@ class PrestamoWebController extends Controller
             $errores = $response->json('errors') ?? [];
 
             $mensajesAplanados = [];
-            foreach ($errores as $campo => $msgs) {
+            foreach ($errores as $msgs) {
                 if (is_array($msgs)) {
                     foreach ($msgs as $m) {
                         $mensajesAplanados[] = $m;
@@ -166,13 +166,12 @@ class PrestamoWebController extends Controller
 
         $todosPrestamos = $response->json('data') ?? [];
 
-        // Filtra solicitudes aprobadas que están listas para que el equipo sea entregado
         $entregasPendientes = array_filter($todosPrestamos, function ($p) {
             return strtolower($p['estado'] ?? '') === 'aprobado';
         });
 
         return view('prestamos.entregas', [
-            'prestamos' => array_values($entregasPendientes),
+            'prestamos'       => array_values($entregasPendientes),
             'totalPendientes' => count($entregasPendientes),
         ]);
     }
@@ -250,12 +249,10 @@ class PrestamoWebController extends Controller
 
         $todos = $response->json('data') ?? [];
 
-        // Préstamos con equipo entregado pendientes de ser devueltos
         $pendientesDevolucion = array_values(array_filter($todos, function ($p) {
             return strtolower($p['estado'] ?? '') === 'entregado';
         }));
 
-        // Historial de devoluciones cerradas
         $historialDevueltos = array_values(array_filter($todos, function ($p) {
             return strtolower($p['estado'] ?? '') === 'devuelto';
         }));
@@ -328,7 +325,6 @@ class PrestamoWebController extends Controller
         return redirect()->route('prestamos.devoluciones')->with('success', $mensajeExito);
     }
 
-
     /**
      * Muestra la bandeja de gestión de solicitudes (HU-08 / KAN-94).
      */
@@ -361,7 +357,8 @@ class PrestamoWebController extends Controller
     }
 
     /**
-     * Aprueba una solicitud de préstamo (HU-08).
+     * Aprueba formalmente una solicitud de préstamo (HU-08 / KAN-95).
+     * Endpoint oficial: POST /api/prestamos/{id}/aprobacion
      */
     public function aprobarSolicitud(Request $request, string $id): RedirectResponse
     {
@@ -371,35 +368,35 @@ class PrestamoWebController extends Controller
         }
 
         try {
-            //  patch 
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->patch($this->apiUrl() . "/prestamos/{$id}/aprobar");
-
-            if ($response->status() === 404 || $response->status() === 405) {
-                $response = Http::withToken($token)
-                    ->acceptJson()
-                    ->timeout(10)
-                    ->patch($this->apiUrl() . "/prestamos/{$id}/estado", [
-                        'estado' => 'aprobado',
-                    ]);
-            }
+                ->post($this->apiUrl() . "/prestamos/{$id}/aprobacion");
         } catch (ConnectionException $e) {
-            return back()->withErrors(['error' => 'No fue posible conectar con el backend.']);
+            return back()->withErrors(['error' => 'No fue posible conectar con el servicio backend.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->status() === 403) {
+            return back()->withErrors(['error' => 'No tienes permisos para aprobar solicitudes de préstamo.']);
         }
 
         if ($response->failed()) {
-            $msg = $response->json('message') ?? 'No se pudo aprobar la solicitud.';
+            $msg = $response->json('message') ?? 'No fue posible aprobar la solicitud.';
             return back()->withErrors(['error' => $msg]);
         }
 
         return redirect()->route('prestamos.solicitudes')
-            ->with('success', '¡Solicitud #' . $id . ' aprobada exitosamente! Ahora se encuentra lista para entrega física.');
+            ->with('success', '¡Solicitud #' . $id . ' aprobada exitosamente! Ahora se encuentra disponible en Entregas pendientes.');
     }
 
     /**
-     * Rechaza una solicitud de préstamo (HU-08).
+     * Rechaza formalmente una solicitud de préstamo (HU-08).
+     * Endpoint oficial: POST /api/prestamos/{id}/rechazo
      */
     public function rechazarSolicitud(Request $request, string $id): RedirectResponse
     {
@@ -408,38 +405,34 @@ class PrestamoWebController extends Controller
             return redirect()->route('login');
         }
 
-        $request->validate([
-            'motivo_rechazo' => 'nullable|string|max:500',
+        $payload = array_filter([
+            'motivo' => $request->input('motivo_rechazo') ?? $request->input('observaciones'),
         ]);
 
         try {
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->patch($this->apiUrl() . "/prestamos/{$id}/rechazar", [
-                    'motivo_rechazo' => $request->input('motivo_rechazo'),
-                ]);
-
-            if ($response->status() === 404 || $response->status() === 405) {
-                $response = Http::withToken($token)
-                    ->acceptJson()
-                    ->timeout(10)
-                    ->patch($this->apiUrl() . "/prestamos/{$id}/estado", [
-                        'estado' => 'rechazado',
-                        'observaciones' => $request->input('motivo_rechazo'),
-                    ]);
-            }
+                ->post($this->apiUrl() . "/prestamos/{$id}/rechazo", $payload);
         } catch (ConnectionException $e) {
-            return back()->withErrors(['error' => 'No fue posible conectar con el backend.']);
+            return back()->withErrors(['error' => 'No fue posible conectar con el servicio backend.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->status() === 403) {
+            return back()->withErrors(['error' => 'No tienes permisos para rechazar solicitudes de préstamo.']);
         }
 
         if ($response->failed()) {
-            $msg = $response->json('message') ?? 'No se pudo rechazar la solicitud.';
+            $msg = $response->json('message') ?? 'No fue posible rechazar la solicitud.';
             return back()->withErrors(['error' => $msg]);
         }
 
         return redirect()->route('prestamos.solicitudes')
-            ->with('success', 'La solicitud #' . $id . ' ha sido rechazada.');
+            ->with('success', 'La solicitud #' . $id . ' ha sido rechazada formalmente.');
     }
-
 }

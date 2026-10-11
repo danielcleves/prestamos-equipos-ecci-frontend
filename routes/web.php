@@ -70,4 +70,9 @@ Route::middleware(['web'])->group(function () {
     Route::patch('/prestamos/{id}/aprobar', [PrestamoWebController::class, 'aprobarSolicitud'])->name('prestamos.aprobar');
     Route::patch('/prestamos/{id}/rechazar', [PrestamoWebController::class, 'rechazarSolicitud'])->name('prestamos.rechazar');
 
+    //Gestión y Detalle de Solicitudes
+    Route::get('/solicitudes', [PrestamoWebController::class, 'solicitudesIndex'])->name('prestamos.solicitudes');
+    Route::post('/prestamos/{id}/aprobar', [PrestamoWebController::class, 'aprobarSolicitud'])->name('prestamos.aprobar');
+    Route::post('/prestamos/{id}/rechazar', [PrestamoWebController::class, 'rechazarSolicitud'])->name('prestamos.rechazar');
+
 });
