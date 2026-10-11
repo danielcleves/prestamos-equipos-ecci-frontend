@@ -84,4 +84,40 @@ class RegistroEquipoTest extends TestCase
             ->post(route('equipos.store'), [])
             ->assertSessionHasErrors(['codigo', 'nombre', 'categoria_id']);
     }
+
+    public function test_invitado_es_redirigido_al_login_al_intentar_actualizar_estado(): void
+    {
+        $this->patch(route('equipos.updateEstado', 1), ['estado' => 'mantenimiento'])
+            ->assertRedirect(route('login'));
+    }
+
+    public function test_usuario_no_admin_es_bloqueado_al_actualizar_estado(): void
+    {
+        $this->withSession($this->authHeaders('usuario'))
+            ->patch(route('equipos.updateEstado', 1), ['estado' => 'mantenimiento'])
+            ->assertRedirect(route('inicio'));
+    }
+
+    public function test_admin_puede_actualizar_estado_exitosamente(): void
+    {
+        $apiUrl = config('services.backend.url');
+
+        Http::fake([
+            "{$apiUrl}/equipos/1/estado" => Http::response([
+                'data' => ['id' => 1, 'codigo' => 'CP-011', 'estado' => 'mantenimiento'],
+            ], 200),
+        ]);
+
+        $this->withSession($this->authHeaders('admin'))
+            ->patch(route('equipos.updateEstado', 1), ['estado' => 'mantenimiento'])
+            ->assertRedirect(route('equipos.index'))
+            ->assertSessionHas('success');
+    }
+
+    public function test_falla_validacion_si_estado_no_es_valido(): void
+    {
+        $this->withSession($this->authHeaders('admin'))
+            ->patch(route('equipos.updateEstado', 1), ['estado' => 'inventado'])
+            ->assertSessionHasErrors(['estado']);
+    }
 }
