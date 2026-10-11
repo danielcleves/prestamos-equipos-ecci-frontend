@@ -167,6 +167,7 @@ class PrestamoWebController extends Controller
         return redirect()->route('equipos.index', ['vista' => 'catalogo'])
             ->with('success', '¡Solicitud de préstamo registrada con éxito! El estado inicial de la solicitud es "Solicitado".');
     }
+
     /**
      * Bandeja de solicitudes aprobadas listas para entrega física (HU-09 / KAN-82).
      */
@@ -181,13 +182,14 @@ class PrestamoWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->get($this->apiUrl() . '/prestamos?per_page=100');
+                ->get($this->apiUrl().'/prestamos?per_page=100');
         } catch (ConnectionException $e) {
             return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
         }
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
+
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
@@ -217,28 +219,29 @@ class PrestamoWebController extends Controller
 
         $request->validate([
             'condicion_entrega' => 'required|string|in:bueno,con_danos,requiere_mantenimiento',
-            'observaciones'     => 'nullable|string|max:2000',
+            'observaciones' => 'nullable|string|max:2000',
         ], [
             'condicion_entrega.required' => 'Debes indicar la condición en que se entrega el equipo.',
-            'condicion_entrega.in'       => 'La condición de entrega no es válida.',
+            'condicion_entrega.in' => 'La condición de entrega no es válida.',
         ]);
 
         $payload = [
             'condicion_entrega' => $request->input('condicion_entrega', 'bueno'),
-            'observaciones'     => $request->input('observaciones'),
+            'observaciones' => $request->input('observaciones'),
         ];
 
         try {
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->post($this->apiUrl() . "/prestamos/{$id}/entrega", $payload);
+                ->post($this->apiUrl()."/prestamos/{$id}/entrega", $payload);
         } catch (ConnectionException $e) {
             return back()->withErrors(['error' => 'No fue posible conectar con el servidor backend.']);
         }
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
+
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
