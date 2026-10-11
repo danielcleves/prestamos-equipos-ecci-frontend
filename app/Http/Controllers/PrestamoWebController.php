@@ -280,13 +280,14 @@ class PrestamoWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->get($this->apiUrl() . '/prestamos?per_page=100');
+                ->get($this->apiUrl().'/prestamos?per_page=100');
         } catch (ConnectionException $e) {
             return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
         }
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
+
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
@@ -303,10 +304,10 @@ class PrestamoWebController extends Controller
         }));
 
         return view('prestamos.devoluciones', [
-            'pendientes'      => $pendientesDevolucion,
-            'historial'       => $historialDevueltos,
+            'pendientes' => $pendientesDevolucion,
+            'historial' => $historialDevueltos,
             'totalPendientes' => count($pendientesDevolucion),
-            'totalDevueltos'  => count($historialDevueltos),
+            'totalDevueltos' => count($historialDevueltos),
         ]);
     }
 
@@ -324,33 +325,34 @@ class PrestamoWebController extends Controller
 
         $reglas = [
             'condicion_devolucion' => 'required|string|in:bueno,con_danos,requiere_mantenimiento',
-            'observaciones'        => ($condicion !== 'bueno') ? 'required|string|min:5|max:2000' : 'nullable|string|max:2000',
+            'observaciones' => ($condicion !== 'bueno') ? 'required|string|min:5|max:2000' : 'nullable|string|max:2000',
         ];
 
         $mensajes = [
             'condicion_devolucion.required' => 'Debes indicar la condición en que se recibe el equipo.',
-            'observaciones.required'        => 'Las observaciones son obligatorias cuando el equipo presenta daños o requiere mantenimiento.',
-            'observaciones.min'             => 'Describe con mayor detalle el daño o mantenimiento requerido.',
+            'observaciones.required' => 'Las observaciones son obligatorias cuando el equipo presenta daños o requiere mantenimiento.',
+            'observaciones.min' => 'Describe con mayor detalle el daño o mantenimiento requerido.',
         ];
 
         $request->validate($reglas, $mensajes);
 
         $payload = [
             'condicion_devolucion' => $condicion,
-            'observaciones'        => $request->input('observaciones'),
+            'observaciones' => $request->input('observaciones'),
         ];
 
         try {
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->post($this->apiUrl() . "/prestamos/{$id}/devolucion", $payload);
+                ->post($this->apiUrl()."/prestamos/{$id}/devolucion", $payload);
         } catch (ConnectionException $e) {
             return back()->withErrors(['error' => 'No fue posible conectar con el servidor backend.']);
         }
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
+
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
