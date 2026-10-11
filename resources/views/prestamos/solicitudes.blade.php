@@ -5,6 +5,8 @@
     search: '',
     estadoFilter: '',
     openModalDetalle: false,
+    openRechazo: false,
+    motivoRechazo: '',
     selected: {
         id: null,
         solicitante: '',
@@ -16,7 +18,7 @@
         equipo_nombre: '',
         equipo_codigo: '',
         equipo_disponibilidad: '',
-        ubicacion: ''
+        categoria: ''
     },
     abrirModal(item) {
         this.selected = { ...item };
@@ -92,7 +94,8 @@
                             $eqNom = $item['equipo']['nombre'] ?? 'Equipo';
                             $eqCod = $item['equipo']['codigo'] ?? 'S/C';
                             $eqDisp = strtolower($item['equipo']['estado'] ?? 'disponible') === 'disponible';
-                            $ub = $item['equipo']['ubicacion'] ?? 'Sala A - Bodega 1';
+                            $eqCat = $item['equipo']['categoria']['nombre'] ?? 'N/D';
+                            $ub = $eqCat;
                             $fSol = !empty($item['fecha_solicitud']) ? date('Y-m-d', strtotime($item['fecha_solicitud'])) : date('Y-m-d');
                             $fIni = !empty($item['fecha_inicio']) ? date('Y-m-d', strtotime($item['fecha_inicio'])) : '—';
                             $fFin = !empty($item['fecha_devolucion_estimada']) ? date('Y-m-d', strtotime($item['fecha_devolucion_estimada'])) : '—';
@@ -108,8 +111,8 @@
                                 'estado' => ucfirst($st),
                                 'equipo_nombre' => $eqNom,
                                 'equipo_codigo' => $eqCod,
-                                'equipo_disponibilidad' => $eqDisp ? 'Disponible' : 'No disponible',
-                                'ubicacion' => $ub,
+                            'equipo_disponibilidad' => $eqDisp ? 'Disponible' : 'No disponible',
+                            'categoria' => $ub,
                             ];
                         @endphp
                         <tr 
@@ -248,8 +251,8 @@
                         </div>
 
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">UBICACIÓN</span>
-                            <span class="text-slate-700 mt-0.5 block" x-text="selected.ubicacion"></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">CATEGORÍA</span>
+                            <span class="text-slate-700 mt-0.5 block" x-text="selected.categoria"></span>
                         </div>
                     </div>
                 </div>
@@ -261,26 +264,55 @@
                     </button>
 
                     <template x-if="selected.estado === 'Solicitado' || selected.estado === 'Pendiente'">
-                        <div class="flex items-center gap-2">
-                            {{-- Formulario Rechazar --}}
-                            <form :action="'{{ url('/prestamos') }}/' + selected.id + '/rechazar'" method="POST">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" class="h-10 px-4 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-[10px] transition flex items-center gap-1.5">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                    <span>Rechazar</span>
-                                </button>
-                            </form>
+                        <div class="w-full space-y-4">
+                            {{-- Campo de motivo (requerido por el backend para rechazar) --}}
+                            <div x-show="openRechazo" class="p-4 bg-rose-50/60 border border-rose-200 rounded-xl space-y-2">
+                                <label for="motivoRechazo" class="block text-[10px] uppercase font-bold text-rose-700 tracking-wider">
+                                    Motivo de rechazo <span class="text-rose-600">*</span>
+                                </label>
+                                <textarea
+                                    id="motivoRechazo"
+                                    x-model="motivoRechazo"
+                                    rows="3"
+                                    maxlength="1000"
+                                    placeholder="Describe el motivo del rechazo (máx. 1000 caracteres)..."
+                                    class="w-full text-xs bg-white border border-rose-200 rounded-[10px] p-3 text-slate-700 focus:outline-none focus:ring-1 focus:ring-rose-400 resize-none"
+                                ></textarea>
+                                <p class="text-[10px] text-rose-600" x-show="motivoRechazo.length > 900" x-text="(1000 - motivoRechazo.length) + ' caracteres restantes'"></p>
+                            </div>
 
-                            {{-- Formulario Aprobar --}}
-                            <form :action="'{{ url('/prestamos') }}/' + selected.id + '/aprobar'" method="POST">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" class="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-[10px] transition shadow-sm flex items-center gap-1.5">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                    <span>Aprobar solicitud</span>
+                            <div class="flex items-center justify-end gap-3">
+                                <button type="button" @click="openModalDetalle = false" class="h-10 px-4 border border-[#D9DEE7] text-slate-600 text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition">
+                                    Cancelar
                                 </button>
-                            </form>
+
+                                {{-- Formulario Rechazar (POST /rechazo con motivo requerido) --}}
+                                <form x-show="!openRechazo" @submit.prevent="openRechazo = true" class="inline">
+                                    <button type="submit" class="h-10 px-4 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-[10px] transition flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <span>Rechazar</span>
+                                    </button>
+                                </form>
+
+                                <form x-show="openRechazo" :action="'{{ url('/prestamos') }}/' + selected.id + '/rechazar'" method="POST" class="inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="motivo" :value="motivoRechazo">
+                                    <button type="submit" :disabled="motivoRechazo.trim().length < 1" :class="motivoRechazo.trim().length < 1 ? 'opacity-50 cursor-not-allowed' : ''" class="h-10 px-4 border border-rose-200 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-[10px] transition flex items-center gap-1.5">
+                                        <span>Confirmar rechazo</span>
+                                    </button>
+                                </form>
+
+                                {{-- Formulario Aprobar (POST /aprobacion, sin body) --}}
+                                <form :action="'{{ url('/prestamos') }}/' + selected.id + '/aprobar'" method="POST" class="inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-[10px] transition shadow-sm flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        <span>Aprobar solicitud</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </template>
                 </div>

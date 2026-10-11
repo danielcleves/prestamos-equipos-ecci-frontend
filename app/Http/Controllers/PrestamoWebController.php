@@ -396,13 +396,14 @@ class PrestamoWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->get($this->apiUrl() . '/prestamos?per_page=100');
+                ->get($this->apiUrl().'/prestamos?per_page=100');
         } catch (ConnectionException $e) {
             return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
         }
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
+
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
@@ -428,13 +429,14 @@ class PrestamoWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->post($this->apiUrl() . "/prestamos/{$id}/aprobacion");
+                ->post($this->apiUrl()."/prestamos/{$id}/aprobacion");
         } catch (ConnectionException $e) {
             return back()->withErrors(['error' => 'No fue posible conectar con el backend.']);
         }
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
+
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
@@ -457,7 +459,7 @@ class PrestamoWebController extends Controller
         }
 
         return redirect()->route('prestamos.solicitudes')
-            ->with('success', '¡Solicitud #' . $id . ' aprobada exitosamente! Ahora se encuentra lista para entrega física.');
+            ->with('success', '¡Solicitud #'.$id.' aprobada exitosamente! Ahora se encuentra lista para entrega física.');
     }
 
     /**
@@ -482,7 +484,7 @@ class PrestamoWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->post($this->apiUrl() . "/prestamos/{$id}/rechazo", [
+                ->post($this->apiUrl()."/prestamos/{$id}/rechazo", [
                     'motivo' => $request->input('motivo'),
                 ]);
         } catch (ConnectionException $e) {
@@ -491,6 +493,7 @@ class PrestamoWebController extends Controller
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
+
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
@@ -513,6 +516,6 @@ class PrestamoWebController extends Controller
         }
 
         return redirect()->route('prestamos.solicitudes')
-            ->with('success', 'La solicitud #' . $id . ' ha sido rechazada.');
+            ->with('success', 'La solicitud #'.$id.' ha sido rechazada.');
     }
 }
