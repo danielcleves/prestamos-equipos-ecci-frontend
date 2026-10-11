@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\EquipoWebController;
-use App\Http\Controllers\UsuarioWebController;
 use App\Http\Controllers\PrestamoWebController;
+use App\Http\Controllers\UsuarioWebController;
 use Illuminate\Support\Facades\Route;
 
 // Raíz: según sesión/rol

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
 class PrestamoWebController extends Controller
@@ -33,7 +34,7 @@ class PrestamoWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->get($this->apiUrl() . "/equipos/{$equipoId}");
+                ->get($this->apiUrl()."/equipos/{$equipoId}");
         } catch (ConnectionException $e) {
             return redirect()->route('equipos.index', ['vista' => 'catalogo'])
                 ->withErrors(['index_error' => 'No fue posible conectar con el servidor para consultar el equipo.']);
@@ -41,6 +42,7 @@ class PrestamoWebController extends Controller
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
+
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
@@ -66,59 +68,80 @@ class PrestamoWebController extends Controller
     /**
      * Procesa y registra la solicitud de préstamo (HU-06 / KAN-76).
      */
-public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $token = $this->getToken();
         if (! $token) {
             return redirect()->route('login');
         }
 
+        // Duración máxima permitida por el backend (StorePrestamoRequest usa config('prestamos.duracion_maxima_dias', 7))
+        $maxDias = 7;
+
         $request->validate([
-            'equipo_id'        => 'required',
-            'fecha_inicio'     => 'required|date',
-            'fecha_devolucion' => 'required|date|after_or_equal:fecha_inicio',
-            'motivo'           => 'nullable|string|max:500',
+            'equipo_id' => 'required|integer',
+            'fecha_inicio' => 'required|date',
+            'fecha_devolucion' => [
+                'required',
+                'date',
+                'after:fecha_inicio',
+                function (string $attribute, mixed $value, \Closure $fail) use ($maxDias) {
+                    $inicio = Carbon::parse($request->input('fecha_inicio'));
+                    $fin = Carbon::parse($value);
+
+                    if ($fin->greaterThan($inicio->copy()->addDays($maxDias))) {
+                        $fail("La fecha de devolución no puede superar los {$maxDias} días posteriores a la fecha de inicio.");
+                    }
+                },
+            ],
+            'motivo' => 'required|string|max:1000',
         ], [
-            'fecha_inicio.required'     => 'La fecha de inicio es requerida.',
+            'equipo_id.required' => 'Debes seleccionar un equipo.',
+            'fecha_inicio.required' => 'La fecha de inicio es requerida.',
             'fecha_devolucion.required' => 'La fecha de devolución es requerida.',
-            'fecha_devolucion.after_or_equal' => 'La fecha de devolución debe ser igual o posterior a la fecha de inicio.',
+            'fecha_devolucion.after' => 'La fecha de devolución debe ser posterior a la fecha de inicio.',
+            'motivo.required' => 'El motivo del préstamo es obligatorio.',
+            'motivo.max' => 'El motivo no puede superar los 1000 caracteres.',
         ]);
 
         $fechaInicioRaw = $request->input('fecha_inicio');
         $fechaDevolucionRaw = $request->input('fecha_devolucion');
 
-        // Formatear a fecha y hora completa que exige el backend (Y-m-d H:i:s)
-        // Si el input date solo trae 'Y-m-d', le asignamos una hora de inicio y fin laboral estándar
-        $fechaInicio = str_contains($fechaInicioRaw, ':')
-            ? date('Y-m-d H:i:s', strtotime($fechaInicioRaw))
-            : date('Y-m-d 08:00:00', strtotime($fechaInicioRaw));
+        // El backend exige Y-m-d H:i:s y rechaza fechas pasadas. Si el input date solo
+        // trae 'Y-m-d': para hoy usamos la hora actual (nunca en el pasado); para fechas
+        // futuras usamos el inicio del horario laboral (08:00).
+        if (str_contains($fechaInicioRaw, ':')) {
+            $fechaInicio = date('Y-m-d H:i:s', strtotime($fechaInicioRaw));
+        } else {
+            $fechaInicio = $fechaInicioRaw === date('Y-m-d')
+                ? date('Y-m-d H:i:s')
+                : date('Y-m-d 08:00:00', strtotime($fechaInicioRaw));
+        }
 
         $fechaDevolucion = str_contains($fechaDevolucionRaw, ':')
             ? date('Y-m-d H:i:s', strtotime($fechaDevolucionRaw))
             : date('Y-m-d 18:00:00', strtotime($fechaDevolucionRaw));
 
-        $motivo = $request->input('motivo');
-
-        // Payload exacto según el contrato de StorePrestamoRequest del backend
+        // Payload según el contrato de StorePrestamoRequest del backend
         $payload = [
-            'equipo_id'                 => (int) $request->input('equipo_id'),
-            'fecha_inicio'              => $fechaInicio,
+            'equipo_id' => (int) $request->input('equipo_id'),
+            'fecha_inicio' => $fechaInicio,
             'fecha_devolucion_estimada' => $fechaDevolucion,
-            'motivo'                    => $motivo,
-            'observaciones'             => $motivo,
+            'motivo' => $request->input('motivo'),
         ];
 
         try {
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->post($this->apiUrl() . '/prestamos', $payload);
+                ->post($this->apiUrl().'/prestamos', $payload);
         } catch (ConnectionException $e) {
             return back()->withInput()->withErrors(['prestamo_error' => 'No fue posible conectar con el servicio backend.']);
         }
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
+
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
