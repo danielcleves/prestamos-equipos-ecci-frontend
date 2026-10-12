@@ -12,7 +12,6 @@
         nombre: '',
         categoria: '',
         estado: 'disponible',
-        ubicacion: 'Bodega Principal',
         descripcion: '',
         observaciones: ''
     },
@@ -60,13 +59,9 @@
 
             <select x-model="categoryFilter" class="text-xs bg-slate-50/60 border border-[#D9DEE7] rounded-[10px] px-3 h-11 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Tipo de equipo</option>
-                <option value="Portátil">Portátil</option>
-                <option value="Tablet">Tablet</option>
-                <option value="De mesa">De mesa</option>
-                <option value="Computadores">Computadores</option>
-                <option value="Cámaras">Cámaras</option>
-                <option value="Proyectores">Proyectores</option>
-                <option value="Micrófonos">Micrófonos</option>
+                @foreach (collect($equipos)->map(fn ($e) => $e['categoria']['nombre'] ?? ($e['categoria_nombre'] ?? 'General'))->unique()->sort()->values() as $categoriaOpcion)
+                    <option value="{{ $categoriaOpcion }}">{{ $categoriaOpcion }}</option>
+                @endforeach
             </select>
         </div>
 
@@ -105,7 +100,6 @@
                     'nombre' => $nombre,
                     'categoria' => $categoria,
                     'estado' => $rawEstado,
-                    'ubicacion' => $equipo['ubicacion'] ?? 'Bodega Principal',
                     'descripcion' => $equipo['descripcion'] ?? 'Sin descripción detallada.',
                     'observaciones' => $equipo['observaciones'] ?? '',
                 ];
@@ -142,10 +136,9 @@
                         <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ $equipo['descripcion'] ?? 'Equipo asignado al inventario institucional.' }}</p>
                     </div>
 
-                    {{-- Código y Ubicación --}}
+                    {{-- Código --}}
                     <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-mono">
                         <span class="px-2 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ $codigo }}</span>
-                        <span class="text-slate-500 font-sans">{{ $equipo['ubicacion'] ?? 'Bodega Principal' }}</span>
                     </div>
                 </div>
 
@@ -208,8 +201,8 @@
                         <span class="font-semibold uppercase" :class="selectedEquipo.estado === 'disponible' ? 'text-emerald-600' : 'text-rose-600'" x-text="selectedEquipo.estado === 'disponible' ? 'Disponible para préstamo' : 'No disponible'"></span>
                     </div>
                     <div>
-                        <span class="text-slate-400 block font-medium">Ubicación</span>
-                        <span class="text-slate-800" x-text="selectedEquipo.ubicacion"></span>
+                        <span class="text-slate-400 block font-medium">Categoría</span>
+                        <span class="text-slate-800" x-text="selectedEquipo.categoria"></span>
                     </div>
                 </div>
 

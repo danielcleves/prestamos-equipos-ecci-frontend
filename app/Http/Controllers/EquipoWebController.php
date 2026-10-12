@@ -46,7 +46,7 @@ class EquipoWebController extends Controller
 
         $equipos = $response->json('data') ?? [];
         $esAdmin = $this->esAdmin();
-        // Captura el modo vista y alterna entre User//Admin
+        // Captura el modo de vista (?vista=catalogo) para alternar entre catálogo (HU-05) y gestión (HU-04)
         $vistaModo = $request->query('vista');
 
         // Métricas calculadas para las tarjetas superiores (HU-04)

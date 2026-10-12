@@ -13,6 +13,7 @@
         nombre: '',
         categoria: '',
         estado: 'disponible',
+        estado_crudo: 'disponible',
         ubicacion: 'Sala A - Bodega 1',
         descripcion: '',
         observaciones: ''
@@ -187,6 +188,11 @@
                                 'nombre' => $nombre,
                                 'categoria' => $categoria,
                                 'estado' => $estado,
+                                // Valor que espera el backend (PATCH /equipos/{id}/estado)
+                                'estado_crudo' => match($estado) {
+                                    'prestado' => 'en_prestamo',
+                                    default => $estado,
+                                },
                                 'ubicacion' => $ubicacion,
                                 'descripcion' => $descripcion,
                                 'observaciones' => $observaciones,
@@ -332,7 +338,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-2">Nuevo Estado <span class="text-rose-500">*</span></label>
-                        <select name="estado" x-model="selectedEquipo.estado" required class="w-full h-12 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
+                        <select name="estado" x-model="selectedEquipo.estado_crudo" required class="w-full h-12 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                             <option value="disponible">Disponible (Apto para préstamo)</option>
                             <option value="en_prestamo">En préstamo</option>
                             <option value="mantenimiento">En mantenimiento (No disponible para préstamo)</option>

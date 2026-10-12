@@ -6,15 +6,26 @@
     $codigo = $equipo['codigo'] ?? 'S/C';
     $nombre = $equipo['nombre'] ?? 'Sin nombre';
     $categoria = $equipo['categoria']['nombre'] ?? ($equipo['categoria_nombre'] ?? 'General');
-    $ubicacion = $equipo['ubicacion'] ?? 'Sala A — Piso 2';
-    $descripcion = $equipo['descripcion'] ?? 'Intel Core i5, 16GB RAM, 512GB SSD';
+    $descripcion = $equipo['descripcion'] ?? 'Sin descripción detallada.';
     $usuario = session('user') ?? [];
 @endphp
 
 <div x-data="{
     fechaInicio: '{{ old('fecha_inicio', date('Y-m-d')) }}',
     fechaDevolucion: '{{ old('fecha_devolucion', '') }}',
-    motivo: '{{ old('motivo', '') }}',
+    motivo: @js(old('motivo', '')),
+    get minDevolucion() {
+        if (!this.fechaInicio) return '';
+        const d = new Date(this.fechaInicio + 'T00:00:00');
+        d.setDate(d.getDate() + 1);
+        return d.toISOString().slice(0, 10);
+    },
+    get maxDevolucion() {
+        if (!this.fechaInicio) return '';
+        const d = new Date(this.fechaInicio + 'T00:00:00');
+        d.setDate(d.getDate() + 7);
+        return d.toISOString().slice(0, 10);
+    },
     get duracionDias() {
         if (!this.fechaInicio || !this.fechaDevolucion) return '—';
         const start = new Date(this.fechaInicio);
@@ -78,7 +89,7 @@
                             </div>
                             <div>
                                 <h3 class="text-sm font-bold text-slate-800">{{ $nombre }}</h3>
-                                <p class="text-xs text-slate-500 mt-0.5">{{ $categoria }} · {{ $ubicacion }}</p>
+                                <p class="text-xs text-slate-500 mt-0.5">{{ $categoria }}</p>
                                 <p class="text-[11px] text-slate-400 mt-1">{{ $descripcion }}</p>
                             </div>
                         </div>
@@ -116,7 +127,8 @@
                                 type="date" 
                                 name="fecha_devolucion" 
                                 x-model="fechaDevolucion" 
-                                :min="fechaInicio"
+                                :min="minDevolucion"
+                                :max="maxDevolucion"
                                 required 
                                 class="w-full h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700"
                             >
@@ -124,11 +136,13 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Observaciones <span class="text-slate-400 font-normal">(opcional)</span></label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Motivo del préstamo <span class="text-rose-500">*</span></label>
                         <textarea 
                             name="motivo" 
                             x-model="motivo" 
                             rows="4" 
+                            required
+                            maxlength="1000"
                             placeholder="Motivo del préstamo, propósito de uso, requerimientos especiales..."
                             class="w-full p-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700"
                         ></textarea>
