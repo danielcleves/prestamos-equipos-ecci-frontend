@@ -244,8 +244,9 @@
 
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">DISPONIBILIDAD</span>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 mt-0.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border mt-0.5"
+                                  :class="selected.equipo_disponibilidad === 'Disponible' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'">
+                                <span class="w-1.5 h-1.5 rounded-full" :class="selected.equipo_disponibilidad === 'Disponible' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
                                 <span x-text="selected.equipo_disponibilidad"></span>
                             </span>
                         </div>
@@ -303,15 +304,25 @@
                                     </button>
                                 </form>
 
-                                {{-- Formulario Aprobar (POST /aprobacion, sin body) --}}
-                                <form :action="'{{ url('/prestamos') }}/' + selected.id + '/aprobar'" method="POST" class="inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-[10px] transition shadow-sm flex items-center gap-1.5">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                        <span>Aprobar solicitud</span>
+                                {{-- Formulario Aprobar (POST /aprobacion, sin body) — solo si el equipo está disponible --}}
+                                <template x-if="selected.equipo_disponibilidad === 'Disponible' && !openRechazo">
+                                    <form :action="'{{ url('/prestamos') }}/' + selected.id + '/aprobar'" method="POST" class="inline">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-[10px] transition shadow-sm flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                            <span>Aprobar solicitud</span>
+                                        </button>
+                                    </form>
+                                </template>
+
+                                {{-- Bloqueo de aprobación si el equipo no está disponible --}}
+                                <template x-if="selected.equipo_disponibilidad !== 'Disponible' && !openRechazo">
+                                    <button type="button" disabled title="No se puede aprobar porque el equipo no está disponible" class="h-10 px-5 bg-slate-100 text-slate-400 text-xs font-semibold rounded-[10px] cursor-not-allowed flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                        <span>Equipo no disponible</span>
                                     </button>
-                                </form>
+                                </template>
                             </div>
                         </div>
                     </template>
