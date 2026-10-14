@@ -1,0 +1,104 @@
+# CI/CD del frontend.
+#
+# - Pull request hacia develop o main: corre las pruebas (no despliega).
+# - Push a develop o main (incluye el merge de un PR): corre las pruebas y, si
+#   pasan, dispara el deploy hook de Render del entorno de esa rama.
+#
+# El auto-deploy de Render debe estar DESACTIVADO: el unico que despliega es
+# este workflow, y solo despues de que las pruebas pasen.
+#
+# Secretos del repositorio (Settings > Secrets and variables > Actions):
+#   RENDER_DEPLOY_HOOK_DEVELOP  deploy hook del servicio que sigue a develop
+#   RENDER_DEPLOY_HOOK_MAIN     deploy hook del servicio que sigue a main
+# Si un secreto no existe, el despliegue de esa rama se omite con un aviso.
+
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+# Un push nuevo a un PR cancela la corrida anterior; en develop/main no se
+# cancela nada para no cortar un despliegue a medias.
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: Pruebas (PHPUnit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, pdo_sqlite
+          coverage: none
+
+      - name: Cache de Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # Las vistas usan @vite: sin el manifest cualquier prueba que las
+      # renderice falla. Ademas valida que el build de produccion compile.
+      - name: Instalar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Compilar assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Preparar .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      # Las llamadas al backend se simulan con Http::fake(): no hace falta API.
+      - name: Pruebas (SQLite en memoria)
+        run: php artisan test
+
+  desplegar:
+    name: Desplegar en Render (${{ github.ref_name }})
+    needs: pruebas
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.ref_name == 'develop' || github.ref_name == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Deja el historial de despliegues visible en la pestana "Environments" de GitHub.
+    environment: ${{ github.ref_name == 'main' && 'produccion' || 'develop' }}
+
+    steps:
+      - name: Disparar deploy hook
+        env:
+          HOOK: ${{ github.ref_name == 'main' && secrets.RENDER_DEPLOY_HOOK_MAIN || secrets.RENDER_DEPLOY_HOOK_DEVELOP }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::No hay deploy hook configurado para '${GITHUB_REF_NAME}'. Se omite el despliegue."
+            exit 0
+          fi
+          # ref= le pide a Render desplegar exactamente el commit que paso las pruebas.
+          curl --fail-with-body --silent --show-error -X POST "${HOOK}&ref=${GITHUB_SHA}"
+          echo
+          echo "Despliegue solicitado a Render para ${GITHUB_SHA::7} (${GITHUB_REF_NAME})."
