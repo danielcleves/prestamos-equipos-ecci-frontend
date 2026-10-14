@@ -62,4 +62,4 @@ ENV APP_ENV=production \
 EXPOSE 8000
 
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["sh", "-c", "exec php artisan serve --host=0.0.0.0 --port=${PORT}"]
+CMD ["sh", "-c", "exec php artisan serve --host=0.0.0.0 --port=${PORT} --no-reload"]
