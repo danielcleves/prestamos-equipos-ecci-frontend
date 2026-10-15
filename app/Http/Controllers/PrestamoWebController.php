@@ -21,6 +21,39 @@ class PrestamoWebController extends Controller
     }
 
     /**
+     * Guardia de las secciones de personal (HU-08, HU-09, HU-11): requiere sesión
+     * activa y rol autorizado (administrador o encargado), igual que autoriza el backend.
+     * Devuelve el redirect correspondiente o null si el acceso está permitido.
+     */
+    private function guardiaPersonalAutorizado(): ?RedirectResponse
+    {
+        if (! $this->getToken()) {
+            return redirect()->route('login');
+        }
+
+        if (! $this->esPersonalAutorizado()) {
+            return redirect()->route('inicio')
+                ->withErrors(['inicio' => 'Esta sección es exclusiva para personal autorizado (administradores y encargados).']);
+        }
+
+        return null;
+    }
+
+    private function esPersonalAutorizado(): bool
+    {
+        $user = session('user') ?? [];
+        $roles = $user['roles'] ?? [];
+
+        if (is_array($roles[0] ?? null)) {
+            $nombresRoles = array_column($roles, 'name');
+        } else {
+            $nombresRoles = is_array($roles) ? $roles : array_filter([$user['role'] ?? $user['rol'] ?? null]);
+        }
+
+        return in_array('admin', $nombresRoles, true) || in_array('encargado', $nombresRoles, true);
+    }
+
+    /**
      * Muestra el formulario para solicitar préstamo de un equipo (HU-06).
      */
     public function create(Request $request, string $equipoId)
@@ -84,11 +117,13 @@ class PrestamoWebController extends Controller
                 'required',
                 'date',
                 'after:fecha_inicio',
-                function (string $attribute, mixed $value, \Closure $fail) use ($maxDias) {
+                function (string $attribute, mixed $value, \Closure $fail) use ($maxDias, $request) {
                     $inicio = Carbon::parse($request->input('fecha_inicio'));
                     $fin = Carbon::parse($value);
 
-                    if ($fin->greaterThan($inicio->copy()->addDays($maxDias))) {
+                    // Mismo criterio que StorePrestamoRequest del backend: el límite se
+                    // cuenta hasta el fin del día (23:59:59) del día máximo permitido.
+                    if ($fin->greaterThan($inicio->copy()->addDays($maxDias)->endOfDay())) {
                         $fail("La fecha de devolución no puede superar los {$maxDias} días posteriores a la fecha de inicio.");
                     }
                 },
@@ -171,10 +206,11 @@ class PrestamoWebController extends Controller
      */
     public function entregasIndex(Request $request)
     {
-        $token = $this->getToken();
-        if (! $token) {
-            return redirect()->route('login');
+        if ($redirigido = $this->guardiaPersonalAutorizado()) {
+            return $redirigido;
         }
+
+        $token = $this->getToken();
 
         try {
             $response = Http::withToken($token)
@@ -210,10 +246,11 @@ class PrestamoWebController extends Controller
      */
     public function registrarEntrega(Request $request, string $id): RedirectResponse
     {
-        $token = $this->getToken();
-        if (! $token) {
-            return redirect()->route('login');
+        if ($redirigido = $this->guardiaPersonalAutorizado()) {
+            return $redirigido;
         }
+
+        $token = $this->getToken();
 
         $request->validate([
             'condicion_entrega' => 'required|string|in:bueno,con_danos,requiere_mantenimiento',
@@ -271,10 +308,11 @@ class PrestamoWebController extends Controller
      */
     public function devolucionesIndex(Request $request)
     {
-        $token = $this->getToken();
-        if (! $token) {
-            return redirect()->route('login');
+        if ($redirigido = $this->guardiaPersonalAutorizado()) {
+            return $redirigido;
         }
+
+        $token = $this->getToken();
 
         try {
             $response = Http::withToken($token)
@@ -316,10 +354,11 @@ class PrestamoWebController extends Controller
      */
     public function registrarDevolucion(Request $request, string $id): RedirectResponse
     {
-        $token = $this->getToken();
-        if (! $token) {
-            return redirect()->route('login');
+        if ($redirigido = $this->guardiaPersonalAutorizado()) {
+            return $redirigido;
         }
+
+        $token = $this->getToken();
 
         $condicion = $request->input('condicion_devolucion');
 
@@ -387,10 +426,11 @@ class PrestamoWebController extends Controller
      */
     public function solicitudesIndex(Request $request)
     {
-        $token = $this->getToken();
-        if (! $token) {
-            return redirect()->route('login');
+        if ($redirigido = $this->guardiaPersonalAutorizado()) {
+            return $redirigido;
         }
+
+        $token = $this->getToken();
 
         try {
             $response = Http::withToken($token)
@@ -420,10 +460,11 @@ class PrestamoWebController extends Controller
      */
     public function aprobarSolicitud(Request $request, string $id): RedirectResponse
     {
-        $token = $this->getToken();
-        if (! $token) {
-            return redirect()->route('login');
+        if ($redirigido = $this->guardiaPersonalAutorizado()) {
+            return $redirigido;
         }
+
+        $token = $this->getToken();
 
         try {
             $response = Http::withToken($token)
@@ -468,10 +509,11 @@ class PrestamoWebController extends Controller
      */
     public function rechazarSolicitud(Request $request, string $id): RedirectResponse
     {
-        $token = $this->getToken();
-        if (! $token) {
-            return redirect()->route('login');
+        if ($redirigido = $this->guardiaPersonalAutorizado()) {
+            return $redirigido;
         }
+
+        $token = $this->getToken();
 
         $request->validate([
             'motivo' => 'required|string|max:1000',
