@@ -60,3 +60,6 @@ Route::post('/prestamos/{id}/devolucion', [PrestamoWebController::class, 'regist
 Route::get('/solicitudes', [PrestamoWebController::class, 'solicitudesIndex'])->name('prestamos.solicitudes');
 Route::patch('/prestamos/{id}/aprobar', [PrestamoWebController::class, 'aprobarSolicitud'])->name('prestamos.aprobar');
 Route::patch('/prestamos/{id}/rechazar', [PrestamoWebController::class, 'rechazarSolicitud'])->name('prestamos.rechazar');
+
+// Mis préstamos vigentes - vista del solicitante (HU-10 / KAN-120)
+Route::get('/mis-prestamos', [PrestamoWebController::class, 'misPrestamosActivos'])->name('prestamos.mis-activos');
