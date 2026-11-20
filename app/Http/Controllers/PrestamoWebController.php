@@ -183,18 +183,29 @@ class PrestamoWebController extends Controller
             $mensaje = $response->json('message') ?? 'Error al procesar la solicitud de préstamo.';
             $errores = $response->json('errors') ?? [];
 
-            $mensajesAplanados = [];
+            // KAN-195: Mapear errores por campo para mostrarlos junto al campo correspondiente.
+            // El backend puede usar fecha_inicio, fecha_devolucion_estimada, equipo_id, motivo, etc.
+            $erroresMapeados = [];
+            $campoPresentacion = [
+                'fecha_inicio'              => 'fecha_inicio',
+                'fecha_devolucion_estimada' => 'fecha_devolucion',
+                'fecha_devolucion'          => 'fecha_devolucion',
+                'equipo_id'                 => 'equipo_id',
+                'motivo'                    => 'motivo',
+            ];
+
             foreach ($errores as $campo => $msgs) {
-                if (is_array($msgs)) {
-                    foreach ($msgs as $m) {
-                        $mensajesAplanados[] = $m;
-                    }
-                } else {
-                    $mensajesAplanados[] = $msgs;
-                }
+                $destino = $campoPresentacion[$campo] ?? 'prestamo_error';
+                $primerMensaje = is_array($msgs) ? ($msgs[0] ?? '') : $msgs;
+                $erroresMapeados[$destino] = $primerMensaje;
             }
 
-            return back()->withInput()->withErrors($mensajesAplanados ?: ['prestamo_error' => $mensaje]);
+            // Si no hay errores mapeados por campo, usar el mensaje general
+            if (empty($erroresMapeados)) {
+                $erroresMapeados['prestamo_error'] = $mensaje;
+            }
+
+            return back()->withInput()->withErrors($erroresMapeados);
         }
 
         return redirect()->route('equipos.index', ['vista' => 'catalogo'])
@@ -422,7 +433,8 @@ class PrestamoWebController extends Controller
     }
 
     /**
-     * Muestra la bandeja de gestión de solicitudes (HU-08 / KAN-94).
+     * Muestra la bandeja de solicitudes pendientes (HU-07 / KAN-113).
+     * Consume GET /api/prestamos/pendientes (endpoint dedicado).
      */
     public function solicitudesIndex(Request $request)
     {
@@ -436,9 +448,14 @@ class PrestamoWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->get($this->apiUrl().'/prestamos?per_page=100');
+                // El backend pagina a 15 por defecto y la vista no tiene paginación:
+                // se pide el máximo de una página para no ocultar solicitudes.
+                ->get($this->apiUrl().'/prestamos/pendientes', ['per_page' => 100]);
         } catch (ConnectionException $e) {
-            return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
+            return view('prestamos.solicitudes', [
+                'solicitudes' => [],
+                'errorConexion' => 'No fue posible conectar con el servicio de préstamos.',
+            ]);
         }
 
         if ($response->status() === 401) {
@@ -447,10 +464,23 @@ class PrestamoWebController extends Controller
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
         }
 
-        $todos = $response->json('data') ?? [];
+        if ($response->failed()) {
+            $msg = $response->json('message') ?? 'Error al cargar las solicitudes pendientes.';
+
+            return view('prestamos.solicitudes', [
+                'solicitudes' => [],
+                'errorConexion' => $msg,
+            ]);
+        }
+
+        // Soporta respuesta directa o envuelta en data/meta
+        $pendientes = $response->json('data') ?? $response->json() ?? [];
+        if (isset($pendientes['data'])) {
+            $pendientes = $pendientes['data'];
+        }
 
         return view('prestamos.solicitudes', [
-            'solicitudes' => $todos,
+            'solicitudes' => is_array($pendientes) ? $pendientes : [],
         ]);
     }
 
@@ -559,5 +589,54 @@ class PrestamoWebController extends Controller
 
         return redirect()->route('prestamos.solicitudes')
             ->with('success', 'La solicitud #'.$id.' ha sido rechazada.');
+    }
+
+    /**
+     * Muestra los préstamos activos del solicitante autenticado (HU-10 / KAN-120).
+     * Consume GET /api/prestamos?activos=1 (filtro del solicitante, NO el endpoint administrativo).
+     */
+    public function misPrestamosActivos(Request $request)
+    {
+        $token = $this->getToken();
+        if (! $token) {
+            return redirect()->route('login');
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                // per_page máximo: la vista no pagina y el backend pagina a 15 por defecto.
+                ->get($this->apiUrl().'/prestamos', ['activos' => 1, 'per_page' => 100]);
+        } catch (ConnectionException $e) {
+            return view('prestamos.mis-activos', [
+                'prestamos' => [],
+                'errorConexion' => 'No fue posible conectar con el servicio de préstamos.',
+            ]);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->failed()) {
+            $msg = $response->json('message') ?? 'Error al cargar tus préstamos activos.';
+
+            return view('prestamos.mis-activos', [
+                'prestamos' => [],
+                'errorConexion' => $msg,
+            ]);
+        }
+
+        $datos = $response->json('data') ?? $response->json() ?? [];
+        if (isset($datos['data'])) {
+            $datos = $datos['data'];
+        }
+
+        return view('prestamos.mis-activos', [
+            'prestamos' => is_array($datos) ? $datos : [],
+        ]);
     }
 }

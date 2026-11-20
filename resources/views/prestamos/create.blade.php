@@ -8,12 +8,38 @@
     $categoria = $equipo['categoria']['nombre'] ?? ($equipo['categoria_nombre'] ?? 'General');
     $descripcion = $equipo['descripcion'] ?? 'Sin descripción detallada.';
     $usuario = session('user') ?? [];
+
+    // KAN-195: Mapear errores del backend a campos del formulario.
+    // MessageBag::first() devuelve '' (no null) cuando la clave no existe, así que
+    // el respaldo a la variante *_estimada necesita ?: y no ??.
+    $erroresCampo = [
+        'fecha_inicio'     => $errors->first('fecha_inicio') ?: $errors->first('fecha_inicio_estimada'),
+        'fecha_devolucion' => $errors->first('fecha_devolucion') ?: $errors->first('fecha_devolucion_estimada'),
+        'motivo'           => $errors->first('motivo'),
+        'prestamo_error'   => $errors->first('prestamo_error'),
+        // KAN-188: el backend reporta la indisponibilidad del equipo bajo la clave
+        // `equipo_id` (SolicitudPrestamoService) y el formulario no tiene un input
+        // para ese campo, así que se muestra en el aviso de indisponibilidad.
+        'disponibilidad'   => $errors->first('equipo_id'),
+    ];
+
+    // Mensajes que no se muestran en ningún campo: se listan en el bloque general.
+    $mensajesMostrados = array_filter($erroresCampo);
+    $erroresGenerales = array_values(array_filter(
+        $errors->all(),
+        fn (string $mensaje) => ! in_array($mensaje, $mensajesMostrados, true)
+    ));
+    $hayErroresGenerales = $erroresGenerales !== [];
 @endphp
 
 <div x-data="{
     fechaInicio: '{{ old('fecha_inicio', date('Y-m-d')) }}',
     fechaDevolucion: '{{ old('fecha_devolucion', '') }}',
     motivo: @js(old('motivo', '')),
+    errorFechaInicio: '',
+    errorFechaDevolucion: '',
+    errorMotivo: '',
+    hoy: '{{ date('Y-m-d') }}',
     get minDevolucion() {
         if (!this.fechaInicio) return '';
         const d = new Date(this.fechaInicio + 'T00:00:00');
@@ -42,6 +68,50 @@
             return parts[2] + '/' + parts[1] + '/' + parts[0];
         }
         return dateStr;
+    },
+    validarFechaInicio() {
+        if (!this.fechaInicio) {
+            this.errorFechaInicio = 'La fecha de inicio es requerida.';
+            return false;
+        }
+        if (this.fechaInicio < this.hoy) {
+            this.errorFechaInicio = 'La fecha de inicio no puede ser anterior al día de hoy.';
+            return false;
+        }
+        this.errorFechaInicio = '';
+        return true;
+    },
+    validarFechaDevolucion() {
+        if (!this.fechaDevolucion) {
+            this.errorFechaDevolucion = 'La fecha de devolución es requerida.';
+            return false;
+        }
+        if (this.fechaInicio && this.fechaDevolucion <= this.fechaInicio) {
+            this.errorFechaDevolucion = 'La fecha de devolución debe ser posterior a la fecha de inicio.';
+            return false;
+        }
+        if (this.maxDevolucion && this.fechaDevolucion > this.maxDevolucion) {
+            this.errorFechaDevolucion = 'La fecha de devolución no puede superar los 7 días posteriores a la fecha de inicio.';
+            return false;
+        }
+        this.errorFechaDevolucion = '';
+        return true;
+    },
+    validarMotivo() {
+        if (!this.motivo || this.motivo.trim().length === 0) {
+            this.errorMotivo = 'El motivo del préstamo es obligatorio.';
+            return false;
+        }
+        this.errorMotivo = '';
+        return true;
+    },
+    validarYEnviar(event) {
+        const v1 = this.validarFechaInicio();
+        const v2 = this.validarFechaDevolucion();
+        const v3 = this.validarMotivo();
+        if (!v1 || !v2 || !v3) {
+            event.preventDefault();
+        }
     }
 }" class="max-w-6xl mx-auto space-y-6">
 
@@ -55,33 +125,50 @@
         <p class="text-xs text-[#6B7280]">Indica el período de préstamo para registrar formalmente tu solicitud.</p>
     </div>
 
-    {{-- Mensajes de error de validación --}}
-    @if ($errors->any())
+    {{-- KAN-188: Mensajes de disponibilidad del backend por campo --}}
+    @if($erroresCampo['disponibilidad'])
+        <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl flex items-start gap-3 shadow-sm">
+            <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div>
+                <p class="font-semibold mb-0.5">El equipo no puede ser solicitado</p>
+                <p>{{ $erroresCampo['disponibilidad'] }}</p>
+            </div>
+        </div>
+    @endif
+
+    {{-- KAN-195: Mensajes de error de validación por campo --}}
+    @if($erroresCampo['prestamo_error'])
+        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl space-y-1">
+            <p class="font-bold">{{ $erroresCampo['prestamo_error'] }}</p>
+        </div>
+    @endif
+
+    {{-- Otros errores no mapeados --}}
+    @if($hayErroresGenerales)
         <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl space-y-1">
             <p class="font-bold">Por favor verifica los siguientes campos:</p>
             <ul class="list-disc pl-5 space-y-0.5">
-                @forelse ($errors->all() as $err)
+                @foreach ($erroresGenerales as $err)
                     <li>{{ $err }}</li>
-                @empty
-                @endforelse
+                @endforeach
             </ul>
         </div>
     @endif
 
-    {{-- Formulario principal (Mockup HU-06) --}}
-    <form action="{{ route('prestamos.store') }}" method="POST">
+    {{-- Formulario principal (HU-06) --}}
+    <form action="{{ route('prestamos.store') }}" method="POST" @submit="validarYEnviar($event)">
         @csrf
         <input type="hidden" name="equipo_id" value="{{ $equipoId }}">
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            
+
             {{-- Columna Izquierda --}}
             <div class="lg:col-span-2 space-y-6">
-                
+
                 {{-- Tarjeta 1: Equipo Seleccionado --}}
                 <div class="bg-white p-5 rounded-xl border border-[#D9DEE7] shadow-sm">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 block mb-3">Equipo seleccionado</span>
-                    
+
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-start gap-3.5">
                             <div class="w-10 h-10 rounded-lg bg-blue-50 text-[#0B3D91] flex items-center justify-center shrink-0 mt-0.5">
@@ -109,43 +196,67 @@
                     <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Periodo de préstamo</h3>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {{-- Fecha de inicio con validación inline (KAN-194 / KAN-195) --}}
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">Fecha de inicio <span class="text-rose-500">*</span></label>
-                            <input 
-                                type="date" 
-                                name="fecha_inicio" 
-                                x-model="fechaInicio" 
+                            <input
+                                type="date"
+                                name="fecha_inicio"
+                                x-model="fechaInicio"
+                                @change="validarFechaInicio(); fechaDevolucion && validarFechaDevolucion()"
                                 min="{{ date('Y-m-d') }}"
-                                required 
-                                class="w-full h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700"
+                                required
+                                :class="errorFechaInicio ? 'border-rose-400 focus:ring-rose-400' : 'border-[#D9DEE7] focus:ring-[#0B3D91]'"
+                                class="w-full h-11 px-3 text-xs bg-white border rounded-[10px] focus:outline-none focus:ring-1 text-slate-700"
                             >
+                            {{-- Error PHP (vuelta del servidor) --}}
+                            @if($erroresCampo['fecha_inicio'])
+                                <p class="text-[11px] text-rose-600 mt-1">{{ $erroresCampo['fecha_inicio'] }}</p>
+                            @endif
+                            {{-- Error JS (validación cliente) --}}
+                            <p x-show="errorFechaInicio" x-text="errorFechaInicio" class="text-[11px] text-rose-600 mt-1" x-cloak></p>
                         </div>
 
+                        {{-- Fecha de devolución con validación inline (KAN-194 / KAN-195) --}}
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">Fecha de devolución <span class="text-rose-500">*</span></label>
-                            <input 
-                                type="date" 
-                                name="fecha_devolucion" 
-                                x-model="fechaDevolucion" 
+                            <input
+                                type="date"
+                                name="fecha_devolucion"
+                                x-model="fechaDevolucion"
+                                @change="validarFechaDevolucion()"
                                 :min="minDevolucion"
                                 :max="maxDevolucion"
-                                required 
-                                class="w-full h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700"
+                                required
+                                :class="errorFechaDevolucion ? 'border-rose-400 focus:ring-rose-400' : 'border-[#D9DEE7] focus:ring-[#0B3D91]'"
+                                class="w-full h-11 px-3 text-xs bg-white border rounded-[10px] focus:outline-none focus:ring-1 text-slate-700"
                             >
+                            @if($erroresCampo['fecha_devolucion'])
+                                <p class="text-[11px] text-rose-600 mt-1">{{ $erroresCampo['fecha_devolucion'] }}</p>
+                            @endif
+                            <p x-show="errorFechaDevolucion" x-text="errorFechaDevolucion" class="text-[11px] text-rose-600 mt-1" x-cloak></p>
                         </div>
                     </div>
 
+                    {{-- Motivo con validación inline (KAN-194 / KAN-195) --}}
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1.5">Motivo del préstamo <span class="text-rose-500">*</span></label>
-                        <textarea 
-                            name="motivo" 
-                            x-model="motivo" 
-                            rows="4" 
+                        <textarea
+                            name="motivo"
+                            x-model="motivo"
+                            @input="motivo.trim().length > 0 && (errorMotivo = '')"
+                            @blur="validarMotivo()"
+                            rows="4"
                             required
                             maxlength="1000"
                             placeholder="Motivo del préstamo, propósito de uso, requerimientos especiales..."
-                            class="w-full p-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700"
+                            :class="errorMotivo ? 'border-rose-400 focus:ring-rose-400' : 'border-[#D9DEE7] focus:ring-[#0B3D91]'"
+                            class="w-full p-3 text-xs bg-white border rounded-[10px] focus:outline-none focus:ring-1 text-slate-700"
                         ></textarea>
+                        @if($erroresCampo['motivo'])
+                            <p class="text-[11px] text-rose-600 mt-1">{{ $erroresCampo['motivo'] }}</p>
+                        @endif
+                        <p x-show="errorMotivo" x-text="errorMotivo" class="text-[11px] text-rose-600 mt-1" x-cloak></p>
                     </div>
                 </div>
 
@@ -153,7 +264,7 @@
 
             {{-- Columna Derecha --}}
             <div class="space-y-6">
-                
+
                 {{-- Solicitante --}}
                 <div class="bg-white p-5 rounded-xl border border-[#D9DEE7] shadow-sm space-y-4">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Solicitante</span>

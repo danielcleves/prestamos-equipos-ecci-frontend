@@ -3,7 +3,9 @@
 @section('content')
 <div x-data="{
     search: '',
-    estadoFilter: '',
+    fechaDesde: '',
+    fechaHasta: '',
+    filasFiltrables: [],
     openModalDetalle: false,
     openRechazo: false,
     motivoRechazo: '',
@@ -22,7 +24,39 @@
     },
     abrirModal(item) {
         this.selected = { ...item };
+        this.openRechazo = false;
+        this.motivoRechazo = '';
         this.openModalDetalle = true;
+    },
+    limpiarFiltros() {
+        this.search = '';
+        this.fechaDesde = '';
+        this.fechaHasta = '';
+    },
+    get hayFiltrosActivos() {
+        return this.search !== '' || this.fechaDesde !== '' || this.fechaHasta !== '';
+    },
+    filaVisible(fSolicitud, solicitanteNorm, equipoNorm) {
+        if (this.search !== '' && !solicitanteNorm.includes(this.search.toLowerCase()) && !equipoNorm.includes(this.search.toLowerCase())) {
+            return false;
+        }
+        if (this.fechaDesde !== '' && fSolicitud < this.fechaDesde) {
+            return false;
+        }
+        if (this.fechaHasta !== '' && fSolicitud > this.fechaHasta) {
+            return false;
+        }
+        return true;
+    },
+    registrarFila(fila) {
+        this.filasFiltrables.push(fila);
+    },
+    // Filas que pasan los filtros, calculadas sobre los mismos datos que usa cada
+    // <tr>, para poder mostrar el aviso de "sin resultados" sin mirar el DOM.
+    get filasVisibles() {
+        return this.filasFiltrables.filter(
+            (fila) => this.filaVisible(fila.fecha, fila.solicitante, fila.equipo)
+        ).length;
     }
 }" class="max-w-7xl mx-auto space-y-6">
 
@@ -31,10 +65,10 @@
         <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
             <span>Personal de préstamo</span>
             <span>></span>
-            <span class="text-slate-700 font-medium">Gestión de solicitudes</span>
+            <span class="text-slate-700 font-medium">Solicitudes pendientes</span>
         </div>
-        <h2 class="text-xl font-bold text-[#1F2937]">Solicitudes de préstamo</h2>
-        <p class="text-xs text-[#6B7280]">Revisa las solicitudes para aprobar o rechazar el préstamo de equipos.</p>
+        <h2 class="text-xl font-bold text-[#1F2937]">Solicitudes pendientes</h2>
+        <p class="text-xs text-[#6B7280]">Revisa las solicitudes pendientes de aprobación o rechazo.</p>
     </div>
 
     {{-- Alertas --}}
@@ -45,31 +79,54 @@
         </div>
     @endif
 
+    {{-- Error de conexión (KAN-113) --}}
+    @if(isset($errorConexion))
+        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2 shadow-sm">
+            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>{{ $errorConexion }}</span>
+        </div>
+    @endif
+
     @if($errors->any())
         <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl space-y-1">
             <p class="font-bold">{{ $errors->first() }}</p>
         </div>
     @endif
 
-    {{-- Tabla de Solicitudes --}}
+    {{-- Tabla de Solicitudes Pendientes --}}
     <div class="bg-white rounded-xl border border-[#D9DEE7] shadow-sm overflow-hidden">
-        {{-- Filtros --}}
-        <div class="p-4 bg-slate-50/50 border-b border-[#D9DEE7] flex flex-wrap gap-4 items-center justify-between">
-            <div class="relative flex-1 min-w-[240px] max-w-md">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                </span>
-                <input x-model="search" type="text" placeholder="Buscar por solicitante o equipo..." class="w-full h-11 pl-9 pr-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
-            </div>
+        {{-- Filtros (KAN-114) --}}
+        <div class="p-4 bg-slate-50/50 border-b border-[#D9DEE7] space-y-3">
+            <div class="flex flex-wrap gap-3 items-center">
+                {{-- Búsqueda por solicitante o equipo --}}
+                <div class="relative flex-1 min-w-[220px] max-w-md">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </span>
+                    <input x-model="search" type="text" placeholder="Buscar por solicitante o equipo..." class="w-full h-11 pl-9 pr-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
+                </div>
 
-            <select x-model="estadoFilter" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-11 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
-                <option value="">Todos los estados</option>
-                <option value="solicitado">Solicitado</option>
-                <option value="aprobado">Aprobado</option>
-                <option value="rechazado">Rechazado</option>
-                <option value="entregado">Entregado</option>
-                <option value="devuelto">Devuelto</option>
-            </select>
+                {{-- Filtro por rango de fechas de solicitud --}}
+                <div class="flex items-center gap-2">
+                    <label class="text-xs text-slate-500 shrink-0">Desde:</label>
+                    <input x-model="fechaDesde" type="date" class="h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-xs text-slate-500 shrink-0">Hasta:</label>
+                    <input x-model="fechaHasta" type="date" class="h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
+                </div>
+
+                {{-- Limpiar filtros --}}
+                <button
+                    x-show="hayFiltrosActivos"
+                    type="button"
+                    @click="limpiarFiltros()"
+                    class="h-11 px-4 text-xs text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 bg-white rounded-[10px] transition flex items-center gap-1.5"
+                >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Limpiar filtros
+                </button>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -79,7 +136,8 @@
                         <th class="py-3 px-6">#</th>
                         <th class="py-3 px-6">Solicitante</th>
                         <th class="py-3 px-6">Equipo</th>
-                        <th class="py-3 px-6">F. Requerida</th>
+                        <th class="py-3 px-6">F. Solicitud</th>
+                        <th class="py-3 px-6">F. Inicio</th>
                         <th class="py-3 px-6">F. Devolución</th>
                         <th class="py-3 px-6">Estado</th>
                         <th class="py-3 px-6 text-right">Acciones</th>
@@ -95,10 +153,18 @@
                             $eqCod = $item['equipo']['codigo'] ?? 'S/C';
                             $eqDisp = strtolower($item['equipo']['estado'] ?? 'disponible') === 'disponible';
                             $eqCat = $item['equipo']['categoria']['nombre'] ?? 'N/D';
-                            $ub = $eqCat;
-                            $fSol = !empty($item['fecha_solicitud']) ? date('Y-m-d', strtotime($item['fecha_solicitud'])) : date('Y-m-d');
-                            $fIni = !empty($item['fecha_inicio']) ? date('Y-m-d', strtotime($item['fecha_inicio'])) : '—';
-                            $fFin = !empty($item['fecha_devolucion_estimada']) ? date('Y-m-d', strtotime($item['fecha_devolucion_estimada'])) : '—';
+                            // El backend entrega ISO 8601 con desplazamiento (FechaNegocio) y la
+                            // app corre en UTC: hay que convertir a la zona de negocio, si no
+                            // una solicitud de las 22:00 de Bogotá aparece con el día siguiente.
+                            $fSol = !empty($item['fecha_solicitud'])
+                                ? \Illuminate\Support\Carbon::parse($item['fecha_solicitud'])->timezone('America/Bogota')->toDateString()
+                                : now()->timezone('America/Bogota')->toDateString();
+                            $fIni = !empty($item['fecha_inicio'])
+                                ? \Illuminate\Support\Carbon::parse($item['fecha_inicio'])->timezone('America/Bogota')->toDateString()
+                                : '—';
+                            $fFin = !empty($item['fecha_devolucion_estimada'])
+                                ? \Illuminate\Support\Carbon::parse($item['fecha_devolucion_estimada'])->timezone('America/Bogota')->toDateString()
+                                : '—';
                             $st = strtolower($item['estado'] ?? 'solicitado');
 
                             $itemJson = [
@@ -112,15 +178,14 @@
                                 'equipo_nombre' => $eqNom,
                                 'equipo_codigo' => $eqCod,
                             'equipo_disponibilidad' => $eqDisp ? 'Disponible' : 'No disponible',
-                            'categoria' => $ub,
+                            'categoria' => $eqCat,
                             ];
+                            $solicitanteNorm = strtolower($solic);
+                            $equipoNorm = strtolower($eqNom).' '.strtolower($eqCod);
                         @endphp
-                        <tr 
-                            x-show="(search === '' || 
-                                    @js(strtolower($solic)).includes(search.toLowerCase()) || 
-                                    @js(strtolower($eqNom)).includes(search.toLowerCase()) || 
-                                    @js(strtolower($eqCod)).includes(search.toLowerCase())) &&
-                                    (estadoFilter === '' || @js($st) === estadoFilter)"
+                        <tr
+                            x-show="filaVisible(@js($fSol), @js($solicitanteNorm), @js($equipoNorm))"
+                            x-init="registrarFila({ fecha: @js($fSol), solicitante: @js($solicitanteNorm), equipo: @js($equipoNorm) })"
                             class="hover:bg-slate-50/80 transition"
                         >
                             <td class="py-3.5 px-6 font-mono text-slate-400">#{{ $id }}</td>
@@ -132,8 +197,9 @@
                                 <p class="font-semibold text-slate-700">{{ $eqNom }}</p>
                                 <span class="font-mono text-slate-400 text-[11px]">{{ $eqCod }}</span>
                             </td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ $fIni }}</td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ $fFin }}</td>
+                            <td class="py-3.5 px-6 text-slate-600">{{ date('d/m/Y', strtotime($fSol)) }}</td>
+                            <td class="py-3.5 px-6 text-slate-600">{{ $fIni !== '—' ? date('d/m/Y', strtotime($fIni)) : '—' }}</td>
+                            <td class="py-3.5 px-6 text-slate-600">{{ $fFin !== '—' ? date('d/m/Y', strtotime($fFin)) : '—' }}</td>
                             <td class="py-3.5 px-6">
                                 @if($st === 'solicitado')
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
@@ -154,8 +220,8 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-6 text-right">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     @click="abrirModal(@js($itemJson))"
                                     class="h-9 px-3.5 bg-slate-100 hover:bg-[#0B3D91] hover:text-white text-slate-700 text-xs font-semibold rounded-[10px] transition inline-flex items-center gap-1.5"
                                 >
@@ -166,20 +232,30 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-12 text-center text-slate-400">
-                                No hay solicitudes registradas.
+                            <td colspan="8" class="py-12 text-center text-slate-400">
+                                No hay solicitudes pendientes.
                             </td>
                         </tr>
                     @endforelse
+
+                    {{-- Fila dinámica: sin resultados por filtros (KAN-114) --}}
+                    @if(count($solicitudes) > 0)
+                    <tr x-show="filasVisibles === 0" x-cloak>
+                        <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
+                            No hay solicitudes que coincidan con los filtros aplicados.
+                            <button type="button" @click="limpiarFiltros()" class="ml-2 text-[#0B3D91] underline">Limpiar filtros</button>
+                        </td>
+                    </tr>
+                    @endif
                 </tbody>
             </table>
         </div>
     </div>
 
-    {{-- MODAL DETALLE DE SOLICITUD (MOCKUP HU-08) --}}
+    {{-- MODAL DETALLE DE SOLICITUD (HU-08) --}}
     <div x-show="openModalDetalle" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div @click.away="openModalDetalle = false" class="bg-white rounded-2xl shadow-2xl border border-[#D9DEE7] w-full max-w-xl overflow-hidden animate-fade-in">
-            
+
             {{-- Header Modal --}}
             <div class="px-6 py-5 border-b border-[#D9DEE7] flex justify-between items-start bg-white">
                 <div>
@@ -261,7 +337,7 @@
                 {{-- Acciones del Modal --}}
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                     <button type="button" @click="openModalDetalle = false" class="h-10 px-4 border border-[#D9DEE7] text-slate-600 text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition">
-                        Cancelar
+                        Cerrar
                     </button>
 
                     <template x-if="selected.estado === 'Solicitado' || selected.estado === 'Pendiente'">
@@ -287,7 +363,7 @@
                                     Cancelar
                                 </button>
 
-                                {{-- Formulario Rechazar (POST /rechazo con motivo requerido) --}}
+                                {{-- Formulario Rechazar --}}
                                 <form x-show="!openRechazo" @submit.prevent="openRechazo = true" class="inline">
                                     <button type="submit" class="h-10 px-4 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-[10px] transition flex items-center gap-1.5">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -304,7 +380,7 @@
                                     </button>
                                 </form>
 
-                                {{-- Formulario Aprobar (POST /aprobacion, sin body) — solo si el equipo está disponible --}}
+                                {{-- Formulario Aprobar — solo si el equipo está disponible --}}
                                 <template x-if="selected.equipo_disponibilidad === 'Disponible' && !openRechazo">
                                     <form :action="'{{ url('/prestamos') }}/' + selected.id + '/aprobar'" method="POST" class="inline">
                                         @csrf
