@@ -9,34 +9,27 @@
     $descripcion = $equipo['descripcion'] ?? 'Sin descripción detallada.';
     $usuario = session('user') ?? [];
 
-    // KAN-195: Mapear errores del backend a campos del formulario
+    // KAN-195: Mapear errores del backend a campos del formulario.
+    // MessageBag::first() devuelve '' (no null) cuando la clave no existe, así que
+    // el respaldo a la variante *_estimada necesita ?: y no ??.
     $erroresCampo = [
-        'fecha_inicio'             => $errors->first('fecha_inicio') ?? $errors->first('fecha_inicio_estimada'),
-        'fecha_devolucion'         => $errors->first('fecha_devolucion') ?? $errors->first('fecha_devolucion_estimada'),
-        'motivo'                   => $errors->first('motivo'),
-        'equipo_id'                => $errors->first('equipo_id'),
-        'prestamo_error'           => $errors->first('prestamo_error'),
-        'disponibilidad'           => null, // se llena abajo si hay mensaje de disponibilidad
+        'fecha_inicio'     => $errors->first('fecha_inicio') ?: $errors->first('fecha_inicio_estimada'),
+        'fecha_devolucion' => $errors->first('fecha_devolucion') ?: $errors->first('fecha_devolucion_estimada'),
+        'motivo'           => $errors->first('motivo'),
+        'prestamo_error'   => $errors->first('prestamo_error'),
+        // KAN-188: el backend reporta la indisponibilidad del equipo bajo la clave
+        // `equipo_id` (SolicitudPrestamoService) y el formulario no tiene un input
+        // para ese campo, así que se muestra en el aviso de indisponibilidad.
+        'disponibilidad'   => $errors->first('equipo_id'),
     ];
 
-    // KAN-188: Detectar errores de disponibilidad del backend en los mensajes genéricos
-    $mensajesDisponibilidad = [];
-    foreach ($errors->all() as $err) {
-        $errLower = strtolower($err);
-        // Excluir mensajes ya mapeados a campos
-        if (str_contains($errLower, 'préstamo') || str_contains($errLower, 'prestamo') ||
-            str_contains($errLower, 'disponible') || str_contains($errLower, 'mantenimiento') ||
-            str_contains($errLower, 'baja') || str_contains($errLower, 'solapamiento') ||
-            str_contains($errLower, 'activo') || str_contains($errLower, 'límite') ||
-            str_contains($errLower, 'limite')) {
-            $mensajesDisponibilidad[] = $err;
-        }
-    }
-    if (!empty($mensajesDisponibilidad)) {
-        $erroresCampo['disponibilidad'] = implode(' ', $mensajesDisponibilidad);
-    }
-
-    $hayErroresGenerales = $errors->any() && empty(array_filter($erroresCampo));
+    // Mensajes que no se muestran en ningún campo: se listan en el bloque general.
+    $mensajesMostrados = array_filter($erroresCampo);
+    $erroresGenerales = array_values(array_filter(
+        $errors->all(),
+        fn (string $mensaje) => ! in_array($mensaje, $mensajesMostrados, true)
+    ));
+    $hayErroresGenerales = $erroresGenerales !== [];
 @endphp
 
 <div x-data="{
@@ -155,7 +148,7 @@
         <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl space-y-1">
             <p class="font-bold">Por favor verifica los siguientes campos:</p>
             <ul class="list-disc pl-5 space-y-0.5">
-                @foreach ($errors->all() as $err)
+                @foreach ($erroresGenerales as $err)
                     <li>{{ $err }}</li>
                 @endforeach
             </ul>

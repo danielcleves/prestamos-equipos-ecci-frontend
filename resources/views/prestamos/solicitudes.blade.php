@@ -3,9 +3,9 @@
 @section('content')
 <div x-data="{
     search: '',
-    estadoFilter: '',
     fechaDesde: '',
     fechaHasta: '',
+    filasFiltrables: [],
     openModalDetalle: false,
     openRechazo: false,
     motivoRechazo: '',
@@ -30,12 +30,11 @@
     },
     limpiarFiltros() {
         this.search = '';
-        this.estadoFilter = '';
         this.fechaDesde = '';
         this.fechaHasta = '';
     },
     get hayFiltrosActivos() {
-        return this.search !== '' || this.estadoFilter !== '' || this.fechaDesde !== '' || this.fechaHasta !== '';
+        return this.search !== '' || this.fechaDesde !== '' || this.fechaHasta !== '';
     },
     filaVisible(fSolicitud, solicitanteNorm, equipoNorm) {
         if (this.search !== '' && !solicitanteNorm.includes(this.search.toLowerCase()) && !equipoNorm.includes(this.search.toLowerCase())) {
@@ -48,6 +47,16 @@
             return false;
         }
         return true;
+    },
+    registrarFila(fila) {
+        this.filasFiltrables.push(fila);
+    },
+    // Filas que pasan los filtros, calculadas sobre los mismos datos que usa cada
+    // <tr>, para poder mostrar el aviso de "sin resultados" sin mirar el DOM.
+    get filasVisibles() {
+        return this.filasFiltrables.filter(
+            (fila) => this.filaVisible(fila.fecha, fila.solicitante, fila.equipo)
+        ).length;
     }
 }" class="max-w-7xl mx-auto space-y-6">
 
@@ -135,7 +144,6 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @php $totalVisible = 0; @endphp
                     @forelse($solicitudes as $item)
                         @php
                             $id = $item['id'];
@@ -145,9 +153,18 @@
                             $eqCod = $item['equipo']['codigo'] ?? 'S/C';
                             $eqDisp = strtolower($item['equipo']['estado'] ?? 'disponible') === 'disponible';
                             $eqCat = $item['equipo']['categoria']['nombre'] ?? 'N/D';
-                            $fSol = !empty($item['fecha_solicitud']) ? date('Y-m-d', strtotime($item['fecha_solicitud'])) : date('Y-m-d');
-                            $fIni = !empty($item['fecha_inicio']) ? date('Y-m-d', strtotime($item['fecha_inicio'])) : '—';
-                            $fFin = !empty($item['fecha_devolucion_estimada']) ? date('Y-m-d', strtotime($item['fecha_devolucion_estimada'])) : '—';
+                            // El backend entrega ISO 8601 con desplazamiento (FechaNegocio) y la
+                            // app corre en UTC: hay que convertir a la zona de negocio, si no
+                            // una solicitud de las 22:00 de Bogotá aparece con el día siguiente.
+                            $fSol = !empty($item['fecha_solicitud'])
+                                ? \Illuminate\Support\Carbon::parse($item['fecha_solicitud'])->timezone('America/Bogota')->toDateString()
+                                : now()->timezone('America/Bogota')->toDateString();
+                            $fIni = !empty($item['fecha_inicio'])
+                                ? \Illuminate\Support\Carbon::parse($item['fecha_inicio'])->timezone('America/Bogota')->toDateString()
+                                : '—';
+                            $fFin = !empty($item['fecha_devolucion_estimada'])
+                                ? \Illuminate\Support\Carbon::parse($item['fecha_devolucion_estimada'])->timezone('America/Bogota')->toDateString()
+                                : '—';
                             $st = strtolower($item['estado'] ?? 'solicitado');
 
                             $itemJson = [
@@ -163,10 +180,12 @@
                             'equipo_disponibilidad' => $eqDisp ? 'Disponible' : 'No disponible',
                             'categoria' => $eqCat,
                             ];
-                            $totalVisible++;
+                            $solicitanteNorm = strtolower($solic);
+                            $equipoNorm = strtolower($eqNom).' '.strtolower($eqCod);
                         @endphp
                         <tr
-                            x-show="filaVisible(@js($fSol), @js(strtolower($solic)), @js(strtolower($eqNom) . ' ' . strtolower($eqCod)))"
+                            x-show="filaVisible(@js($fSol), @js($solicitanteNorm), @js($equipoNorm))"
+                            x-init="registrarFila({ fecha: @js($fSol), solicitante: @js($solicitanteNorm), equipo: @js($equipoNorm) })"
                             class="hover:bg-slate-50/80 transition"
                         >
                             <td class="py-3.5 px-6 font-mono text-slate-400">#{{ $id }}</td>
@@ -219,9 +238,9 @@
                         </tr>
                     @endforelse
 
-                    {{-- Fila dinámica: sin resultados por filtros --}}
+                    {{-- Fila dinámica: sin resultados por filtros (KAN-114) --}}
                     @if(count($solicitudes) > 0)
-                    <tr x-show="document.querySelectorAll('tbody tr[x-show]:not([style*=\"display: none\"])').length === 0 || ((() => { let vis = 0; document.querySelectorAll('tbody tr[x-show]').forEach(r => { if (r.style.display !== 'none') vis++; }); return vis; })()) < 1" class="hidden" x-cloak>
+                    <tr x-show="filasVisibles === 0" x-cloak>
                         <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
                             No hay solicitudes que coincidan con los filtros aplicados.
                             <button type="button" @click="limpiarFiltros()" class="ml-2 text-[#0B3D91] underline">Limpiar filtros</button>

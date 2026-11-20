@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\MessageBag;
+use Illuminate\Support\ViewErrorBag;
 use Tests\TestCase;
 
 class PrestamosHUTest extends TestCase
@@ -32,7 +34,7 @@ class PrestamosHUTest extends TestCase
     public function test_mis_prestamos_consume_endpoint_activos_con_parametro(): void
     {
         Http::fake([
-            '*/prestamos?activos=1' => Http::response([
+            '*/prestamos?activos=1*' => Http::response([
                 'data' => [
                     [
                         'id' => 10,
@@ -41,9 +43,9 @@ class PrestamosHUTest extends TestCase
                             'codigo' => 'OSC-001',
                             'categoria' => ['nombre' => 'Electrónica'],
                         ],
-                        'fecha_inicio' => '2026-11-19 08:00:00',
-                        'fecha_entrega_real' => '2026-11-19 09:30:00',
-                        'fecha_devolucion_estimada' => '2026-11-25 18:00:00',
+                        'fecha_inicio' => now()->subDays(2)->format('Y-m-d H:i:s'),
+                        'fecha_entrega_real' => now()->subDays(2)->addHour()->format('Y-m-d H:i:s'),
+                        'fecha_devolucion_estimada' => now()->addDays(5)->format('Y-m-d H:i:s'),
                         'estado' => 'entregado',
                     ],
                 ],
@@ -57,6 +59,7 @@ class PrestamosHUTest extends TestCase
         $response->assertSee('Osciloscopio Digital');
         $response->assertSee('OSC-001');
         $response->assertSee('Vigente');
+        $response->assertDontSee('Devolución vencida');
 
         // Verifica que se llamó exactamente a /prestamos?activos=1 y NO a /prestamos/activos
         Http::assertSent(fn ($request) => str_contains($request->url(), '/prestamos') &&
@@ -68,7 +71,7 @@ class PrestamosHUTest extends TestCase
     public function test_mis_prestamos_destaca_prestamos_retrasados(): void
     {
         Http::fake([
-            '*/prestamos?activos=1' => Http::response([
+            '*/prestamos?activos=1*' => Http::response([
                 'data' => [
                     [
                         'id' => 11,
@@ -77,9 +80,9 @@ class PrestamosHUTest extends TestCase
                             'codigo' => 'MUL-002',
                             'categoria' => ['nombre' => 'Electrónica'],
                         ],
-                        'fecha_inicio' => '2026-11-01 08:00:00',
-                        'fecha_entrega_real' => '2026-11-01 09:00:00',
-                        'fecha_devolucion_estimada' => '2026-11-05 18:00:00', // Pasada
+                        'fecha_inicio' => now()->subDays(10)->format('Y-m-d H:i:s'),
+                        'fecha_entrega_real' => now()->subDays(10)->addHour()->format('Y-m-d H:i:s'),
+                        'fecha_devolucion_estimada' => now()->subDays(3)->format('Y-m-d H:i:s'), // Pasada
                         'estado' => 'entregado',
                     ],
                 ],
@@ -95,10 +98,42 @@ class PrestamosHUTest extends TestCase
         $response->assertSee('Devolución vencida');
     }
 
+    public function test_mis_prestamos_no_marca_retrasado_si_aun_no_se_entrega(): void
+    {
+        // KAN-121: una solicitud con fecha estimada vencida no es una mora: nunca
+        // se entregó, así que no debe aparecer como "Retrasado".
+        Http::fake([
+            '*/prestamos?activos=1*' => Http::response([
+                'data' => [
+                    [
+                        'id' => 12,
+                        'equipo' => [
+                            'nombre' => 'Fuente de Poder',
+                            'codigo' => 'FUE-003',
+                            'categoria' => ['nombre' => 'Electrónica'],
+                        ],
+                        'fecha_inicio' => now()->subDays(10)->format('Y-m-d H:i:s'),
+                        'fecha_entrega_real' => null,
+                        'fecha_devolucion_estimada' => now()->subDays(3)->format('Y-m-d H:i:s'),
+                        'estado' => 'solicitado',
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession($this->sesionUsuario)
+            ->get('/mis-prestamos');
+
+        $response->assertOk();
+        $response->assertSee('Fuente de Poder');
+        $response->assertSee('Solicitado');
+        $response->assertDontSee('Devolución vencida');
+    }
+
     public function test_mis_prestamos_muestra_estado_vacio(): void
     {
         Http::fake([
-            '*/prestamos?activos=1' => Http::response(['data' => []], 200),
+            '*/prestamos?activos=1*' => Http::response(['data' => []], 200),
         ]);
 
         $response = $this->withSession($this->sesionUsuario)
@@ -115,7 +150,7 @@ class PrestamosHUTest extends TestCase
     public function test_solicitudes_consume_endpoint_pendientes(): void
     {
         Http::fake([
-            '*/prestamos/pendientes' => Http::response([
+            '*/prestamos/pendientes*' => Http::response([
                 'data' => [
                     [
                         'id' => 20,
@@ -138,7 +173,9 @@ class PrestamosHUTest extends TestCase
         $response->assertSee('Juan Pérez');
         $response->assertSee('Generador de Señales');
 
-        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/prestamos/pendientes'));
+        Http::assertSent(fn ($request) => str_ends_with(strtok($request->url(), '?'), '/prestamos/pendientes') &&
+            ($request['per_page'] ?? null) == 100
+        );
     }
 
     /* =========================================================================
@@ -190,5 +227,101 @@ class PrestamosHUTest extends TestCase
 
         $response->assertRedirect('/prestamos/solicitar/1');
         $response->assertSessionHasErrors(['prestamo_error']);
+    }
+
+    public function test_store_muestra_aviso_de_indisponibilidad_del_equipo(): void
+    {
+        // KAN-188: el backend reporta la indisponibilidad bajo `equipo_id`; el
+        // formulario no tiene ese input, así que se pinta en el aviso ámbar.
+        $mensaje = 'El equipo seleccionado se encuentra en mantenimiento y no está disponible para préstamo.';
+
+        Http::fake([
+            '*/prestamos' => Http::response([
+                'message' => 'Los datos proporcionados no son válidos.',
+                'errors' => ['equipo_id' => [$mensaje]],
+            ], 422),
+        ]);
+
+        $this->withSession($this->sesionUsuario)
+            ->from('/prestamos/solicitar/1')
+            ->post('/prestamos/solicitar', [
+                'equipo_id' => 1,
+                'fecha_inicio' => now()->format('Y-m-d'),
+                'fecha_devolucion' => now()->addDays(2)->format('Y-m-d'),
+                'motivo' => 'Prueba',
+            ])
+            ->assertRedirect('/prestamos/solicitar/1')
+            ->assertSessionHasErrors(['equipo_id']);
+
+        // La vista pinta ese error en el aviso de indisponibilidad.
+        $errors = (new ViewErrorBag)->put('default', new MessageBag(['equipo_id' => [$mensaje]]));
+
+        $this->view('prestamos.create', [
+            'equipo' => [
+                'id' => 1,
+                'nombre' => 'Osciloscopio Digital',
+                'codigo' => 'OSC-001',
+                'estado' => 'disponible',
+            ],
+            'errors' => $errors,
+            'usuario' => [],
+        ])
+            ->assertSee('El equipo no puede ser solicitado')
+            ->assertSee($mensaje);
+    }
+
+    public function test_create_no_confunde_un_error_de_motivo_con_indisponibilidad(): void
+    {
+        // Un mensaje con la palabra "préstamo" no debe activar el aviso de
+        // indisponibilidad del equipo (KAN-188): solo el error de `equipo_id`.
+        $errors = (new ViewErrorBag)->put('default', new MessageBag([
+            'motivo' => ['El motivo del préstamo es obligatorio.'],
+        ]));
+
+        $this->view('prestamos.create', [
+            'equipo' => [
+                'id' => 1,
+                'nombre' => 'Osciloscopio Digital',
+                'codigo' => 'OSC-001',
+                'estado' => 'disponible',
+            ],
+            'errors' => $errors,
+            'usuario' => [],
+        ])
+            ->assertSee('El motivo del préstamo es obligatorio.')
+            ->assertDontSee('El equipo no puede ser solicitado');
+    }
+
+    public function test_solicitudes_muestra_fechas_en_zona_horaria_de_bogota(): void
+    {
+        // El backend entrega ISO 8601 con desplazamiento; con APP_TIMEZONE=UTC una
+        // solicitud de las 22:30 en Bogotá debe seguir mostrando el mismo día.
+        Http::fake([
+            '*/prestamos/pendientes*' => Http::response([
+                'data' => [
+                    [
+                        'id' => 30,
+                        'solicitante' => ['name' => 'Laura Gómez', 'email' => 'laura@ecci.edu.co'],
+                        'equipo' => [
+                            'nombre' => 'Fuente de Poder',
+                            'codigo' => 'FUE-01',
+                            'estado' => 'disponible',
+                            'categoria' => ['nombre' => 'Electrónica'],
+                        ],
+                        'fecha_solicitud' => '2026-11-19T22:30:00-05:00',
+                        'fecha_inicio' => '2026-11-25T08:00:00-05:00',
+                        'fecha_devolucion_estimada' => '2026-11-28T18:00:00-05:00',
+                        'estado' => 'solicitado',
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $this->withSession($this->sesionEncargado)
+            ->get('/solicitudes')
+            ->assertOk()
+            ->assertSee('19/11/2026')
+            ->assertSee('25/11/2026')
+            ->assertSee('28/11/2026');
     }
 }

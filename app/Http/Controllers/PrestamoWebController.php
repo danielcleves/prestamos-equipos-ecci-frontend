@@ -448,7 +448,9 @@ class PrestamoWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->get($this->apiUrl().'/prestamos/pendientes');
+                // El backend pagina a 15 por defecto y la vista no tiene paginación:
+                // se pide el máximo de una página para no ocultar solicitudes.
+                ->get($this->apiUrl().'/prestamos/pendientes', ['per_page' => 100]);
         } catch (ConnectionException $e) {
             return view('prestamos.solicitudes', [
                 'solicitudes' => [],
@@ -604,7 +606,8 @@ class PrestamoWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->get($this->apiUrl().'/prestamos', ['activos' => 1]);
+                // per_page máximo: la vista no pagina y el backend pagina a 15 por defecto.
+                ->get($this->apiUrl().'/prestamos', ['activos' => 1, 'per_page' => 100]);
         } catch (ConnectionException $e) {
             return view('prestamos.mis-activos', [
                 'prestamos' => [],

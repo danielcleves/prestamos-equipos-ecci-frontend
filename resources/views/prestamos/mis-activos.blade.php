@@ -1,9 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-@php
-    $hoy = now()->timezone('America/Bogota');
-@endphp
 <div class="max-w-7xl mx-auto space-y-6">
 
     {{-- Breadcrumb y Cabecera --}}
@@ -68,14 +65,15 @@
                                 ? \Carbon\Carbon::parse($fechaDevolucionRaw)->timezone('America/Bogota')->format('d/m/Y H:i')
                                 : '—';
 
-                            // KAN-121: Detectar si está retrasado
+                            // KAN-121: solo un préstamo ya entregado puede estar retrasado;
+                            // una solicitud o un préstamo aprobado sin entregar tiene la
+                            // fecha estimada en el pasado por antigüedad, no por mora.
+                            $estado = strtolower($item['estado'] ?? '');
                             $estaRetrasado = false;
-                            if ($fechaDevolucionRaw) {
+                            if ($estado === 'entregado' && $fechaDevolucionRaw) {
                                 $devCarbon = \Carbon\Carbon::parse($fechaDevolucionRaw)->timezone('America/Bogota');
                                 $estaRetrasado = $devCarbon->isPast();
                             }
-
-                            $estado = strtolower($item['estado'] ?? '');
                         @endphp
                         <tr class="hover:bg-slate-50/80 transition {{ $estaRetrasado ? 'bg-rose-50/30' : '' }}">
                             <td class="py-3.5 px-6 font-mono text-slate-400">#{{ $item['id'] ?? '—' }}</td>
