@@ -127,6 +127,16 @@ class UxAcabadoTest extends TestCase
         $this->assertStringContainsString('Catálogo de equipos', $nodos->item(0)->textContent);
     }
 
+    public function test_configuracion_avisa_del_desplazamiento_de_la_tabla_de_restriccion(): void
+    {
+        $this->fakeVacio();
+
+        $this->withSession($this->sesionAdmin)
+            ->get('/configuracion')
+            ->assertOk()
+            ->assertSee('Desliza la tabla para cambiar el nivel de restricción.');
+    }
+
     public function test_incidencias_avisa_del_desplazamiento_y_muestra_estado_en_movil(): void
     {
         Http::fake([
