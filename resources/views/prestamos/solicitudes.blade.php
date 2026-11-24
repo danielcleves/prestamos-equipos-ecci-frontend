@@ -55,7 +55,7 @@
         this.filasFiltrables.push(fila);
     },
     // Filas que pasan los filtros, calculadas sobre los mismos datos que usa cada
-    // <tr>, para poder mostrar el aviso de "sin resultados" sin mirar el DOM.
+    // fila, para mostrar el aviso de sin resultados sin mirar el DOM.
     get filasVisibles() {
         return this.filasFiltrables.filter(
             (fila) => this.filaVisible(fila.fecha, fila.solicitante, fila.equipo)
