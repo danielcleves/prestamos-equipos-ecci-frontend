@@ -190,4 +190,33 @@ class SolicitudesGestionTest extends TestCase
             ->assertSee('x-model="fechaDesde"', false)
             ->assertSee('x-model="fechaHasta"', false);
     }
+
+    /**
+     * Regresión: un comentario JS con comillas dobles dentro de x-data cerraba el
+     * atributo antes de tiempo y el navegador mostraba el código como texto.
+     */
+    public function test_el_atributo_x_data_de_solicitudes_queda_completo(): void
+    {
+        Http::fake(['*' => Http::response(['data' => []], 200)]);
+
+        $response = $this->withSession($this->sesionEncargado)->get('/solicitudes');
+        $response->assertOk();
+
+        $dom = new \DOMDocument();
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+
+        $completo = false;
+        foreach ($xpath->query('//*[@x-data]') as $nodo) {
+            if (str_contains($nodo->getAttribute('x-data'), 'filasVisibles')) {
+                $completo = true;
+                break;
+            }
+        }
+
+        $this->assertTrue(
+            $completo,
+            'El atributo x-data de /solicitudes está truncado: revisa comillas dobles en los comentarios JS.'
+        );
+    }
 }
