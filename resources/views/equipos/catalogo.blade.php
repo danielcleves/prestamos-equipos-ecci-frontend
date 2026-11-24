@@ -36,6 +36,14 @@
         @endif
     </div>
 
+    {{-- Banner de error de carga --}}
+    @if(isset($errorConexion))
+        <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-[10px] flex items-center gap-3 shadow-sm">
+            <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            <span>{{ $errorConexion }}</span>
+        </div>
+    @endif
+
     {{-- Banner Informativo --}}
     <div class="p-4 bg-blue-50/70 border border-blue-100 text-slate-700 text-xs rounded-[10px] flex items-center gap-3 shadow-sm">
         <div class="w-8 h-8 rounded-lg bg-blue-100/70 text-[#0B3D91] flex items-center justify-center shrink-0">

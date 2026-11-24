@@ -113,9 +113,9 @@ class LoginController extends Controller
             return redirect()->route('usuarios.index');
         }
 
-        // Encargado: Gestión de préstamos
-        if ($rol === 'encargado' && Route::has('prestamos.gestion')) {
-            return redirect()->route('prestamos.gestion');
+        // Encargado: entra directo a las entregas pendientes de su módulo
+        if ($rol === 'encargado' && Route::has('prestamos.entregas')) {
+            return redirect()->route('prestamos.entregas');
         }
 
         // Estudiante / Solicitante: Catálogo de equipos

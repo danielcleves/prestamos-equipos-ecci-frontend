@@ -229,13 +229,26 @@ class PrestamoWebController extends Controller
                 ->timeout(10)
                 ->get($this->apiUrl().'/prestamos?per_page=100');
         } catch (ConnectionException $e) {
-            return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
+            return view('prestamos.entregas', [
+                'prestamos' => [],
+                'totalPendientes' => 0,
+                'errorConexion' => 'No fue posible conectar con el servicio de préstamos.',
+            ]);
         }
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
 
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        // Un 5xx no puede confundirse con "no hay entregas": se avisa del fallo.
+        if ($response->failed()) {
+            return view('prestamos.entregas', [
+                'prestamos' => [],
+                'totalPendientes' => 0,
+                'errorConexion' => $response->json('message') ?? 'No fue posible cargar las entregas pendientes.',
+            ]);
         }
 
         $todosPrestamos = $response->json('data') ?? [];
@@ -331,13 +344,30 @@ class PrestamoWebController extends Controller
                 ->timeout(10)
                 ->get($this->apiUrl().'/prestamos?per_page=100');
         } catch (ConnectionException $e) {
-            return back()->withErrors(['error' => 'No fue posible conectar con el servicio de préstamos.']);
+            return view('prestamos.devoluciones', [
+                'pendientes' => [],
+                'historial' => [],
+                'totalPendientes' => 0,
+                'totalDevueltos' => 0,
+                'errorConexion' => 'No fue posible conectar con el servicio de préstamos.',
+            ]);
         }
 
         if ($response->status() === 401) {
             session()->forget(['api_token', 'auth_token', 'user']);
 
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        // Un 5xx no puede confundirse con "no hay devoluciones": se avisa del fallo.
+        if ($response->failed()) {
+            return view('prestamos.devoluciones', [
+                'pendientes' => [],
+                'historial' => [],
+                'totalPendientes' => 0,
+                'totalDevueltos' => 0,
+                'errorConexion' => $response->json('message') ?? 'No fue posible cargar las devoluciones.',
+            ]);
         }
 
         $todos = $response->json('data') ?? [];
