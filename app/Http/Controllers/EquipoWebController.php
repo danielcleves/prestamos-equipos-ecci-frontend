@@ -162,6 +162,7 @@ class EquipoWebController extends Controller
             'nombre' => 'required|string|max:255',
             'categoria_id' => 'required|integer',
             'descripcion' => 'nullable|string',
+            'ubicacion' => 'nullable|string|max:255',
             'observaciones' => 'nullable|string',
         ]);
 
@@ -170,6 +171,7 @@ class EquipoWebController extends Controller
             'nombre' => $request->input('nombre'),
             'categoria_id' => (int) $request->input('categoria_id'),
             'descripcion' => $request->input('descripcion'),
+            'ubicacion' => $request->input('ubicacion'),
             'observaciones' => $request->input('observaciones'),
         ];
 

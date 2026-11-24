@@ -128,6 +128,10 @@
                     </button>
                 </form>
 
+                <p class="mt-5 text-center text-xs text-slate-500">
+                    ¿No tienes cuenta?
+                    <a href="{{ route('registro') }}" class="text-[#0B3D91] font-semibold hover:underline">Crear cuenta</a>
+                </p>
             </section>
         </main>
 

@@ -120,4 +120,36 @@ class RegistroEquipoTest extends TestCase
             ->patch(route('equipos.updateEstado', 1), ['estado' => 'inventado'])
             ->assertSessionHasErrors(['estado']);
     }
+
+    public function test_admin_puede_registrar_equipo_con_ubicacion_opcional(): void
+    {
+        $apiUrl = config('services.backend.url');
+
+        Http::fake([
+            "{$apiUrl}/equipos" => Http::response([
+                'data' => [
+                    'id' => 11,
+                    'codigo' => 'CP-UBI-01',
+                    'nombre' => 'Portátil con ubicación',
+                    'categoria_id' => 1,
+                    'ubicacion' => 'Bodega principal',
+                    'estado' => 'disponible',
+                ],
+            ], 201),
+        ]);
+
+        $this->withSession($this->authHeaders('admin'))
+            ->post(route('equipos.store'), [
+                'codigo' => 'CP-UBI-01',
+                'nombre' => 'Portátil con ubicación',
+                'categoria_id' => 1,
+                'ubicacion' => 'Bodega principal',
+            ])
+            ->assertRedirect(route('equipos.index'))
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn ($request) => $request->method() === 'POST' &&
+            str_ends_with($request->url(), '/equipos') &&
+            $request['ubicacion'] === 'Bodega principal');
+    }
 }

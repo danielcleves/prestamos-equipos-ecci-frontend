@@ -14,7 +14,7 @@
         categoria: '',
         estado: 'disponible',
         estado_crudo: 'disponible',
-        ubicacion: 'Sala A - Bodega 1',
+        ubicacion: '',
         descripcion: '',
         observaciones: ''
     },
@@ -185,7 +185,7 @@
                                 'dado_de_baja' => 'Dado de baja',
                             };
 
-                            $ubicacion = $equipo['ubicacion'] ?? 'Sala A - Bodega 1';
+                            $ubicacion = $equipo['ubicacion'] ?? 'No registrada';
                             $descripcion = $equipo['descripcion'] ?? '';
                             $observaciones = $equipo['observaciones'] ?? '';
 
@@ -303,7 +303,7 @@
                     </div>
                     <div>
                         <span class="text-slate-400 block font-medium">Ubicación asignada</span>
-                        <span class="text-slate-800" x-text="selectedEquipo.ubicacion"></span>
+                        <span class="text-slate-800" x-text="selectedEquipo.ubicacion || 'No registrada'"></span>
                     </div>
                 </div>
 
