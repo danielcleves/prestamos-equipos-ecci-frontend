@@ -73,7 +73,7 @@
             request()->routeIs('incidencias.*') => 'Incidencias',
             request()->routeIs('usuarios.*') => 'Usuarios',
             request()->routeIs('configuracion.*') => 'Configuración',
-            request()->routeIs('equipos.*') => 'Equipos',
+            request()->routeIs('equipos.*') => $esAdmin ? 'Equipos' : 'Catálogo de equipos',
             default => $title ?? 'Gestión de equipos',
         };
 
