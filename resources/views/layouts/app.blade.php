@@ -117,12 +117,6 @@
                                 <span>Catálogo de equipos</span>
                             </a>
 
-                            {{-- Mis solicitudes --}}
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-200 hover:bg-white/10 hover:text-white transition">
-                                <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                <span>Mis solicitudes</span>
-                            </a>
-
                             {{-- Mis préstamos vigentes (HU-10 / KAN-120) --}}
                             <a href="{{ route('prestamos.mis-activos') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('prestamos.mis-activos') ? 'bg-white/15 text-white font-semibold shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }} transition">
                                 <svg class="w-4 h-4 {{ request()->routeIs('prestamos.mis-activos') ? 'text-white' : 'text-blue-300' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
