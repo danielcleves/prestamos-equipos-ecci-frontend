@@ -151,6 +151,12 @@
                                 <span>Devoluciones</span>
                             </a>
 
+                            {{-- Incidencias (RN-08) --}}
+                            <a href="{{ route('incidencias.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('incidencias.*') ? 'bg-white/15 text-white font-semibold shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }} transition">
+                                <svg class="w-4 h-4 {{ request()->routeIs('incidencias.*') ? 'text-white' : 'text-blue-300' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                                <span>Incidencias</span>
+                            </a>
+
                             {{-- Solicitudes --}}
                             <a href="{{ route('prestamos.solicitudes') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-200 hover:bg-white/10 hover:text-white transition">
                                 <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>

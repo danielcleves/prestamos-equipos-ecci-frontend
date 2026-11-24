@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ConfiguracionWebController;
 use App\Http\Controllers\EquipoWebController;
+use App\Http\Controllers\IncidenciaWebController;
 use App\Http\Controllers\PrestamoWebController;
 use App\Http\Controllers\UsuarioWebController;
 use Illuminate\Support\Facades\Route;
@@ -62,6 +63,10 @@ Route::post('/prestamos/{id}/entrega', [PrestamoWebController::class, 'registrar
 // Devolución de equipos (HU-11 / personal autorizado)
 Route::get('/devoluciones', [PrestamoWebController::class, 'devolucionesIndex'])->name('prestamos.devoluciones');
 Route::post('/prestamos/{id}/devolucion', [PrestamoWebController::class, 'registrarDevolucion'])->name('prestamos.registrarDevolucion');
+
+// Incidencias por daños (RN-08 / personal autorizado)
+Route::get('/incidencias', [IncidenciaWebController::class, 'index'])->name('incidencias.index');
+Route::patch('/incidencias/{id}/cerrar', [IncidenciaWebController::class, 'cerrar'])->name('incidencias.cerrar');
 
 // Gestión y detalle de solicitudes (HU-08 / personal autorizado)
 Route::get('/solicitudes', [PrestamoWebController::class, 'solicitudesIndex'])->name('prestamos.solicitudes');
