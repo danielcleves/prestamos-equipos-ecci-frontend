@@ -260,13 +260,16 @@
         </div>
 
         <div class="overflow-x-auto">
+            <div class="md:hidden px-4 py-2 text-[11px] text-slate-400 bg-slate-50/60 border-b border-slate-100">
+                Desliza la tabla para cambiar el nivel de restricción.
+            </div>
             <table class="w-full text-left border-collapse text-xs">
                 <thead>
                     <tr class="border-b border-[#D9DEE7] text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
                         <th class="py-3 px-6">Categoría</th>
                         <th class="py-3 px-6">Nivel actual</th>
                         <th class="py-3 px-6">Nuevo nivel</th>
-                        <th class="py-3 px-6 text-right">Acción</th>
+                        <th class="py-3 px-6 text-right sticky right-0 bg-slate-50/70">Acción</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -293,7 +296,7 @@
                                     </select>
                                 </form>
                             </td>
-                            <td class="py-3.5 px-6 text-right">
+                            <td class="py-3.5 px-6 text-right sticky right-0 bg-white">
                                 <button type="submit" form="restriccion-{{ $categoria['id'] }}" class="h-9 px-3.5 bg-slate-100 hover:bg-[#0B3D91] hover:text-white text-slate-700 text-xs font-semibold rounded-[10px] transition">
                                     Actualizar
                                 </button>
