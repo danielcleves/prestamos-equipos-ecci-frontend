@@ -48,6 +48,13 @@
         </div>
     @endif
 
+    @if(isset($errorConexion))
+        <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl flex items-center gap-2 shadow-sm">
+            <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            <span>{{ $errorConexion }}</span>
+        </div>
+    @endif
+
     {{-- Tarjetas de Métricas Superiores (Mockup HU-11) --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
         {{-- Tarjeta 1: Pendientes de devolución --}}

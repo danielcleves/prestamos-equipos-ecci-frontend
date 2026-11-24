@@ -46,12 +46,16 @@ class UsuarioWebController extends Controller
         $roles = $user['roles'] ?? [];
 
         if (is_array($roles[0] ?? null)) {
-            $rol = $roles[0]['name'] ?? null;
+            $nombresRoles = array_column($roles, 'name');
         } else {
-            $rol = $roles[0] ?? $user['role'] ?? $user['rol'] ?? null;
+            $nombresRoles = is_array($roles) ? $roles : [];
         }
 
-        return $rol === 'admin';
+        if (empty($nombresRoles)) {
+            $nombresRoles = array_filter([$user['role'] ?? $user['rol'] ?? null]);
+        }
+
+        return in_array('admin', $nombresRoles, true);
     }
 
     /**

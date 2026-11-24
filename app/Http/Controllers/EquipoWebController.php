@@ -29,13 +29,17 @@ class EquipoWebController extends Controller
             return redirect()->route('login');
         }
 
+        $esAdmin = $this->esAdmin();
+        // Captura el modo de vista (?vista=catalogo) para alternar entre catálogo (HU-05) y gestión (HU-04)
+        $vistaModo = is_string($request->query('vista')) ? $request->query('vista') : null;
+
         try {
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
                 ->get($this->apiUrl().'/equipos?per_page=100');
         } catch (ConnectionException $e) {
-            return back()->withErrors(['index_error' => 'No fue posible conectar con el inventario de equipos.']);
+            return $this->renderVista($esAdmin, $vistaModo, [], 'No fue posible conectar con el inventario de equipos.');
         }
 
         if ($response->status() === 401) {
@@ -44,12 +48,26 @@ class EquipoWebController extends Controller
             return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró, vuelve a iniciar sesión.']);
         }
 
-        $equipos = $response->json('data') ?? [];
-        $esAdmin = $this->esAdmin();
-        // Captura el modo de vista (?vista=catalogo) para alternar entre catálogo (HU-05) y gestión (HU-04)
-        $vistaModo = $request->query('vista');
+        // Un 5xx no puede confundirse con un inventario vacío.
+        if ($response->failed()) {
+            return $this->renderVista(
+                $esAdmin,
+                $vistaModo,
+                [],
+                $response->json('message') ?? 'No fue posible cargar el inventario de equipos.',
+            );
+        }
 
-        // Métricas calculadas para las tarjetas superiores (HU-04)
+        return $this->renderVista($esAdmin, $vistaModo, $response->json('data') ?? []);
+    }
+
+    /**
+     * Pinta la vista que corresponde al rol y calcula las métricas de las tarjetas.
+     *
+     * @param  array<int, array<string, mixed>>  $equipos
+     */
+    private function renderVista(bool $esAdmin, ?string $vistaModo, array $equipos, ?string $errorConexion = null)
+    {
         $metricas = [
             'disponibles' => 0,
             'prestados' => 0,
@@ -67,13 +85,14 @@ class EquipoWebController extends Controller
                 $metricas['mantenimiento']++;
             }
         }
+
         // Si es administrador HU04
         if ($esAdmin && $vistaModo !== 'catalogo') {
-            return view('equipos.index', compact('equipos', 'esAdmin', 'metricas'));
+            return view('equipos.index', compact('equipos', 'esAdmin', 'metricas', 'errorConexion'));
         }
 
         // si es solicitante HU05
-        return view('equipos.catalogo', compact('equipos', 'esAdmin', 'metricas'));
+        return view('equipos.catalogo', compact('equipos', 'esAdmin', 'metricas', 'errorConexion'));
     }
 
     /**
@@ -99,12 +118,16 @@ class EquipoWebController extends Controller
         $roles = $user['roles'] ?? [];
 
         if (is_array($roles[0] ?? null)) {
-            $rol = $roles[0]['name'] ?? null;
+            $nombresRoles = array_column($roles, 'name');
         } else {
-            $rol = $roles[0] ?? $user['role'] ?? $user['rol'] ?? null;
+            $nombresRoles = is_array($roles) ? $roles : [];
         }
 
-        return $rol === 'admin';
+        if (empty($nombresRoles)) {
+            $nombresRoles = array_filter([$user['role'] ?? $user['rol'] ?? null]);
+        }
+
+        return in_array('admin', $nombresRoles, true);
     }
 
     /**

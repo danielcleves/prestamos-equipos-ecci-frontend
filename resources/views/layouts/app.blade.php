@@ -42,12 +42,26 @@
     @php
         $user = session('user') ?? [];
         $roles = $user['roles'] ?? [];
-        $rolNombre = is_array($roles[0] ?? null) ? ($roles[0]['name'] ?? null) : ($roles[0] ?? $user['role'] ?? $user['rol'] ?? null);
-        $esAdmin = ($rolNombre === 'admin');
-        
+
+        if (is_array($roles[0] ?? null)) {
+            $nombresRoles = array_column($roles, 'name');
+        } else {
+            $nombresRoles = is_array($roles) ? $roles : [];
+        }
+
+        if (empty($nombresRoles)) {
+            $nombresRoles = array_filter([$user['role'] ?? $user['rol'] ?? null]);
+        }
+
+        $esAdmin = in_array('admin', $nombresRoles, true);
+        $esEncargado = in_array('encargado', $nombresRoles, true);
+        $esPersonal = $esAdmin || $esEncargado;
+
         $vistaCatalogo = request()->query('vista') === 'catalogo' || request()->routeIs('catalogo.*');
         $esRutaEquipos = request()->routeIs('equipos.*');
-        $modoAdminSidebar = $esAdmin && !$vistaCatalogo;
+        // El modo "ver catálogo como solicitante" solo aplica al admin; el
+        // encargado conserva su menú de personal aunque esté en el catálogo.
+        $modoAdminSidebar = $esPersonal && !($esAdmin && $vistaCatalogo);
     @endphp
 
     {{-- Sidebar Lateral --}}
@@ -69,11 +83,11 @@
                     </div>
                 </div>
 
-                {{-- Badge de Rol: Solicitante o Administrador --}}
+                {{-- Badge de Rol: Solicitante, Encargado o Administrador --}}
                 <div class="mt-4">
                     @if($modoAdminSidebar)
                         <span class="inline-block px-2.5 py-1 bg-blue-500/20 border border-blue-400/30 rounded-md text-[11px] font-semibold text-blue-200">
-                            Administrador
+                            {{ $esAdmin ? 'Administrador' : 'Encargado' }}
                         </span>
                     @else
                         <span class="inline-block px-2.5 py-1 bg-white/10 border border-white/15 rounded-md text-[11px] font-medium text-blue-100">
@@ -116,12 +130,20 @@
                             </a>
 
                         @else
-                        {{-- MODO ADMINISTRADOR (HU-04) --}}
-                            {{-- Gestión Equipos --}}
-                            <a href="{{ route('equipos.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ $esRutaEquipos && !$vistaCatalogo ? 'bg-white/15 text-white font-semibold shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }} transition">
-                                <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                                <span>Equipos</span>
-                            </a>
+                        {{-- MODO PERSONAL: administrador o encargado --}}
+                            @if($esAdmin)
+                                {{-- Gestión Equipos (solo administrador) --}}
+                                <a href="{{ route('equipos.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ $esRutaEquipos && !$vistaCatalogo ? 'bg-white/15 text-white font-semibold shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }} transition">
+                                    <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                    <span>Equipos</span>
+                                </a>
+                            @else
+                                {{-- Catálogo de equipos (encargado) --}}
+                                <a href="{{ route('equipos.index', ['vista' => 'catalogo']) }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ $vistaCatalogo || $esRutaEquipos ? 'bg-white/15 text-white font-semibold shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }} transition">
+                                    <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                                    <span>Catálogo de equipos</span>
+                                </a>
+                            @endif
 
                             {{-- Préstamos Pendientes --}}
                             <a href="{{ route('prestamos.entregas') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-200 hover:bg-white/10 hover:text-white transition">
@@ -141,6 +163,7 @@
                                 <span>Solicitudes</span>
                             </a>
 
+                            @if($esAdmin)
                             {{-- Usuarios --}}
                             <a href="{{ route('usuarios.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('usuarios.*') ? 'bg-white/15 text-white font-semibold shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }} transition">
                                 <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -152,6 +175,7 @@
                                 <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                                 <span>Reportes</span>
                             </a>
+                            @endif
                         @endif
 
                     </nav>
