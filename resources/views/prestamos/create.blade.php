@@ -9,6 +9,12 @@
     $descripcion = $equipo['descripcion'] ?? 'Sin descripción detallada.';
     $usuario = session('user') ?? [];
 
+    // RN-06: límite que expone el detalle del equipo; 7 días si no viene.
+    $maxDias = (int) ($duracionMaxima ?? ($equipo['duracion_maxima_dias'] ?? 7));
+    if ($maxDias < 1) {
+        $maxDias = 7;
+    }
+
     // KAN-195: Mapear errores del backend a campos del formulario.
     // MessageBag::first() devuelve '' (no null) cuando la clave no existe, así que
     // el respaldo a la variante *_estimada necesita ?: y no ??.
@@ -23,8 +29,17 @@
         'disponibilidad'   => $errors->first('equipo_id'),
     ];
 
+    // RN-01/RN-02/RN-04: el backend rechaza por elegibilidad (sanción activa,
+    // cupo superado, préstamo vencido, capacitación o restricción de categoría)
+    // bajo `usuario_id`. Se muestran todos los motivos.
+    $motivosElegibilidad = array_values(array_filter(array_merge(
+        $errors->get('elegibilidad'),
+        $errors->get('usuario_id'),
+        $errors->get('user_id'),
+    )));
+
     // Mensajes que no se muestran en ningún campo: se listan en el bloque general.
-    $mensajesMostrados = array_filter($erroresCampo);
+    $mensajesMostrados = array_merge(array_filter($erroresCampo), $motivosElegibilidad);
     $erroresGenerales = array_values(array_filter(
         $errors->all(),
         fn (string $mensaje) => ! in_array($mensaje, $mensajesMostrados, true)
@@ -40,6 +55,7 @@
     errorFechaDevolucion: '',
     errorMotivo: '',
     hoy: '{{ date('Y-m-d') }}',
+    maxDias: {{ $maxDias }},
     get minDevolucion() {
         if (!this.fechaInicio) return '';
         const d = new Date(this.fechaInicio + 'T00:00:00');
@@ -49,7 +65,7 @@
     get maxDevolucion() {
         if (!this.fechaInicio) return '';
         const d = new Date(this.fechaInicio + 'T00:00:00');
-        d.setDate(d.getDate() + 7);
+        d.setDate(d.getDate() + this.maxDias);
         return d.toISOString().slice(0, 10);
     },
     get duracionDias() {
@@ -91,7 +107,7 @@
             return false;
         }
         if (this.maxDevolucion && this.fechaDevolucion > this.maxDevolucion) {
-            this.errorFechaDevolucion = 'La fecha de devolución no puede superar los 7 días posteriores a la fecha de inicio.';
+            this.errorFechaDevolucion = 'La fecha de devolución no puede superar los ' + this.maxDias + ' días posteriores a la fecha de inicio.';
             return false;
         }
         this.errorFechaDevolucion = '';
@@ -136,6 +152,19 @@
         </div>
     @endif
 
+    {{-- RN-01/RN-02/RN-04: rechazo por elegibilidad (sanción, cupo, capacitación,
+         préstamo vencido o categoría restringida) --}}
+    @if($motivosElegibilidad !== [])
+        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl space-y-1 shadow-sm">
+            <p class="font-bold">No puedes solicitar este equipo todavía:</p>
+            <ul class="list-disc pl-5 space-y-0.5">
+                @foreach ($motivosElegibilidad as $motivo)
+                    <li>{{ $motivo }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     {{-- KAN-195: Mensajes de error de validación por campo --}}
     @if($erroresCampo['prestamo_error'])
         <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl space-y-1">
@@ -159,6 +188,8 @@
     <form action="{{ route('prestamos.store') }}" method="POST" @submit="validarYEnviar($event)">
         @csrf
         <input type="hidden" name="equipo_id" value="{{ $equipoId }}">
+        {{-- RN-06: el backend confirma el límite con la categoría y el rol --}}
+        <input type="hidden" name="duracion_maxima_dias" value="{{ $maxDias }}">
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
@@ -308,6 +339,11 @@
                         <div class="flex justify-between items-center text-slate-600">
                             <span class="text-slate-400">Duración</span>
                             <span class="font-medium text-slate-800" x-text="duracionDias"></span>
+                        </div>
+
+                        <div class="flex justify-between items-center text-slate-600">
+                            <span class="text-slate-400">Máximo permitido</span>
+                            <span class="font-medium text-slate-800" x-text="maxDias + (maxDias === 1 ? ' día' : ' días')"></span>
                         </div>
 
                         <div class="flex justify-between items-center pt-2.5 border-t border-slate-100">

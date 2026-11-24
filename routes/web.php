@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ConfiguracionWebController;
 use App\Http\Controllers\EquipoWebController;
 use App\Http\Controllers\PrestamoWebController;
 use App\Http\Controllers\UsuarioWebController;
@@ -38,6 +39,12 @@ Route::patch('/usuarios/{id}/{accion}', [UsuarioWebController::class, 'toggleSta
     ->whereIn('accion', ['activar', 'desactivar'])
     ->name('usuarios.toggle');
 
+// Iteración 2: parámetros de las reglas de negocio (exclusivo administrador)
+Route::get('/configuracion', [ConfiguracionWebController::class, 'index'])->name('configuracion.index');
+Route::put('/configuracion', [ConfiguracionWebController::class, 'update'])->name('configuracion.update');
+Route::patch('/categorias/{id}/restriccion', [ConfiguracionWebController::class, 'actualizarRestriccion'])
+    ->name('categorias.restriccion');
+
 // HU-03/HU-05: Catálogo y gestión de equipos
 Route::get('/equipos', [EquipoWebController::class, 'index'])->name('equipos.index');
 Route::get('/equipos/crear', [EquipoWebController::class, 'create'])->name('equipos.create');
@@ -59,6 +66,7 @@ Route::post('/prestamos/{id}/devolucion', [PrestamoWebController::class, 'regist
 // Gestión y detalle de solicitudes (HU-08 / personal autorizado)
 Route::get('/solicitudes', [PrestamoWebController::class, 'solicitudesIndex'])->name('prestamos.solicitudes');
 Route::patch('/prestamos/{id}/aprobar', [PrestamoWebController::class, 'aprobarSolicitud'])->name('prestamos.aprobar');
+Route::patch('/prestamos/{id}/autorizar', [PrestamoWebController::class, 'autorizarSolicitud'])->name('prestamos.autorizar');
 Route::patch('/prestamos/{id}/rechazar', [PrestamoWebController::class, 'rechazarSolicitud'])->name('prestamos.rechazar');
 
 // Mis préstamos vigentes - vista del solicitante (HU-10 / KAN-120)

@@ -94,7 +94,14 @@ class PrestamoWebController extends Controller
 
         $usuario = session('user') ?? [];
 
-        return view('prestamos.create', compact('equipo', 'usuario'));
+        // RN-06: el detalle del equipo expone la duración máxima ya calculada
+        // (días por categoría + días extra del rol). Si no viene, se mantiene 7.
+        $duracionMaxima = (int) ($equipo['duracion_maxima_dias'] ?? 7);
+        if ($duracionMaxima < 1) {
+            $duracionMaxima = 7;
+        }
+
+        return view('prestamos.create', compact('equipo', 'usuario', 'duracionMaxima'));
     }
 
     /**
@@ -107,8 +114,13 @@ class PrestamoWebController extends Controller
             return redirect()->route('login');
         }
 
-        // Duración máxima permitida por el backend (StorePrestamoRequest usa config('prestamos.duracion_maxima_dias', 7))
-        $maxDias = 7;
+        // RF-06/RN-06: el formulario envía la duración máxima del equipo
+        // (`duracion_maxima_dias`); si no llega, se conserva el límite de 7 días.
+        // El backend valida de nuevo contra la categoría y el rol del usuario.
+        $maxDias = (int) $request->input('duracion_maxima_dias', 7);
+        if ($maxDias < 1 || $maxDias > 365) {
+            $maxDias = 7;
+        }
 
         $request->validate([
             'equipo_id' => 'required|integer',
@@ -195,6 +207,18 @@ class PrestamoWebController extends Controller
             ];
 
             foreach ($errores as $campo => $msgs) {
+                // RN-01/RN-02/RN-04: el backend identifica los rechazos por
+                // elegibilidad bajo `usuario_id` (sanción activa, cupo, préstamo
+                // vencido, capacitación, restricción de categoría).
+                if (in_array($campo, ['usuario_id', 'user_id'], true)) {
+                    $erroresMapeados['elegibilidad'] = array_values(array_map(
+                        fn ($m) => is_array($m) ? ($m[0] ?? '') : (string) $m,
+                        (array) $msgs
+                    ));
+
+                    continue;
+                }
+
                 $destino = $campoPresentacion[$campo] ?? 'prestamo_error';
                 $primerMensaje = is_array($msgs) ? ($msgs[0] ?? '') : $msgs;
                 $erroresMapeados[$destino] = $primerMensaje;
@@ -455,9 +479,20 @@ class PrestamoWebController extends Controller
             return back()->withErrors($mensajesAplanados ?: ['error' => $errorMsg]);
         }
 
-        $mensajeExito = ($condicion === 'bueno')
-            ? '¡Devolución registrada con éxito! El equipo ha regresado al estado "Disponible".'
-            : '¡Devolución registrada con éxito! Debido a la condición reportada, el equipo ha pasado a "En mantenimiento".';
+        // RN-08: si la condición no es «bueno», el backend abre una incidencia y
+        // restringe el equipo. El aviso lo confirma explícitamente al encargado.
+        if ($condicion === 'bueno') {
+            $mensajeExito = '¡Devolución registrada con éxito! El equipo ha regresado al estado "Disponible".';
+        } else {
+            $incidencia = $response->json('data.incidencia') ?? $response->json('incidencia');
+            $restriccion = is_array($incidencia) ? ($incidencia['restringe_hasta'] ?? null) : null;
+
+            $mensajeExito = '¡Devolución registrada con éxito! Debido a la condición reportada, el equipo ha pasado a "En mantenimiento" y se abrió una incidencia (RN-08) que restringe su uso.';
+
+            if (! empty($restriccion)) {
+                $mensajeExito .= ' Restringido hasta el '.Carbon::parse($restriccion)->timezone('America/Bogota')->format('d/m/Y H:i').'.';
+            }
+        }
 
         return redirect()->route('prestamos.devoluciones')->with('success', $mensajeExito);
     }
@@ -524,6 +559,13 @@ class PrestamoWebController extends Controller
             return $redirigido;
         }
 
+        // RN-03: una solicitud restringida no se aprueba mientras no esté autorizada.
+        if ($request->boolean('requiere_autorizacion') && ! $request->boolean('autorizado')) {
+            return back()->withErrors([
+                'autorizacion' => 'La solicitud #'.$id.' requiere autorización especial. Usa el botón «Autorizar» antes de aprobarla.',
+            ]);
+        }
+
         $token = $this->getToken();
 
         try {
@@ -561,6 +603,55 @@ class PrestamoWebController extends Controller
 
         return redirect()->route('prestamos.solicitudes')
             ->with('success', '¡Solicitud #'.$id.' aprobada exitosamente! Ahora se encuentra lista para entrega física.');
+    }
+
+    /**
+     * Autoriza una solicitud restringida (RN-03).
+     * Contrato del backend: POST /api/prestamos/{prestamo}/autorizacion (sin body).
+     */
+    public function autorizarSolicitud(Request $request, string $id): RedirectResponse
+    {
+        if ($redirigido = $this->guardiaPersonalAutorizado()) {
+            return $redirigido;
+        }
+
+        $token = $this->getToken();
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->post($this->apiUrl()."/prestamos/{$id}/autorizacion");
+        } catch (ConnectionException $e) {
+            return back()->withErrors(['error' => 'No fue posible conectar con el backend.']);
+        }
+
+        if ($response->status() === 401) {
+            session()->forget(['api_token', 'auth_token', 'user']);
+
+            return redirect()->route('login')->withErrors(['email' => 'Tu sesión expiró. Inicia sesión nuevamente.']);
+        }
+
+        if ($response->status() === 403) {
+            return back()->withErrors(['error' => 'No tienes permisos para autorizar solicitudes.']);
+        }
+
+        if ($response->failed()) {
+            $msg = $response->json('message') ?? 'No se pudo autorizar la solicitud.';
+            $errores = $response->json('errors') ?? [];
+
+            $mensajesAplanados = [];
+            foreach ($errores as $msgs) {
+                foreach ((array) $msgs as $m) {
+                    $mensajesAplanados[] = $m;
+                }
+            }
+
+            return back()->withErrors($mensajesAplanados ?: ['error' => $msg]);
+        }
+
+        return redirect()->route('prestamos.solicitudes')
+            ->with('success', 'La solicitud #'.$id.' fue autorizada. Ya puede aprobarse.');
     }
 
     /**
