@@ -224,6 +224,21 @@
             </div>
         </div>
 
+        {{-- Registro de solicitantes --}}
+        <div class="bg-white p-6 rounded-xl border border-[#D9DEE7] shadow-sm space-y-4">
+            <div>
+                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Registro de solicitantes</h3>
+                <p class="text-[11px] text-slate-400 mt-0.5">Correos o dominios autorizados para crear una cuenta. El registro asigna siempre el rol Solicitante.</p>
+            </div>
+            <textarea
+                name="correos_permitidos"
+                rows="4"
+                placeholder="@ecci.edu.co&#10;docente@otra-universidad.edu.co"
+                class="w-full p-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700 font-mono"
+            >{{ implode("\n", $parametros['registro.correos_permitidos']) }}</textarea>
+            <p class="text-[11px] text-slate-400">Uno por línea. Usa <code>@ecci.edu.co</code> para todo un dominio o un correo completo para una persona. Si se vacía, se conserva la lista actual.</p>
+        </div>
+
         {{-- RN-01: elegibilidad --}}
         <div class="bg-white p-6 rounded-xl border border-[#D9DEE7] shadow-sm space-y-4">
             <div>

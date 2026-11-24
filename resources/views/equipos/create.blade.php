@@ -132,12 +132,13 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Ubicación</label>
-                            <input 
-                                type="text" 
-                                placeholder="Ej. Bodega Principal" 
-                                disabled
-                                class="w-full h-12 px-3 text-xs bg-slate-50 border border-[#D9DEE7] rounded-[10px] text-slate-400 cursor-not-allowed"
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Ubicación <span class="text-slate-400 font-normal">(opcional)</span></label>
+                            <input
+                                type="text"
+                                name="ubicacion"
+                                value="{{ old('ubicacion') }}"
+                                placeholder="Ej. Bodega Principal"
+                                class="w-full h-12 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]"
                             >
                             <p class="text-[11px] text-slate-400 mt-1">Sala, bodega o lugar de almacenamiento</p>
                         </div>

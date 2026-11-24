@@ -63,6 +63,7 @@ class ConfiguracionReglasTest extends TestCase
             'mora_dias_bloqueo' => 2,
             'danos_dias_restriccion' => 5,
             'requiere_capacitacion' => '1',
+            'correos_permitidos' => "@ecci.edu.co\ndocente@otro.edu.co",
         ], $sobrescribir);
     }
 
@@ -87,6 +88,9 @@ class ConfiguracionReglasTest extends TestCase
         $response->assertSee('name="danos_dias_restriccion"', false);
         // Elegibilidad (RN-01)
         $response->assertSee('name="requiere_capacitacion"', false);
+        // Registro de solicitantes
+        $response->assertSee('name="correos_permitidos"', false);
+        $response->assertSee('@ecci.edu.co');
         // Restricción por categoría (RN-03)
         $response->assertSee('1 · Requiere autorización adicional');
         $response->assertSee('2 · Solo personal administrativo');
@@ -187,7 +191,8 @@ class ConfiguracionReglasTest extends TestCase
                 && $request['mora.escala'][1]['hasta'] === null
                 && $request['mora.dias_bloqueo'] === 2
                 && $request['danos.dias_restriccion'] === 5
-                && $request['elegibilidad.requiere_capacitacion'] === true;
+                && $request['elegibilidad.requiere_capacitacion'] === true
+                && $request['registro.correos_permitidos'] === ['@ecci.edu.co', 'docente@otro.edu.co'];
         });
     }
 

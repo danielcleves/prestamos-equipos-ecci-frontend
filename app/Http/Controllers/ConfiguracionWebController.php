@@ -33,6 +33,7 @@ class ConfiguracionWebController extends Controller
         'mora.dias_bloqueo' => 1,
         'danos.dias_restriccion' => 7,
         'elegibilidad.requiere_capacitacion' => false,
+        'registro.correos_permitidos' => ['@ecci.edu.co'],
     ];
 
     /** Nombres conocidos de las categorías del inventario (las crea el admin en Equipos). */
@@ -150,6 +151,7 @@ class ConfiguracionWebController extends Controller
             'mora_dias_bloqueo' => ['required', 'integer', 'min:0', 'max:365'],
             'danos_dias_restriccion' => ['required', 'integer', 'min:0', 'max:365'],
             'requiere_capacitacion' => ['nullable', 'boolean'],
+            'correos_permitidos' => ['nullable', 'string'],
         ], [
             'cupos.required' => 'Debes indicar el cupo de cada rol.',
             'cupos.*.required' => 'Todos los cupos por rol son obligatorios.',
@@ -184,6 +186,23 @@ class ConfiguracionWebController extends Controller
             'danos.dias_restriccion' => (int) $datos['danos_dias_restriccion'],
             'elegibilidad.requiere_capacitacion' => $request->boolean('requiere_capacitacion'),
         ];
+
+        if ($request->filled('correos_permitidos')) {
+            $correos = collect(preg_split('/[\r\n,]+/', (string) $request->input('correos_permitidos')))
+                ->map(fn ($correo) => strtolower(trim($correo)))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($correos === []) {
+                throw ValidationException::withMessages([
+                    'correos_permitidos' => 'Debes autorizar al menos un correo o dominio para el registro.',
+                ]);
+            }
+
+            $parametros['registro.correos_permitidos'] = $correos;
+        }
 
         $token = $this->getToken();
 
@@ -397,6 +416,13 @@ class ConfiguracionWebController extends Controller
                 $planos['elegibilidad.requiere_capacitacion'],
                 FILTER_VALIDATE_BOOLEAN
             );
+        }
+
+        if (is_array($planos['registro.correos_permitidos'] ?? null)) {
+            $parametros['registro.correos_permitidos'] = array_values(array_filter(
+                $planos['registro.correos_permitidos'],
+                fn ($correo) => is_string($correo) && trim($correo) !== ''
+            ));
         }
 
         return $parametros;

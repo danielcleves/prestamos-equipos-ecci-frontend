@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegistroController;
 use App\Http\Controllers\ConfiguracionWebController;
 use App\Http\Controllers\EquipoWebController;
 use App\Http\Controllers\IncidenciaWebController;
@@ -21,6 +22,10 @@ Route::get('/', function () {
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// Auto-registro de solicitantes (correo autorizado en configuración)
+Route::get('/registro', [RegistroController::class, 'show'])->name('registro');
+Route::post('/registro', [RegistroController::class, 'store'])->name('registro.store');
 
 // Rutas autenticadas (el grupo `web` ya viene aplicado por defecto a routes/web.php)
 // Landing por rol (inicio de cada usuario autenticado)
