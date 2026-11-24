@@ -52,8 +52,8 @@ class NavegacionPorRolTest extends TestCase
             ->assertOk()
             ->assertSee('Solicitante')
             ->assertSee('Catálogo de equipos')
-            ->assertSee('Mis solicitudes')
             ->assertSee('Mis préstamos')
+            ->assertDontSee('Mis solicitudes')
             ->assertDontSee('Usuarios');
     }
 
