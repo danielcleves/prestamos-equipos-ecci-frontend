@@ -118,7 +118,7 @@
                             <input type="checkbox" name="remember" class="rounded text-[#0B3D91] focus:ring-[#0B3D91]">
                             <span>Recordarme</span>
                         </label>
-                        <a href="#" class="text-[#0B3D91] hover:text-[#1D5FD0] hover:underline">¿Olvidaste tu contraseña?</a>
+                        <span class="text-[#6B7280]">Solicita el restablecimiento al administrador.</span>
                     </div>
 
                     <button
@@ -128,17 +128,6 @@
                     </button>
                 </form>
 
-                {{-- Demo Access helper según el Mockup: VISIBLE ÚNICAMENTE EN LOCAL --}}
-                @if (app()->environment('local'))
-                    <div class="mt-6 pt-4 border-t border-slate-100">
-                        <p class="text-[10px] text-center text-slate-400 mb-2">Credenciales demo de prueba (Solo Local)</p>
-                        <div class="grid grid-cols-3 gap-2 text-[10px] text-center font-mono text-[#6B7280] bg-slate-50 p-2 rounded-lg border border-slate-100">
-                            <div><span class="text-slate-400">Est:</span> est123</div>
-                            <div><span class="text-slate-400">Doc:</span> doc123</div>
-                            <div><span class="text-slate-400">Adm:</span> admin123</div>
-                        </div>
-                    </div>
-                @endif
             </section>
         </main>
 

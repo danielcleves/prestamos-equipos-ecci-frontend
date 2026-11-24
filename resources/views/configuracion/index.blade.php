@@ -161,13 +161,13 @@
                         <template x-for="(tramo, indice) in escala" :key="indice">
                             <tr>
                                 <td class="py-2 px-3">
-                                    <input type="number" min="1" max="365" required x-model="tramo.desde" :name="'mora_escala[' + indice + '][desde]'" class="w-28 h-10 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
+                                    <input type="number" min="1" max="365" required x-model="tramo.desde" :name="'mora_escala[' + indice + '][desde]'" :aria-label="'Días desde del tramo ' + (indice + 1)" class="w-28 h-10 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
                                 </td>
                                 <td class="py-2 px-3">
-                                    <input type="number" min="1" max="365" x-model="tramo.hasta" :name="'mora_escala[' + indice + '][hasta]'" class="w-28 h-10 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
+                                    <input type="number" min="1" max="365" x-model="tramo.hasta" :name="'mora_escala[' + indice + '][hasta]'" :aria-label="'Días hasta del tramo ' + (indice + 1)" class="w-28 h-10 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
                                 </td>
                                 <td class="py-2 px-3">
-                                    <input type="number" min="1" max="365" required x-model="tramo.dias_sancion" :name="'mora_escala[' + indice + '][dias_sancion]'" class="w-28 h-10 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
+                                    <input type="number" min="1" max="365" required x-model="tramo.dias_sancion" :name="'mora_escala[' + indice + '][dias_sancion]'" :aria-label="'Días de sanción del tramo ' + (indice + 1)" class="w-28 h-10 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
                                 </td>
                                 <td class="py-2 px-3 text-right">
                                     <button type="button" @click="quitarTramo(indice)" class="text-rose-600 hover:text-rose-800 font-medium">Quitar</button>
@@ -286,7 +286,7 @@
                                 <form id="restriccion-{{ $categoria['id'] }}" action="{{ route('categorias.restriccion', ['id' => $categoria['id']]) }}" method="POST">
                                     @csrf
                                     @method('PATCH')
-                                    <select name="nivel_restriccion" class="h-10 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
+                                    <select name="nivel_restriccion" aria-label="Nivel de restricción de {{ $categoria['nombre'] }}" class="h-10 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
                                         @foreach($nivelesRestriccion as $nivel => $etiqueta)
                                             <option value="{{ $nivel }}" @selected($categoria['nivel_restriccion'] === $nivel)>{{ $nivel }} · {{ $etiqueta }}</option>
                                         @endforeach

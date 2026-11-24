@@ -15,6 +15,12 @@
 }" class="space-y-6">
 
     <div>
+        <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span>Administración</span>
+            <span>></span>
+            <span class="text-slate-700 font-medium">Usuarios</span>
+        </div>
+        <h2 class="text-xl font-bold text-[#1F2937]">Gestión de usuarios</h2>
         <p class="text-sm text-slate-500">Administra los usuarios, roles y permisos de acceso al sistema.</p>
     </div>
 
@@ -88,14 +94,14 @@
                 <input x-model="search" type="text" placeholder="Buscar usuario..." class="w-full h-12 pl-9 pr-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
             </div>
 
-            <select x-model="roleFilter" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
+            <select x-model="roleFilter" aria-label="Filtrar por rol" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Filtrar por rol</option>
                 <option value="admin">Administrador</option>
                 <option value="encargado">Personal de préstamo</option>
                 <option value="usuario">Solicitante</option>
             </select>
 
-            <select x-model="statusFilter" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
+            <select x-model="statusFilter" aria-label="Filtrar por estado" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Filtrar por estado</option>
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>

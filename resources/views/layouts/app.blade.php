@@ -62,6 +62,22 @@
         // El modo "ver catálogo como solicitante" solo aplica al admin; el
         // encargado conserva su menú de personal aunque esté en el catálogo.
         $modoAdminSidebar = $esPersonal && !($esAdmin && $vistaCatalogo);
+
+        // H-06: la miga superior debe reflejar la pantalla, no "Gestión de equipos".
+        $tituloRuta = match (true) {
+            request()->routeIs('inicio') => 'Inicio',
+            request()->routeIs('prestamos.solicitudes') => 'Solicitudes pendientes',
+            request()->routeIs('prestamos.entregas') => 'Entregas pendientes',
+            request()->routeIs('prestamos.devoluciones') => 'Devoluciones',
+            request()->routeIs('prestamos.mis-activos') => 'Mis préstamos',
+            request()->routeIs('incidencias.*') => 'Incidencias',
+            request()->routeIs('usuarios.*') => 'Usuarios',
+            request()->routeIs('configuracion.*') => 'Configuración',
+            request()->routeIs('equipos.*') => 'Equipos',
+            default => $title ?? 'Gestión de equipos',
+        };
+
+        $tituloPagina = $vistaCatalogo ? 'Catálogo de equipos' : $tituloRuta;
     @endphp
 
     {{-- Sidebar Lateral --}}
@@ -176,11 +192,6 @@
                                 <span>Configuración</span>
                             </a>
 
-                            {{-- Reportes --}}
-                            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-200 hover:bg-white/10 hover:text-white transition">
-                                <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                                <span>Reportes</span>
-                            </a>
                             @endif
                         @endif
 
@@ -225,17 +236,17 @@
         {{-- Topbar Superior con Breadcrumb sincronizado --}}
         <header class="h-14 bg-white border-b border-slate-200/80 px-4 md:px-8 flex justify-between items-center shrink-0 z-10">
             <div class="flex items-center gap-3 text-xs text-slate-400 min-w-0">
-                <button type="button" @click="menuAbierto = !menuAbierto" class="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700 transition">
+                <button type="button" @click="menuAbierto = !menuAbierto" aria-label="Abrir menú" :aria-expanded="menuAbierto" class="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
                 <span class="hidden sm:inline">Sistema</span>
                 <span class="hidden sm:inline">&gt;</span>
                 <span class="text-slate-700 font-medium truncate">
-                    {{ $vistaCatalogo ? 'Catálogo de equipos' : ($title ?? 'Gestión de equipos') }}
+                    {{ $tituloPagina }}
                 </span>
             </div>
             <div class="flex items-center gap-4">
-                <button type="button" class="text-slate-400 hover:text-slate-600 transition">
+                <button type="button" aria-label="Notificaciones" title="Notificaciones" class="text-slate-400 hover:text-slate-600 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                 </button>
                 <div class="w-7 h-7 rounded-full bg-[#0B3D91] text-white flex items-center justify-center font-bold text-[10px]">

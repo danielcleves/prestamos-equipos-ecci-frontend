@@ -124,14 +124,14 @@
                 <input x-model="search" type="text" placeholder="Buscar equipo por nombre o serial..." class="w-full h-12 pl-9 pr-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
             </div>
 
-            <select x-model="categoryFilter" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
+            <select x-model="categoryFilter" aria-label="Filtrar por categoría" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Filtrar por categoría</option>
                 <option value="Portátil">Portátil</option>
                 <option value="Tablet">Tablet</option>
                 <option value="De mesa">De mesa</option>
             </select>
 
-            <select x-model="statusFilter" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
+            <select x-model="statusFilter" aria-label="Filtrar por estado" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Filtrar por estado</option>
                 <option value="disponible">Disponible</option>
                 <option value="prestado">En préstamo</option>

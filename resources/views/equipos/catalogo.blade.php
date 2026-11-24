@@ -65,7 +65,7 @@
                 <input x-model="search" type="text" placeholder="Buscar equipo..." class="w-full h-11 pl-9 pr-3 text-xs bg-slate-50/60 border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
             </div>
 
-            <select x-model="categoryFilter" class="text-xs bg-slate-50/60 border border-[#D9DEE7] rounded-[10px] px-3 h-11 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
+            <select x-model="categoryFilter" aria-label="Tipo de equipo" class="text-xs bg-slate-50/60 border border-[#D9DEE7] rounded-[10px] px-3 h-11 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Tipo de equipo</option>
                 @foreach (collect($equipos)->map(fn ($e) => $e['categoria']['nombre'] ?? ($e['categoria_nombre'] ?? 'General'))->unique()->sort()->values() as $categoriaOpcion)
                     <option value="{{ $categoriaOpcion }}">{{ $categoriaOpcion }}</option>
