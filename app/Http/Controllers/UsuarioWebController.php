@@ -135,6 +135,7 @@ class UsuarioWebController extends Controller
             'email' => 'required|email',
             'password' => 'required|min:8',
             'role' => 'required|in:admin,encargado,usuario',
+            'capacitado' => 'nullable|boolean',
         ]);
 
         $token = $this->getToken();
@@ -143,7 +144,11 @@ class UsuarioWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->post($this->apiUrl().'/usuarios', $request->only('name', 'email', 'password', 'role'));
+                ->post($this->apiUrl().'/usuarios', array_merge(
+                    $request->only('name', 'email', 'password', 'role'),
+                    // RN-01: el alta llega capacitada por defecto (valor inicial del backend).
+                    ['capacitado' => $request->boolean('capacitado', true)],
+                ));
         } catch (ConnectionException $e) {
             return back()->withErrors(['store_error' => 'No se pudo conectar con el servicio backend.'])->withInput();
         }
@@ -172,6 +177,7 @@ class UsuarioWebController extends Controller
             'email' => 'required|email',
             'role' => 'required|in:admin,encargado,usuario',
             'password' => 'nullable|min:8',
+            'capacitado' => 'nullable|boolean',
         ]);
 
         $id = (int) $user;
@@ -180,6 +186,8 @@ class UsuarioWebController extends Controller
             'name' => $request->input('name'),
             'email' => $request->input('email'),
             'role' => $request->input('role'),
+            // RN-01: el checkbox desmarcado viaja como false (no capacitado).
+            'capacitado' => $request->boolean('capacitado'),
         ];
 
         if ($request->filled('password')) {
