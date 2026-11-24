@@ -111,12 +111,12 @@
 
                 {{-- Filtro por rango de fechas de solicitud --}}
                 <div class="flex items-center gap-2">
-                    <label class="text-xs text-slate-500 shrink-0">Desde:</label>
-                    <input x-model="fechaDesde" type="date" class="h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
+                    <label for="fecha-desde" class="text-xs text-slate-500 shrink-0">Desde:</label>
+                    <input id="fecha-desde" x-model="fechaDesde" type="date" aria-label="Fecha desde" class="h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
                 </div>
                 <div class="flex items-center gap-2">
-                    <label class="text-xs text-slate-500 shrink-0">Hasta:</label>
-                    <input x-model="fechaHasta" type="date" class="h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
+                    <label for="fecha-hasta" class="text-xs text-slate-500 shrink-0">Hasta:</label>
+                    <input id="fecha-hasta" x-model="fechaHasta" type="date" aria-label="Fecha hasta" class="h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700">
                 </div>
 
                 {{-- Limpiar filtros --}}
@@ -133,6 +133,9 @@
         </div>
 
         <div class="overflow-x-auto">
+            <div class="md:hidden px-4 py-2 text-[11px] text-slate-400 bg-slate-50/60 border-b border-slate-100">
+                Desliza la tabla para ver todas las columnas.
+            </div>
             <table class="w-full text-left border-collapse text-xs">
                 <thead>
                     <tr class="border-b border-[#D9DEE7] text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
@@ -143,7 +146,7 @@
                         <th class="py-3 px-6">F. Inicio</th>
                         <th class="py-3 px-6">F. Devolución</th>
                         <th class="py-3 px-6">Estado</th>
-                        <th class="py-3 px-6 text-right">Acciones</th>
+                        <th class="py-3 px-6 text-right sticky right-0 bg-slate-50/70">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -204,6 +207,11 @@
                             <td class="py-3.5 px-6">
                                 <p class="font-bold text-slate-800">{{ $solic }}</p>
                                 <p class="text-[11px] text-slate-400">{{ $doc }}</p>
+                                @if($requiereAutorizacion && ! $autorizado)
+                                    <span class="md:hidden inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                        Requiere autorización
+                                    </span>
+                                @endif
                             </td>
                             <td class="py-3.5 px-6">
                                 <p class="font-semibold text-slate-700">{{ $eqNom }}</p>
@@ -238,7 +246,7 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="py-3.5 px-6 text-right">
+                            <td class="py-3.5 px-6 text-right sticky right-0 bg-white">
                                 <button
                                     type="button"
                                     @click="abrirModal(@js($itemJson))"
@@ -365,13 +373,13 @@
                 </div>
 
                 {{-- Acciones del Modal --}}
-                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100">
                     <button type="button" @click="openModalDetalle = false" class="h-10 px-4 border border-[#D9DEE7] text-slate-600 text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition">
                         Cerrar
                     </button>
 
                     <template x-if="selected.estado === 'Solicitado' || selected.estado === 'Pendiente'">
-                        <div class="w-full space-y-4">
+                        <div class="w-full sm:w-auto space-y-4">
                             {{-- Campo de motivo (requerido por el backend para rechazar) --}}
                             <div x-show="openRechazo" class="p-4 bg-rose-50/60 border border-rose-200 rounded-xl space-y-2">
                                 <label for="motivoRechazo" class="block text-[10px] uppercase font-bold text-rose-700 tracking-wider">
@@ -388,7 +396,7 @@
                                 <p class="text-[10px] text-rose-600" x-show="motivoRechazo.length > 900" x-text="(1000 - motivoRechazo.length) + ' caracteres restantes'"></p>
                             </div>
 
-                            <div class="flex items-center justify-end gap-3">
+                            <div class="flex flex-wrap items-center justify-end gap-3">
                                 <button type="button" @click="openModalDetalle = false" class="h-10 px-4 border border-[#D9DEE7] text-slate-600 text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition">
                                     Cancelar
                                 </button>

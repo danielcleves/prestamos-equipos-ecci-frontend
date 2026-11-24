@@ -56,6 +56,9 @@
         </div>
 
         <div class="overflow-x-auto">
+            <div class="md:hidden px-4 py-2 text-[11px] text-slate-400 bg-slate-50/60 border-b border-slate-100">
+                Desliza la tabla para ver estado y acciones.
+            </div>
             <table class="w-full text-left border-collapse text-xs">
                 <thead>
                     <tr class="border-b border-[#D9DEE7] text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
@@ -65,7 +68,7 @@
                         <th class="py-3 px-6">Descripción</th>
                         <th class="py-3 px-6">Estado</th>
                         <th class="py-3 px-6">Restringido hasta</th>
-                        <th class="py-3 px-6 text-right">Acciones</th>
+                        <th class="py-3 px-6 text-right sticky right-0 bg-slate-50/70">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -81,7 +84,12 @@
                         @endphp
                         <tr class="hover:bg-slate-50/80 transition">
                             <td class="py-3.5 px-6 font-mono text-slate-500">{{ $inc['id'] ?? '—' }}</td>
-                            <td class="py-3.5 px-6 font-bold text-slate-800">{{ $solicitante }}</td>
+                            <td class="py-3.5 px-6 font-bold text-slate-800">
+                                <p>{{ $solicitante }}</p>
+                                <div class="md:hidden mt-1 text-[10px] font-normal text-slate-500">
+                                    {{ ucfirst(str_replace('_', ' ', $estado)) }} · Restringido hasta {{ $estado === 'cerrada' ? '—' : $restringe }}
+                                </div>
+                            </td>
                             <td class="py-3.5 px-6">
                                 <p class="font-semibold text-slate-700">{{ $equipo }}</p>
                                 <p class="font-mono text-[11px] text-slate-400">{{ $codigo }}</p>
@@ -93,7 +101,7 @@
                                 </span>
                             </td>
                             <td class="py-3.5 px-6 text-slate-600">{{ $estado === 'cerrada' ? '—' : $restringe }}</td>
-                            <td class="py-3.5 px-6 text-right">
+                            <td class="py-3.5 px-6 text-right sticky right-0 bg-white">
                                 @if($estado !== 'cerrada')
                                     <form action="{{ route('incidencias.cerrar', $inc['id']) }}" method="POST" class="inline">
                                         @csrf
