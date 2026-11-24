@@ -25,6 +25,12 @@ class UxAcabadoTest extends TestCase
         'user' => ['id' => 2, 'name' => 'Encargado', 'roles' => ['encargado']],
     ];
 
+    /** @var array<string, mixed> */
+    private array $sesionUsuario = [
+        'auth_token' => 'token-usuario',
+        'user' => ['id' => 5, 'name' => 'Estudiante', 'roles' => ['usuario']],
+    ];
+
     private function fakeVacio(): void
     {
         Http::fake(['*' => Http::response(['data' => []], 200)]);
@@ -102,6 +108,23 @@ class UxAcabadoTest extends TestCase
             ->get('/solicitudes')
             ->assertOk()
             ->assertSee('Desliza la tabla para ver todas las columnas.');
+    }
+
+    public function test_la_miga_del_catalogo_del_estudiante_dice_catalogo_de_equipos(): void
+    {
+        $this->fakeVacio();
+
+        $response = $this->withSession($this->sesionUsuario)
+            ->get('/equipos')
+            ->assertOk();
+
+        $dom = new \DOMDocument();
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $nodos = $xpath->query('//header//span[contains(@class, "text-slate-700")]');
+
+        $this->assertGreaterThan(0, $nodos->length);
+        $this->assertStringContainsString('Catálogo de equipos', $nodos->item(0)->textContent);
     }
 
     public function test_incidencias_avisa_del_desplazamiento_y_muestra_estado_en_movil(): void
