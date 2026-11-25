@@ -22,7 +22,7 @@ class GestionUsuariosTest extends TestCase
     {
         $this->withSession([
             'auth_token' => 'token-de-prueba',
-            'user' => ['name' => 'Ana Pérez', 'roles' => ['usuario']],
+            'user' => ['name' => 'Ana Pérez', 'roles' => ['estudiante']],
         ])
             ->get('/usuarios')
             ->assertRedirect(route('inicio'));
@@ -59,7 +59,7 @@ class GestionUsuariosTest extends TestCase
                 'name' => 'Ana Pérez',
                 'email' => 'ana@ecci.edu.co',
                 'password' => 'corta',
-                'role' => 'usuario',
+                'role' => 'estudiante',
             ]);
 
         $response->assertSessionHasErrors('password');

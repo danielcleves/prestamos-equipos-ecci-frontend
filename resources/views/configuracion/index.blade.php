@@ -64,29 +64,25 @@
         @csrf
         @method('PUT')
 
-        {{-- RN-02: cupos por rol --}}
+        {{-- RN-02: cupos por rol (se gestionan en Roles y cupos) --}}
         <div class="bg-white p-6 rounded-xl border border-[#D9DEE7] shadow-sm space-y-4">
-            <div>
-                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Cupos por rol (RN-02)</h3>
-                <p class="text-[11px] text-slate-400 mt-0.5">Máximo de préstamos vivos (solicitado, aprobado o entregado) que puede tener cada rol.</p>
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div>
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Cupos por rol (RN-02)</h3>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Máximo de préstamos vivos (solicitado, aprobado o entregado) por rol. Los roles y sus cupos se gestionan en «Roles y cupos».</p>
+                </div>
+                <a href="{{ route('roles.index') }}" class="inline-flex items-center justify-center h-9 px-3.5 bg-slate-100 hover:bg-[#0B3D91] hover:text-white text-slate-700 text-xs font-semibold rounded-[10px] transition shrink-0">
+                    Gestionar roles y cupos
+                </a>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                @foreach(['usuario' => 'Solicitante', 'encargado' => 'Personal de préstamo', 'admin' => 'Administrador'] as $rol => $etiqueta)
-                    <div>
-                        <label for="cupo-{{ $rol }}" class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $etiqueta }}</label>
-                        <input
-                            id="cupo-{{ $rol }}"
-                            type="number"
-                            name="cupos[{{ $rol }}]"
-                            min="0"
-                            max="1000"
-                            required
-                            value="{{ old('cupos.'.$rol, $parametros['cupos.roles'][$rol] ?? 0) }}"
-                            class="w-full h-11 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91] text-slate-700"
-                        >
-                    </div>
+            <ul class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                @foreach($roles as $rol)
+                    <li class="flex items-center justify-between px-3 py-2.5 border border-slate-100 rounded-[10px] bg-slate-50/60">
+                        <span class="text-xs font-semibold text-slate-700">{{ $rol['etiqueta'] }}</span>
+                        <span class="text-xs font-bold text-[#0B3D91]">{{ $parametros['cupos.roles'][$rol['nombre']] ?? $rol['cupo_prestamos'] }}</span>
+                    </li>
                 @endforeach
-            </div>
+            </ul>
         </div>
 
         {{-- RN-06: duración máxima --}}
@@ -117,7 +113,7 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
-                @foreach(['usuario' => 'Días extra · Solicitante', 'encargado' => 'Días extra · Personal de préstamo', 'admin' => 'Días extra · Administrador'] as $rol => $etiqueta)
+                @foreach(collect($roles)->pluck('etiqueta', 'nombre')->map(fn ($e) => 'Días extra · '.$e) as $rol => $etiqueta)
                     <div>
                         <label for="extra-{{ $rol }}" class="block text-xs font-semibold text-slate-700 mb-1.5">{{ $etiqueta }}</label>
                         <input

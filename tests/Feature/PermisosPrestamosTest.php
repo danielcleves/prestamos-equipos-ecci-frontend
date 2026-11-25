@@ -29,7 +29,7 @@ class PermisosPrestamosTest extends TestCase
     public function test_rol_usuario_no_puede_ver_las_vistas_de_personal(): void
     {
         foreach (self::VISTAS as $ruta) {
-            $this->withSession($this->sesion('usuario'))
+            $this->withSession($this->sesion('estudiante'))
                 ->get($ruta)
                 ->assertRedirect(route('inicio'))
                 ->assertSessionHasErrors('inicio');
@@ -40,19 +40,19 @@ class PermisosPrestamosTest extends TestCase
 
     public function test_rol_usuario_no_puede_ejecutar_las_acciones_de_personal(): void
     {
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->patch(route('prestamos.aprobar', 1))
             ->assertRedirect(route('inicio'));
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->patch(route('prestamos.rechazar', 1), ['motivo' => 'No cumple los requisitos.'])
             ->assertRedirect(route('inicio'));
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->post(route('prestamos.registrarEntrega', 1), ['condicion_entrega' => 'bueno'])
             ->assertRedirect(route('inicio'));
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->post(route('prestamos.registrarDevolucion', 1), ['condicion_devolucion' => 'bueno'])
             ->assertRedirect(route('inicio'));
 

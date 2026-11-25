@@ -48,7 +48,9 @@ class RegistroWebTest extends TestCase
             str_ends_with($request->url(), '/register') &&
             $request['email'] === 'nuevo@ecci.edu.co' &&
             $request['name'] === 'Estudiante Nuevo' &&
-            $request['password'] === 'secreta123');
+            $request['password'] === 'secreta123' &&
+            // BUG-0004: sin la confirmación el backend real responde 422.
+            $request['password_confirmation'] === 'secreta123');
     }
 
     public function test_registro_muestra_los_errores_del_backend(): void

@@ -44,7 +44,12 @@ class RegistroController extends Controller
         try {
             $response = Http::acceptJson()
                 ->timeout(10)
-                ->post(config('services.backend.url').'/register', $datos);
+                // BUG-0004: el backend también valida 'confirmed', así que la
+                // confirmación debe viajar (validate() no la devuelve).
+                ->post(config('services.backend.url').'/register', [
+                    ...$datos,
+                    'password_confirmation' => $request->input('password_confirmation'),
+                ]);
         } catch (ConnectionException $e) {
             return back()->withInput($request->only('name', 'email'))
                 ->withErrors(['email' => 'No fue posible conectar con el servicio de registro.']);

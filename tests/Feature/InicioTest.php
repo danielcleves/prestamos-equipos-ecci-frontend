@@ -18,7 +18,7 @@ class InicioTest extends TestCase
     {
         $this->withSession([
             'auth_token' => 'token-vigente',
-            'user' => ['name' => 'Ana Pérez', 'roles' => ['usuario']],
+            'user' => ['name' => 'Ana Pérez', 'roles' => ['estudiante']],
         ])
             ->get('/inicio')
             ->assertOk()
@@ -37,7 +37,7 @@ class InicioTest extends TestCase
     {
         $this->withSession([
             'auth_token' => 'token-vigente',
-            'user' => ['name' => 'Ana Pérez', 'roles' => ['usuario']],
+            'user' => ['name' => 'Ana Pérez', 'roles' => ['estudiante']],
         ])
             ->get('/')
             ->assertRedirect(route('inicio'));

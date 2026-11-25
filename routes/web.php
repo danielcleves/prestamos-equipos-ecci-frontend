@@ -6,6 +6,7 @@ use App\Http\Controllers\ConfiguracionWebController;
 use App\Http\Controllers\EquipoWebController;
 use App\Http\Controllers\IncidenciaWebController;
 use App\Http\Controllers\PrestamoWebController;
+use App\Http\Controllers\RolWebController;
 use App\Http\Controllers\UsuarioWebController;
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +51,12 @@ Route::get('/configuracion', [ConfiguracionWebController::class, 'index'])->name
 Route::put('/configuracion', [ConfiguracionWebController::class, 'update'])->name('configuracion.update');
 Route::patch('/categorias/{id}/restriccion', [ConfiguracionWebController::class, 'actualizarRestriccion'])
     ->name('categorias.restriccion');
+
+// RN-02: roles personalizados y cupos de préstamo (exclusivo administrador)
+Route::get('/roles', [RolWebController::class, 'index'])->name('roles.index');
+Route::post('/roles', [RolWebController::class, 'store'])->name('roles.store');
+Route::put('/roles/{id}', [RolWebController::class, 'update'])->whereNumber('id')->name('roles.update');
+Route::delete('/roles/{id}', [RolWebController::class, 'destroy'])->whereNumber('id')->name('roles.destroy');
 
 // HU-03/HU-05: Catálogo y gestión de equipos
 Route::get('/equipos', [EquipoWebController::class, 'index'])->name('equipos.index');

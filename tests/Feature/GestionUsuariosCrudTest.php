@@ -28,7 +28,7 @@ class GestionUsuariosCrudTest extends TestCase
             $datos = $pagina === 1
                 ? [
                     ['id' => 1, 'name' => 'Ana Activa', 'email' => 'ana@ecci.edu.co', 'roles' => ['admin'], 'is_active' => true],
-                    ['id' => 2, 'name' => 'Beto Activo', 'email' => 'beto@ecci.edu.co', 'roles' => ['usuario'], 'is_active' => true],
+                    ['id' => 2, 'name' => 'Beto Activo', 'email' => 'beto@ecci.edu.co', 'roles' => ['estudiante'], 'is_active' => true],
                 ]
                 : [
                     ['id' => 3, 'name' => 'Carla Inactiva', 'email' => 'carla@ecci.edu.co', 'roles' => ['encargado'], 'is_active' => false],
@@ -115,7 +115,7 @@ class GestionUsuariosCrudTest extends TestCase
                 'name' => 'Nuevo Usuario',
                 'email' => 'nuevo@ecci.edu.co',
                 'password' => 'secreta123',
-                'role' => 'usuario',
+                'role' => 'estudiante',
             ])
             ->assertRedirect('/usuarios')
             ->assertSessionHasErrors('store_error');
@@ -131,7 +131,7 @@ class GestionUsuariosCrudTest extends TestCase
                 'name' => 'Nuevo Usuario',
                 'email' => 'nuevo@ecci.edu.co',
                 'password' => 'secreta123',
-                'role' => 'usuario',
+                'role' => 'estudiante',
             ])
             ->assertRedirect('/usuarios')
             ->assertSessionHasErrors('store_error')
@@ -170,7 +170,7 @@ class GestionUsuariosCrudTest extends TestCase
             ->put('/usuarios/7', [
                 'name' => 'Usuario Editado',
                 'email' => 'editado@ecci.edu.co',
-                'role' => 'usuario',
+                'role' => 'estudiante',
                 'password' => 'nuevaClave123',
             ])
             ->assertRedirect(route('usuarios.index'));
@@ -189,7 +189,7 @@ class GestionUsuariosCrudTest extends TestCase
             ->put('/usuarios/7', [
                 'name' => 'Usuario Editado',
                 'email' => 'editado@ecci.edu.co',
-                'role' => 'usuario',
+                'role' => 'estudiante',
             ])
             ->assertRedirect('/usuarios')
             ->assertSessionHasErrors('update_error');
