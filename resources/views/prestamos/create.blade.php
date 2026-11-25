@@ -133,17 +133,17 @@
 
     {{-- Breadcrumb y Título --}}
     <div>
-        <a href="{{ route('equipos.index', ['vista' => 'catalogo']) }}" class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-[#0B3D91] transition font-medium mb-1.5">
+        <a href="{{ route('equipos.index', ['vista' => 'catalogo']) }}" class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-marca-700 transition font-medium mb-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             <span>Catálogo</span>
         </a>
-        <h2 class="text-xl font-bold text-[#1F2937]">Solicitar préstamo</h2>
-        <p class="text-xs text-[#6B7280]">Indica el período de préstamo para registrar formalmente tu solicitud.</p>
+        <h2 class="text-2xl font-bold text-texto">Solicitar préstamo</h2>
+        <p class="text-sm text-texto-suave">Indica el período de préstamo para registrar formalmente tu solicitud.</p>
     </div>
 
     {{-- KAN-188: Mensajes de disponibilidad del backend por campo --}}
     @if($erroresCampo['disponibilidad'])
-        <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl flex items-start gap-3 shadow-sm">
+        <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl flex items-start gap-3 shadow-sm">
             <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             <div>
                 <p class="font-semibold mb-0.5">El equipo no puede ser solicitado</p>
@@ -155,7 +155,7 @@
     {{-- RN-01/RN-02/RN-04: rechazo por elegibilidad (sanción, cupo, capacitación,
          préstamo vencido o categoría restringida) --}}
     @if($motivosElegibilidad !== [])
-        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl space-y-1 shadow-sm">
+        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl space-y-1 shadow-sm">
             <p class="font-bold">No puedes solicitar este equipo todavía:</p>
             <ul class="list-disc pl-5 space-y-0.5">
                 @foreach ($motivosElegibilidad as $motivo)
@@ -167,14 +167,14 @@
 
     {{-- KAN-195: Mensajes de error de validación por campo --}}
     @if($erroresCampo['prestamo_error'])
-        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl space-y-1">
+        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl space-y-1">
             <p class="font-bold">{{ $erroresCampo['prestamo_error'] }}</p>
         </div>
     @endif
 
     {{-- Otros errores no mapeados --}}
     @if($hayErroresGenerales)
-        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl space-y-1">
+        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl space-y-1">
             <p class="font-bold">Por favor verifica los siguientes campos:</p>
             <ul class="list-disc pl-5 space-y-0.5">
                 @foreach ($erroresGenerales as $err)
@@ -197,39 +197,39 @@
             <div class="lg:col-span-2 space-y-6">
 
                 {{-- Tarjeta 1: Equipo Seleccionado --}}
-                <div class="bg-white p-5 rounded-xl border border-[#D9DEE7] shadow-sm">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 block mb-3">Equipo seleccionado</span>
+                <div class="bg-white p-5 rounded-xl border border-borde shadow-sm">
+                    <span class="text-xs font-bold uppercase tracking-wider text-blue-600 block mb-3">Equipo seleccionado</span>
 
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-start gap-3.5">
-                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-[#0B3D91] flex items-center justify-center shrink-0 mt-0.5">
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-marca-700 flex items-center justify-center shrink-0 mt-0.5">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             </div>
                             <div>
                                 <h3 class="text-sm font-bold text-slate-800">{{ $nombre }}</h3>
                                 <p class="text-xs text-slate-500 mt-0.5">{{ $categoria }}</p>
-                                <p class="text-[11px] text-slate-400 mt-1">{{ $descripcion }}</p>
+                                <p class="text-xs text-slate-400 mt-1">{{ $descripcion }}</p>
                             </div>
                         </div>
 
                         <div class="text-right shrink-0">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                 Disponible
                             </span>
-                            <span class="block text-[11px] font-mono text-slate-400 mt-1 font-bold">{{ $codigo }}</span>
+                            <span class="block text-xs font-mono text-slate-400 mt-1 font-bold">{{ $codigo }}</span>
                         </div>
                     </div>
                 </div>
 
                 {{-- Tarjeta 2: Periodo de Préstamo --}}
-                <div class="bg-white p-6 rounded-xl border border-[#D9DEE7] shadow-sm space-y-5">
+                <div class="bg-white p-6 rounded-xl border border-borde shadow-sm space-y-5">
                     <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Periodo de préstamo</h3>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {{-- Fecha de inicio con validación inline (KAN-194 / KAN-195) --}}
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Fecha de inicio <span class="text-rose-500">*</span></label>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Fecha de inicio <span class="text-rose-600">*</span></label>
                             <input
                                 type="date"
                                 name="fecha_inicio"
@@ -237,20 +237,20 @@
                                 @change="validarFechaInicio(); fechaDevolucion && validarFechaDevolucion()"
                                 min="{{ date('Y-m-d') }}"
                                 required
-                                :class="errorFechaInicio ? 'border-rose-400 focus:ring-rose-400' : 'border-[#D9DEE7] focus:ring-[#0B3D91]'"
-                                class="w-full h-11 px-3 text-xs bg-white border rounded-[10px] focus:outline-none focus:ring-1 text-slate-700"
+                                :class="errorFechaInicio ? 'border-rose-400 focus:ring-rose-400' : 'border-borde-campo focus:ring-marca-700'"
+                                class="w-full h-11 px-3 text-sm bg-white border rounded-[10px] focus:outline-none focus:ring-1 text-slate-700"
                             >
                             {{-- Error PHP (vuelta del servidor) --}}
                             @if($erroresCampo['fecha_inicio'])
-                                <p class="text-[11px] text-rose-600 mt-1">{{ $erroresCampo['fecha_inicio'] }}</p>
+                                <p class="text-xs text-rose-600 mt-1">{{ $erroresCampo['fecha_inicio'] }}</p>
                             @endif
                             {{-- Error JS (validación cliente) --}}
-                            <p x-show="errorFechaInicio" x-text="errorFechaInicio" class="text-[11px] text-rose-600 mt-1" x-cloak></p>
+                            <p x-show="errorFechaInicio" x-text="errorFechaInicio" class="text-xs text-rose-600 mt-1" x-cloak></p>
                         </div>
 
                         {{-- Fecha de devolución con validación inline (KAN-194 / KAN-195) --}}
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Fecha de devolución <span class="text-rose-500">*</span></label>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Fecha de devolución <span class="text-rose-600">*</span></label>
                             <input
                                 type="date"
                                 name="fecha_devolucion"
@@ -259,19 +259,19 @@
                                 :min="minDevolucion"
                                 :max="maxDevolucion"
                                 required
-                                :class="errorFechaDevolucion ? 'border-rose-400 focus:ring-rose-400' : 'border-[#D9DEE7] focus:ring-[#0B3D91]'"
-                                class="w-full h-11 px-3 text-xs bg-white border rounded-[10px] focus:outline-none focus:ring-1 text-slate-700"
+                                :class="errorFechaDevolucion ? 'border-rose-400 focus:ring-rose-400' : 'border-borde-campo focus:ring-marca-700'"
+                                class="w-full h-11 px-3 text-sm bg-white border rounded-[10px] focus:outline-none focus:ring-1 text-slate-700"
                             >
                             @if($erroresCampo['fecha_devolucion'])
-                                <p class="text-[11px] text-rose-600 mt-1">{{ $erroresCampo['fecha_devolucion'] }}</p>
+                                <p class="text-xs text-rose-600 mt-1">{{ $erroresCampo['fecha_devolucion'] }}</p>
                             @endif
-                            <p x-show="errorFechaDevolucion" x-text="errorFechaDevolucion" class="text-[11px] text-rose-600 mt-1" x-cloak></p>
+                            <p x-show="errorFechaDevolucion" x-text="errorFechaDevolucion" class="text-xs text-rose-600 mt-1" x-cloak></p>
                         </div>
                     </div>
 
                     {{-- Motivo con validación inline (KAN-194 / KAN-195) --}}
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">Motivo del préstamo <span class="text-rose-500">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Motivo del préstamo <span class="text-rose-600">*</span></label>
                         <textarea
                             name="motivo"
                             x-model="motivo"
@@ -281,13 +281,13 @@
                             required
                             maxlength="1000"
                             placeholder="Motivo del préstamo, propósito de uso, requerimientos especiales..."
-                            :class="errorMotivo ? 'border-rose-400 focus:ring-rose-400' : 'border-[#D9DEE7] focus:ring-[#0B3D91]'"
+                            :class="errorMotivo ? 'border-rose-400 focus:ring-rose-400' : 'border-borde-campo focus:ring-marca-700'"
                             class="w-full p-3 text-xs bg-white border rounded-[10px] focus:outline-none focus:ring-1 text-slate-700"
                         ></textarea>
                         @if($erroresCampo['motivo'])
-                            <p class="text-[11px] text-rose-600 mt-1">{{ $erroresCampo['motivo'] }}</p>
+                            <p class="text-xs text-rose-600 mt-1">{{ $erroresCampo['motivo'] }}</p>
                         @endif
-                        <p x-show="errorMotivo" x-text="errorMotivo" class="text-[11px] text-rose-600 mt-1" x-cloak></p>
+                        <p x-show="errorMotivo" x-text="errorMotivo" class="text-xs text-rose-600 mt-1" x-cloak></p>
                     </div>
                 </div>
 
@@ -297,31 +297,31 @@
             <div class="space-y-6">
 
                 {{-- Solicitante --}}
-                <div class="bg-white p-5 rounded-xl border border-[#D9DEE7] shadow-sm space-y-4">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Solicitante</span>
+                <div class="bg-white p-5 rounded-xl border border-borde shadow-sm space-y-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Solicitante</span>
 
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-[#1D5FD0] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                        <div class="w-9 h-9 rounded-full bg-marca-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
                             {{ strtoupper(substr($usuario['name'] ?? 'US', 0, 2)) }}
                         </div>
                         <div class="min-w-0">
                             <h4 class="text-xs font-bold text-slate-800 truncate">{{ $usuario['name'] ?? 'Usuario' }}</h4>
-                            <p class="text-[11px] text-slate-400 truncate">{{ $usuario['email'] ?? 'usuario@ecci.edu.co' }}</p>
+                            <p class="text-xs text-slate-400 truncate">{{ $usuario['email'] ?? 'usuario@ecci.edu.co' }}</p>
                         </div>
                     </div>
                 </div>
 
                 {{-- Resumen de Solicitud en tiempo real --}}
-                <div class="bg-white p-5 rounded-xl border border-[#D9DEE7] shadow-sm space-y-3.5">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Resumen de solicitud</span>
+                <div class="bg-white p-5 rounded-xl border border-borde shadow-sm space-y-3.5">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block">Resumen de solicitud</span>
 
-                    <div class="space-y-2.5 text-xs">
+                    <div class="space-y-2.5 text-sm">
                         <div class="flex justify-between items-center gap-3 text-slate-600">
                             <span class="text-slate-400">Equipo</span>
                             {{-- H-23: el resumen muestra el nombre del equipo, no el serial. --}}
                             <span class="text-right font-semibold text-slate-800">
                                 {{ $nombre }}
-                                <span class="block font-mono text-[11px] text-slate-500">{{ $codigo }}</span>
+                                <span class="block font-mono text-xs text-slate-500">{{ $codigo }}</span>
                             </span>
                         </div>
 
@@ -347,20 +347,18 @@
 
                         <div class="flex justify-between items-center pt-2.5 border-t border-slate-100">
                             <span class="text-slate-400">Estado inicial</span>
-                            <span class="inline-block px-2.5 py-0.5 bg-blue-50 text-[#1D5FD0] font-semibold text-[10px] rounded-full border border-blue-200">
-                                Solicitado
-                            </span>
+                            <x-estado estado="solicitado" />
                         </div>
                     </div>
                 </div>
 
                 {{-- Botones --}}
                 <div class="flex items-center justify-end gap-3 pt-2">
-                    <a href="{{ route('equipos.index', ['vista' => 'catalogo']) }}" class="h-11 px-5 border border-[#D9DEE7] text-slate-600 text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition flex items-center justify-center">
+                    <a href="{{ route('equipos.index', ['vista' => 'catalogo']) }}" class="h-12 px-5 border border-borde text-slate-600 text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition flex items-center justify-center">
                         Cancelar
                     </a>
 
-                    <button type="submit" class="h-11 px-5 bg-[#1D5FD0] hover:bg-[#184ea8] text-white text-xs font-semibold rounded-[10px] transition shadow-sm flex items-center gap-2">
+                    <button type="submit" class="h-12 px-5 bg-marca-500 hover:bg-marca-700 text-white text-sm font-semibold rounded-[10px] transition shadow-sm flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         <span>Registrar solicitud</span>
                     </button>

@@ -4,8 +4,8 @@
 <main class="min-h-screen flex items-center justify-center px-4 py-10">
     <section class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
         <div class="mb-6">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-[#1D5FD0] mb-1">Sistema de préstamo de equipos</p>
-            <h1 class="text-2xl font-bold text-[#1F2937]">Crear cuenta</h1>
+            <p class="text-xs font-bold uppercase tracking-wider text-marca-500 mb-1">Sistema de préstamo de equipos</p>
+            <h1 class="text-2xl font-bold text-texto">Crear cuenta</h1>
             <p class="text-xs text-slate-500 mt-1">Regístrate con tu correo institucional. La cuenta queda como <strong>Solicitante</strong>.</p>
         </div>
 
@@ -27,38 +27,38 @@
             @csrf
 
             <div>
-                <label for="name" class="block text-xs font-bold text-[#1F2937] tracking-wider uppercase mb-1">Nombre completo</label>
+                <label for="name" class="block text-sm font-bold text-texto tracking-wider uppercase mb-1">Nombre completo</label>
                 <input id="name" name="name" type="text" required value="{{ old('name') }}" autocomplete="name"
-                    class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition">
+                    class="w-full h-12 px-4 bg-white border border-borde-campo rounded-[10px] text-sm focus:ring-2 focus:ring-marca-700 focus:border-transparent outline-none transition">
             </div>
 
             <div>
-                <label for="email" class="block text-xs font-bold text-[#1F2937] tracking-wider uppercase mb-1">Correo institucional</label>
+                <label for="email" class="block text-sm font-bold text-texto tracking-wider uppercase mb-1">Correo institucional</label>
                 <input id="email" name="email" type="email" required value="{{ old('email') }}" autocomplete="email" placeholder="ejemplo@ecci.edu.co"
-                    class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition">
-                <p class="text-[11px] text-slate-400 mt-1">Solo se permiten los correos o dominios autorizados por el administrador.</p>
+                    class="w-full h-12 px-4 bg-white border border-borde-campo rounded-[10px] text-sm focus:ring-2 focus:ring-marca-700 focus:border-transparent outline-none transition">
+                <p class="text-xs text-slate-400 mt-1">Solo se permiten los correos o dominios autorizados por el administrador.</p>
             </div>
 
             <div>
-                <label for="password" class="block text-xs font-bold text-[#1F2937] tracking-wider uppercase mb-1">Contraseña</label>
+                <label for="password" class="block text-sm font-bold text-texto tracking-wider uppercase mb-1">Contraseña</label>
                 <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password"
-                    class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition">
+                    class="w-full h-12 px-4 bg-white border border-borde-campo rounded-[10px] text-sm focus:ring-2 focus:ring-marca-700 focus:border-transparent outline-none transition">
             </div>
 
             <div>
-                <label for="password_confirmation" class="block text-xs font-bold text-[#1F2937] tracking-wider uppercase mb-1">Confirmar contraseña</label>
+                <label for="password_confirmation" class="block text-sm font-bold text-texto tracking-wider uppercase mb-1">Confirmar contraseña</label>
                 <input id="password_confirmation" name="password_confirmation" type="password" required minlength="8" autocomplete="new-password"
-                    class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition">
+                    class="w-full h-12 px-4 bg-white border border-borde-campo rounded-[10px] text-sm focus:ring-2 focus:ring-marca-700 focus:border-transparent outline-none transition">
             </div>
 
-            <button type="submit" class="w-full h-12 px-4 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white font-medium rounded-[10px] text-sm shadow-md shadow-blue-950/20 transition duration-150">
+            <button type="submit" class="w-full h-12 px-4 bg-marca-700 hover:bg-marca-500 text-white font-medium rounded-[10px] text-sm shadow-md shadow-blue-950/20 transition duration-150">
                 Crear cuenta
             </button>
         </form>
 
         <p class="mt-5 text-center text-xs text-slate-500">
             ¿Ya tienes cuenta?
-            <a href="{{ route('login') }}" class="text-[#0B3D91] font-semibold hover:underline">Iniciar sesión</a>
+            <a href="{{ route('login') }}" class="text-marca-700 font-semibold hover:underline">Iniciar sesión</a>
         </p>
     </section>
 </main>
