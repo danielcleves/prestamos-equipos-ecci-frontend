@@ -83,7 +83,7 @@
 
                     <div>
                         <label for="email" class="block text-xs font-bold text-[#1F2937] tracking-wider uppercase mb-1">
-                            Usuario Institucional
+                            Usuario institucional
                         </label>
                         <div class="relative">
                             <input

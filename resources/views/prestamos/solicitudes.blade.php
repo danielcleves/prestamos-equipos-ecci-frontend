@@ -308,7 +308,7 @@
                     </div>
 
                     <div>
-                        <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">DOCUMENTO / EMAIL</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">CORREO</span>
                         <span class="text-slate-700 mt-0.5 block" x-text="selected.documento"></span>
                     </div>
 

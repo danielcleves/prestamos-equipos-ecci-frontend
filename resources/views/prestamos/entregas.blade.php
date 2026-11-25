@@ -278,7 +278,7 @@
             class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-md overflow-hidden"
         >
             <div class="px-6 py-4 border-b border-[#D9DEE7] flex justify-between items-center bg-slate-50">
-                <h3 id="modal-entrega-titulo" class="font-bold text-slate-800 text-sm">Confirmar Entrega de Equipo</h3>
+                <h3 id="modal-entrega-titulo" class="font-bold text-slate-800 text-sm">Confirmar entrega de equipo</h3>
                 <button @click="openModalEntrega = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
             </div>
 

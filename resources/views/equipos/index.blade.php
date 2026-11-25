@@ -275,7 +275,7 @@
             class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-lg overflow-hidden"
         >
             <div class="px-6 py-4 border-b border-[#D9DEE7] flex justify-between items-center bg-slate-50">
-                <h3 id="modal-detalle-equipo-titulo" class="font-bold text-slate-800 text-sm">Detalle del Equipo</h3>
+                <h3 id="modal-detalle-equipo-titulo" class="font-bold text-slate-800 text-sm">Detalle del equipo</h3>
                 <button @click="openModalView = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
             </div>
             <div class="p-6 space-y-4 text-xs">
@@ -343,7 +343,7 @@
             class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-md overflow-hidden"
         >
             <div class="px-6 py-4 border-b border-[#D9DEE7] flex justify-between items-center bg-slate-50">
-                <h3 id="modal-estado-equipo-titulo" class="font-bold text-slate-800 text-sm">Actualizar Estado del Equipo</h3>
+                <h3 id="modal-estado-equipo-titulo" class="font-bold text-slate-800 text-sm">Actualizar estado del equipo</h3>
                 <button @click="openModalEdit = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
             </div>
 
@@ -357,7 +357,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-2">Nuevo Estado <span class="text-rose-500">*</span></label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-2">Nuevo estado <span class="text-rose-500">*</span></label>
                         <select name="estado" x-model="selectedEquipo.estado_crudo" required class="w-full h-12 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                             <option value="disponible">Disponible (Apto para préstamo)</option>
                             <option value="en_prestamo">En préstamo</option>

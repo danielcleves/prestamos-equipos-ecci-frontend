@@ -29,11 +29,24 @@
     <style>
         [x-cloak] { display: none !important; }
         body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        /* H-26: halo de foco de 2 px en enlaces y campos (guía UI/UX §13). */
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        [tabindex]:focus-visible {
+            outline: 2px solid #0B3D91;
+            outline-offset: 2px;
+        }
     </style>
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
 <body x-data="{ menuAbierto: false }" class="h-full flex overflow-hidden text-slate-800 antialiased">
+
+    {{-- H-26: primer elemento enfocable; permite saltar el menú lateral con el teclado --}}
+    <a href="#contenido-principal" class="sr-only focus:not-sr-only focus:absolute focus:z-[70] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-white focus:text-[#0B3D91] focus:text-xs focus:font-semibold focus:rounded-[10px] focus:shadow-md">Saltar al contenido</a>
 
     {{-- Overlay móvil --}}
     <div x-show="menuAbierto" @click="menuAbierto = false" x-cloak class="fixed inset-0 bg-slate-900/50 z-30 md:hidden"></div>
@@ -263,7 +276,7 @@
         </header>
 
         {{-- Vista de contenido --}}
-        <main class="flex-1 overflow-y-auto px-4 md:px-8 py-6">
+        <main id="contenido-principal" tabindex="-1" class="flex-1 overflow-y-auto px-4 md:px-8 py-6 focus:outline-none">
             <div class="max-w-[1400px] mx-auto w-full">
                 @yield('content')
             </div>
