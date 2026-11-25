@@ -31,10 +31,21 @@ document.addEventListener(
 // existe (p. ej. la fila desapareció tras una acción) el foco va al contenido
 // principal, nunca se queda en <body>.
 //
+// Mientras el diálogo está abierto, la misma directiva cierra el ciclo de
+// tabulación: Tab en la última parada vuelve a la primera y Shift+Tab en la
+// primera salta a la última, para que el foco no se escape al menú lateral que
+// queda detrás del velo.
+//
 
 const ID_CONTENIDO = 'contenido-principal';
 const CLAVE_RETORNO = 'ecci_foco_al_volver';
 const CONTROLES = 'button, a[href], input, select, textarea, [role="button"]';
+
+// Elementos que reciben el foco al tabular dentro de un diálogo. `tabindex="-1"`
+// queda fuera a propósito: es el foco programático (el propio diálogo), no una
+// parada del recorrido.
+const TABULABLES =
+    'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
 
 // Elemento realmente enfocable: existe, sigue en el documento y se pinta.
 function enfocable(elemento) {
@@ -42,6 +53,17 @@ function enfocable(elemento) {
         elemento instanceof Element &&
         elemento.isConnected &&
         elemento.getClientRects().length > 0
+    );
+}
+
+// Paradas del recorrido del diálogo: las del selector, descartando lo apagado
+// y lo oculto (display:none, [hidden] o un ancestro oculto).
+function paradasDelDialogo(dialogo) {
+    return Array.from(dialogo.querySelectorAll(TABULABLES)).filter(
+        (elemento) =>
+            !elemento.disabled &&
+            !elemento.closest('[hidden]') &&
+            enfocable(elemento)
     );
 }
 
@@ -137,7 +159,53 @@ function registrarDirectivaFoco() {
 
         el.addEventListener('submit', alEnviar, true);
 
-        cleanup(() => el.removeEventListener('submit', alEnviar, true));
+        // Ciclo cerrado mientras el diálogo está abierto: Tab desde la última
+        // parada vuelve a la primera y Shift+Tab desde la primera salta a la
+        // última. Sin esto el foco salía al menú lateral, detrás del velo.
+        // Con el diálogo cerrado no se toca nada.
+        const alTeclear = (evento) => {
+            if (evento.key !== 'Tab' || !estabaAbierto) return;
+
+            const paradas = paradasDelDialogo(el);
+
+            if (paradas.length === 0) {
+                evento.preventDefault();
+
+                return;
+            }
+
+            const primera = paradas[0];
+            const ultima = paradas[paradas.length - 1];
+            const activo = document.activeElement;
+
+            // Foco en el propio contenedor (tabindex="-1") o fuera: la tecla
+            // entra al diálogo por el extremo que corresponde.
+            if (!el.contains(activo) || activo === el) {
+                evento.preventDefault();
+                (evento.shiftKey ? ultima : primera).focus();
+
+                return;
+            }
+
+            if (!evento.shiftKey && activo === ultima) {
+                evento.preventDefault();
+                primera.focus();
+
+                return;
+            }
+
+            if (evento.shiftKey && activo === primera) {
+                evento.preventDefault();
+                ultima.focus();
+            }
+        };
+
+        el.addEventListener('keydown', alTeclear);
+
+        cleanup(() => {
+            el.removeEventListener('submit', alEnviar, true);
+            el.removeEventListener('keydown', alTeclear);
+        });
 
         effect(() =>
             estaAbierto((valor) => {
