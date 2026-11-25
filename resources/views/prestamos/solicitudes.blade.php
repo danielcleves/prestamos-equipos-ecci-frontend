@@ -140,10 +140,12 @@
                         <th class="py-3 px-6">#</th>
                         <th class="py-3 px-6">Solicitante</th>
                         <th class="py-3 px-6">Equipo</th>
+                        {{-- El estado va antes de las fechas: es el dato que se mira
+                             primero y a la derecha quedaba tapado por la columna fija. --}}
+                        <th class="py-3 px-6">Estado</th>
                         <th class="py-3 px-6">F. Solicitud</th>
                         <th class="py-3 px-6">F. Inicio</th>
                         <th class="py-3 px-6">F. Devolución</th>
-                        <th class="py-3 px-6">Estado</th>
                         <th class="py-3 px-6 text-right sticky right-0 bg-slate-50/70">Acciones</th>
                     </tr>
                 </thead>
@@ -220,9 +222,6 @@
                                 <p class="font-semibold text-slate-700">{{ $eqNom }}</p>
                                 <span class="font-mono text-slate-400 text-xs">{{ $eqCod }}</span>
                             </td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ date('d/m/Y', strtotime($fSol)) }}</td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ $fIni !== '—' ? date('d/m/Y', strtotime($fIni)) : '—' }}</td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ $fFin !== '—' ? date('d/m/Y', strtotime($fFin)) : '—' }}</td>
                             <td class="py-3.5 px-6">
                                 <x-estado :estado="$st" />
 
@@ -233,6 +232,9 @@
                                     </span>
                                 @endif
                             </td>
+                            <td class="py-3.5 px-6 text-slate-600">{{ date('d/m/Y', strtotime($fSol)) }}</td>
+                            <td class="py-3.5 px-6 text-slate-600">{{ $fIni !== '—' ? date('d/m/Y', strtotime($fIni)) : '—' }}</td>
+                            <td class="py-3.5 px-6 text-slate-600">{{ $fFin !== '—' ? date('d/m/Y', strtotime($fFin)) : '—' }}</td>
                             <td class="py-3.5 px-6 text-right sticky right-0 bg-white">
                                 <button
                                     type="button"

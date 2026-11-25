@@ -111,6 +111,66 @@ class UxAcabadoTest extends TestCase
             ->assertSee('Desliza la tabla para ver todas las columnas.');
     }
 
+    /**
+     * El estado es el dato que se mira primero: su columna va justo después del
+     * equipo y antes de las tres fechas. Al final de la tabla, en pantallas
+     * medianas, quedaba tapada por la columna fija de acciones.
+     */
+    public function test_solicitudes_pone_el_estado_antes_de_las_fechas(): void
+    {
+        Http::fake([
+            '*/prestamos/pendientes*' => Http::response([
+                'data' => [
+                    [
+                        'id' => 30,
+                        'solicitante' => ['name' => 'Laura Gómez', 'email' => 'laura@ecci.edu.co'],
+                        'equipo' => [
+                            'nombre' => 'Fuente de Poder',
+                            'codigo' => 'FUE-01',
+                            'estado' => 'disponible',
+                            'categoria' => ['nombre' => 'Electrónica'],
+                        ],
+                        'fecha_solicitud' => '2026-11-19T22:30:00-05:00',
+                        'fecha_inicio' => '2026-11-25T08:00:00-05:00',
+                        'fecha_devolucion_estimada' => '2026-11-28T18:00:00-05:00',
+                        'estado' => 'solicitado',
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/solicitudes')
+            ->assertOk();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        $encabezados = [];
+        foreach ($xpath->query('//table/thead/tr/th') as $th) {
+            $encabezados[] = $limpiar($th->textContent);
+        }
+
+        $this->assertSame(
+            ['#', 'Solicitante', 'Equipo', 'Estado', 'F. Solicitud', 'F. Inicio', 'F. Devolución', 'Acciones'],
+            $encabezados,
+            '«Estado» debe ir después del equipo y antes de las fechas'
+        );
+
+        $celdas = [];
+        foreach ($xpath->query('//table/tbody/tr[1]/td') as $td) {
+            $celdas[] = $limpiar($td->textContent);
+        }
+
+        $this->assertCount(8, $celdas, 'La fila debe tener las mismas celdas que encabezados');
+        $this->assertStringContainsString('Solicitado', $celdas[3], 'La cuarta celda es la píldora de estado');
+        $this->assertSame('19/11/2026', $celdas[4]);
+        $this->assertSame('25/11/2026', $celdas[5]);
+        $this->assertSame('28/11/2026', $celdas[6]);
+    }
+
     public function test_la_miga_del_catalogo_del_estudiante_dice_catalogo_de_equipos(): void
     {
         $this->fakeVacio();
