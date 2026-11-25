@@ -14,7 +14,7 @@
     statusFilter: '',
     openModalCreate: false,
     openModalEdit: false,
-    editUser: { id: null, name: '', email: '', role: @js($rolPredeterminado), capacitado: true },
+    editUser: { id: null, name: '', email: '', role: @js($rolPredeterminado), capacitado: true, sancion: null },
     openEdit(user) {
         this.editUser = { ...user };
         this.openModalEdit = true;
@@ -144,6 +144,7 @@
                             };
                             // RN-01: la capacitación del usuario decide si puede solicitar equipos.
                             $capacitado = (bool) ($user['capacitado'] ?? true);
+                            $sancion = \App\Support\SancionVista::desde($user['sancion_activa'] ?? null);
                         @endphp
                         <tr
                             x-show="(search === '' || @js(strtolower($user['name'])).includes(search.toLowerCase()) || @js(strtolower($user['email'])).includes(search.toLowerCase())) &&
@@ -177,11 +178,16 @@
                                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactivo
                                     </span>
                                 @endif
+                                @if($sancion)
+                                    <div class="mt-1">
+                                        <x-estado estado="retrasado" :texto="'Sancionado · '.$sancion['diasTexto']" data-sancion="{{ $user['id'] }}" />
+                                    </div>
+                                @endif
                             </td>
                             <td class="py-3.5 px-6 text-right space-x-2">
                                 <button
                                     type="button"
-                                    @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol, 'capacitado' => (bool) ($user['capacitado'] ?? true)]))"
+                                    @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol, 'capacitado' => (bool) ($user['capacitado'] ?? true), 'sancion' => $sancion]))"
                                     class="text-slate-500 hover:text-marca-700 font-medium transition"
                                 >
                                     Editar
@@ -231,6 +237,7 @@
                     };
                     // RN-01: la capacitación del usuario decide si puede solicitar equipos.
                     $capacitado = (bool) ($user['capacitado'] ?? true);
+                    $sancion = \App\Support\SancionVista::desde($user['sancion_activa'] ?? null);
                 @endphp
                 <div
                     x-show="(search === '' || @js(strtolower($user['name'])).includes(search.toLowerCase()) || @js(strtolower($user['email'])).includes(search.toLowerCase())) &&
@@ -264,12 +271,15 @@
                                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Inactivo
                             </span>
                         @endif
+                        @if($sancion)
+                            <x-estado estado="retrasado" :texto="'Sancionado · '.$sancion['diasTexto']" data-sancion="{{ $user['id'] }}" />
+                        @endif
                     </div>
 
                     <div class="flex gap-2">
                         <button
                             type="button"
-                            @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol, 'capacitado' => (bool) ($user['capacitado'] ?? true)]))"
+                            @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol, 'capacitado' => (bool) ($user['capacitado'] ?? true), 'sancion' => $sancion]))"
                             class="flex-1 h-12 rounded-[10px] border border-borde bg-white text-xs font-semibold text-marca-700 hover:bg-slate-50 transition"
                         >
                             Editar
@@ -370,6 +380,13 @@
             <form :action="'{{ url('/usuarios') }}/' + editUser.id" method="POST" class="p-6 space-y-4">
                 @csrf
                 @method('PUT')
+
+                <div x-show="editUser.sancion" x-cloak data-resumen-sancion class="p-3 bg-error-suave border border-rose-200 text-error-texto text-sm rounded-[10px] space-y-0.5">
+                    <p class="font-semibold">Sanción activa</p>
+                    <p x-show="editUser.sancion && editUser.sancion.motivo" x-text="editUser.sancion && ('Motivo: ' + editUser.sancion.motivo)"></p>
+                    <p x-show="editUser.sancion && editUser.sancion.diasRetraso !== null" x-text="editUser.sancion && ('Días de retraso: ' + editUser.sancion.diasRetraso)"></p>
+                    <p x-text="editUser.sancion && ('Vence el ' + editUser.sancion.fin + ' (' + editUser.sancion.diasTexto + ' restantes)')"></p>
+                </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre completo</label>

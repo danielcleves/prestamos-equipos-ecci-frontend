@@ -31,14 +31,17 @@
             </div>
         @endif
 
-        {{-- Hueco para el aviso de sanción activa (se conecta cuando el backend exponga `sancion_activa`). --}}
-        @isset($sancionActiva)
-            @if ($sancionActiva)
-                <div role="alert" class="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg">
-                    {{ $sancionActiva }}
-                </div>
-            @endif
-        @endisset
+        {{-- Sanción vigente por mora: solo el solicitante la recibe (viene de /api/me). --}}
+        @if (! empty($sancionActiva))
+            <div role="alert" data-aviso="sancion" class="p-4 bg-error-suave border border-rose-200 text-error-texto text-sm rounded-[10px] flex items-start gap-3">
+                <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                <p>
+                    <span class="font-semibold">Tienes una sanción activa:</span>
+                    {{ $sancionActiva['diasTexto'] === '1 día' ? 'queda 1 día' : 'quedan '.$sancionActiva['diasTexto'] }}, hasta el {{ $sancionActiva['fin'] }}.
+                    No podrás solicitar equipos mientras dure.
+                </p>
+            </div>
+        @endif
 
         @if ($esPersonal)
             @php
