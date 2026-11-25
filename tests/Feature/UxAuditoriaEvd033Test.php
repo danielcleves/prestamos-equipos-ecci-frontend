@@ -376,6 +376,9 @@ class UxAuditoriaEvd033Test extends TestCase
 
     public function test_h15_el_solicitante_no_ve_la_tarjeta_de_usuarios(): void
     {
+        // Inicio consulta la API en cada visita (D-2): sin fake saldría a la red.
+        $this->fakeVacio();
+
         $this->withSession($this->sesionEstudiante)
             ->get('/inicio')
             ->assertOk()
@@ -385,6 +388,9 @@ class UxAuditoriaEvd033Test extends TestCase
 
     public function test_h15_el_admin_si_ve_la_tarjeta_de_usuarios(): void
     {
+        // Inicio consulta la API en cada visita (D-2): sin fake saldría a la red.
+        $this->fakeVacio();
+
         $this->withSession($this->sesionAdmin)
             ->get('/inicio')
             ->assertOk()

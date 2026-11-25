@@ -89,6 +89,9 @@ class MarcaTokensTest extends TestCase
         $this->assertStringNotContainsString('tailwind.config', $layout);
         $this->assertStringContainsString("@vite(['resources/css/app.css', 'resources/js/app.js'])", $layout);
 
+        // Inicio consulta la API en cada visita (D-2): se simula vacía.
+        Http::fake(['*' => Http::response(['data' => [], 'meta' => ['total' => 0]])]);
+
         $html = $this->withSession($this->sesion('admin'))->get('/inicio')->assertOk()->getContent();
 
         $this->assertStringNotContainsString('cdn.tailwindcss.com', $html);

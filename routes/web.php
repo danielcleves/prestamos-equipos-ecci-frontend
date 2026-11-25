@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegistroController;
 use App\Http\Controllers\ConfiguracionWebController;
 use App\Http\Controllers\EquipoWebController;
 use App\Http\Controllers\IncidenciaWebController;
+use App\Http\Controllers\InicioController;
 use App\Http\Controllers\PrestamoWebController;
 use App\Http\Controllers\RolWebController;
 use App\Http\Controllers\UsuarioWebController;
@@ -30,13 +31,7 @@ Route::post('/registro', [RegistroController::class, 'store'])->name('registro.s
 
 // Rutas autenticadas (el grupo `web` ya viene aplicado por defecto a routes/web.php)
 // Landing por rol (inicio de cada usuario autenticado)
-Route::get('/inicio', function () {
-    if (! session()->has('auth_token')) {
-        return redirect()->route('login');
-    }
-
-    return view('inicio');
-})->name('inicio');
+Route::get('/inicio', InicioController::class)->name('inicio');
 
 // HU-02: Gestión de usuarios (exclusivo administrador)
 Route::get('/usuarios', [UsuarioWebController::class, 'index'])->name('usuarios.index');
