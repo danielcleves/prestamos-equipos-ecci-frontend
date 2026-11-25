@@ -1,6 +1,18 @@
 @extends('layouts.app')
 
 @section('content')
+    @php
+        // H-15 (EVD-033): Inicio no ofrece destinos que el rol no puede usar. El
+        // encargado tampoco entra a /usuarios, así que esa tarjeta es solo del admin.
+        // El contenido con métricas por rol es la decisión D-2 y no se inventa aquí.
+        $usuarioInicio = session('user') ?? [];
+        $rolesInicio = $usuarioInicio['roles'] ?? [];
+        $nombresRolesInicio = is_array($rolesInicio[0] ?? null)
+            ? array_column($rolesInicio, 'name')
+            : (is_array($rolesInicio) ? $rolesInicio : []);
+        $esAdminInicio = in_array('admin', $nombresRolesInicio, true);
+    @endphp
+
     <div class="space-y-6">
         <div>
             <h1 class="text-xl font-bold text-slate-900">
@@ -17,24 +29,20 @@
 
         <div class="bg-white p-6 rounded-xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
             <p class="text-sm text-slate-600">
-                Tu módulo está en construcción. Pronto podrás consultar el catálogo de equipos
-                y gestionar tus solicitudes de préstamo desde aquí.
+                Usa los accesos de abajo para empezar. Aquí verás el resumen de tu actividad
+                cuando esté definido qué necesita cada rol.
             </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <a href="{{ route('equipos.index') }}" class="bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B3D91]">
                 Catálogo de equipos
             </a>
-            <a href="{{ route('usuarios.index') }}" class="bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B3D91]">
-                Gestión de usuarios
-            </a>
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button type="submit" class="w-full bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B3D91] text-left">
-                    Cerrar sesión
-                </button>
-            </form>
+            @if($esAdminInicio)
+                <a href="{{ route('usuarios.index') }}" class="bg-white p-5 rounded-xl border border-slate-200/80 hover:border-blue-300 transition text-sm font-semibold text-[#0B3D91]">
+                    Gestión de usuarios
+                </a>
+            @endif
         </div>
     </div>
 @endsection

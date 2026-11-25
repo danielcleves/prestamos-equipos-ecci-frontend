@@ -14,7 +14,6 @@
                 Sistema de Préstamo de Equipos ECCI
                 <span class="text-[#6B7280] font-normal ml-2 hidden sm:inline">Gestión de equipos tecnológicos y audiovisuales</span>
             </div>
-            <div class="text-[#6B7280] font-mono">v2.4.1</div>
         </header>
 
         {{-- Contenedor Principal --}}
@@ -23,9 +22,6 @@
             {{-- Columna Izquierda: Banner & Equipos --}}
             <section class="lg:col-span-7 flex flex-col justify-center text-white space-y-6">
                 <div>
-                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-900/60 text-blue-300 border border-blue-700/50 mb-4">
-                        <span class="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse"></span> SISTEMA ACTIVO
-                    </span>
                     <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight">Préstamo de <br>equipos ECCI</h1>
                     <p class="mt-3 text-slate-300 max-w-md text-sm">
                         Solicita y gestiona los equipos que necesitas para tus actividades académicas.
@@ -45,22 +41,6 @@
                             <span class="text-xs font-medium text-slate-200">{{ $cat }}</span>
                         </div>
                     @endforeach
-                </div>
-
-                {{-- Métricas Rápidas --}}
-                <div class="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
-                    <div>
-                        <p class="text-2xl font-bold">240+</p>
-                        <p class="text-xs text-slate-400">Equipos disponibles</p>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold">3</p>
-                        <p class="text-xs text-slate-400">Roles de usuario</p>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold">24h</p>
-                        <p class="text-xs text-slate-400">Soporte técnico</p>
-                    </div>
                 </div>
             </section>
 

@@ -14,9 +14,18 @@ class InicioTest extends TestCase
         $this->get('/inicio')->assertRedirect(route('login'));
     }
 
+    /**
+     * El layout conserva la acción de cerrar sesión del sidebar (title="Cerrar sesión"),
+     * así que se cuenta el texto en vez de prohibirlo en toda la página.
+     */
+    private function contarCerrarSesion(string $html): int
+    {
+        return substr_count($html, 'Cerrar sesión');
+    }
+
     public function test_usuario_autenticado_ve_el_saludo_y_los_accesos(): void
     {
-        $this->withSession([
+        $response = $this->withSession([
             'auth_token' => 'token-vigente',
             'user' => ['name' => 'Ana Pérez', 'roles' => ['estudiante']],
         ])
@@ -24,8 +33,27 @@ class InicioTest extends TestCase
             ->assertOk()
             ->assertSee('Hola, Ana Pérez')
             ->assertSee('Catálogo de equipos')
-            ->assertSee('Gestión de usuarios')
-            ->assertSee('Cerrar sesión');
+            // H-15 (EVD-033): el solicitante no ve accesos que lo devuelvan a Inicio.
+            ->assertDontSee('Gestión de usuarios');
+
+        $this->assertSame(
+            1,
+            $this->contarCerrarSesion($response->getContent()),
+            'Inicio ya no ofrece «Cerrar sesión» como tarjeta: solo queda la acción del sidebar.'
+        );
+    }
+
+    public function test_el_admin_si_ve_el_acceso_a_la_gestion_de_usuarios(): void
+    {
+        $response = $this->withSession([
+            'auth_token' => 'token-admin',
+            'user' => ['name' => 'Admin ECCI', 'roles' => ['admin']],
+        ])
+            ->get('/inicio')
+            ->assertOk()
+            ->assertSee('Gestión de usuarios');
+
+        $this->assertSame(1, $this->contarCerrarSesion($response->getContent()));
     }
 
     public function test_la_raiz_redirige_al_login_sin_sesion(): void
