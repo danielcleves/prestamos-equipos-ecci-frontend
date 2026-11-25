@@ -7,12 +7,6 @@
         1 => 'Requiere autorización adicional',
         2 => 'Solo personal administrativo',
     ];
-
-    // Al volver por un error de validación se respeta lo que el admin marcó,
-    // aunque el checkbox desmarcado no viaje en la petición.
-    $capacitacionMarcada = session()->hasOldInput()
-        ? (bool) old('requiere_capacitacion')
-        : (bool) $parametros['elegibilidad.requiere_capacitacion'];
 @endphp
 
 <div x-data="{
@@ -28,7 +22,7 @@
     {{-- Encabezado --}}
     <div>
         <h2 class="text-2xl font-bold text-texto">Configuración de reglas de negocio</h2>
-        <p class="text-sm text-texto-suave">Parámetros de cupos, duración, mora, daños y elegibilidad. Los cambios aplican a las solicitudes nuevas.</p>
+        <p class="text-sm text-texto-suave">Parámetros de cupos, duración, mora, daños y restricciones por categoría. Los cambios aplican a las solicitudes nuevas.</p>
     </div>
 
     {{-- Alertas --}}
@@ -231,24 +225,6 @@
             <p class="text-xs text-slate-400">Uno por línea. Usa <code>@ecci.edu.co</code> para todo un dominio o un correo completo para una persona. Si se vacía, se conserva la lista actual.</p>
         </div>
 
-        {{-- RN-01: elegibilidad --}}
-        <div class="bg-white p-6 rounded-xl border border-borde shadow-sm space-y-4">
-            <div>
-                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Elegibilidad</h3>
-                <p class="text-xs text-slate-400 mt-0.5">Requisitos que se validan antes de registrar una solicitud.</p>
-            </div>
-            <label class="flex items-center gap-2.5 text-sm text-slate-700 font-medium">
-                <input
-                    type="checkbox"
-                    name="requiere_capacitacion"
-                    value="1"
-                    @checked($capacitacionMarcada)
-                    class="w-4 h-4 rounded border-borde-campo text-marca-700 focus:ring-marca-700"
-                >
-                <span>Exigir capacitación registrada para solicitar equipos</span>
-            </label>
-        </div>
-
         <div class="flex justify-end gap-3">
             <a href="{{ route('inicio') }}" class="h-12 px-5 border border-borde text-slate-600 text-sm font-semibold rounded-[10px] hover:bg-slate-50 transition flex items-center justify-center">
                 Cancelar
@@ -259,16 +235,17 @@
         </div>
     </form>
 
-    {{-- RN-03: nivel de restricción por categoría --}}
+    {{-- RN-03 y RN-01: nivel de restricción y capacitación por categoría --}}
     <div class="bg-white rounded-xl border border-borde shadow-sm overflow-hidden">
-        <div class="p-6 border-b border-borde">
-            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Nivel de restricción por categoría</h3>
-            <p class="text-xs text-slate-400 mt-0.5">Una categoría restringida marca la solicitud con «Requiere autorización» antes de poder aprobarse.</p>
+        <div class="p-6 border-b border-borde space-y-1">
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Restricciones por categoría</h3>
+            <p class="text-xs text-slate-400">Una categoría restringida marca la solicitud con «Requiere autorización» antes de poder aprobarse.</p>
+            <p class="text-xs text-slate-400" id="ayuda-capacitacion-categoria">Si una categoría requiere capacitación, quien no esté capacitado en esa categoría no podrá solicitar sus equipos. La capacitación de cada persona se registra en «Usuarios».</p>
         </div>
 
         <div class="overflow-x-auto">
             <div class="md:hidden px-4 py-2 text-xs text-slate-400 bg-slate-50/60 border-b border-slate-100">
-                Desliza la tabla para cambiar el nivel de restricción.
+                Desliza la tabla para cambiar el nivel de restricción o la capacitación.
             </div>
             <table class="w-full text-left border-collapse text-sm">
                 <thead>
@@ -276,6 +253,7 @@
                         <th class="py-3 px-6">Categoría</th>
                         <th class="py-3 px-6">Nivel actual</th>
                         <th class="py-3 px-6">Nuevo nivel</th>
+                        <th class="py-3 px-6">Capacitación</th>
                         <th class="py-3 px-6 text-right sticky right-0 bg-slate-50/70">Acción</th>
                     </tr>
                 </thead>
@@ -303,6 +281,30 @@
                                     </select>
                                 </form>
                             </td>
+                            <td class="py-3.5 px-6">
+                                {{-- El checkbox desmarcado no viaja: el oculto previo envía «0» (quitar el requisito). --}}
+                                <input type="hidden" name="requiere_capacitacion" value="0" form="restriccion-{{ $categoria['id'] }}">
+                                <label class="inline-flex items-center gap-2.5 cursor-pointer select-none whitespace-nowrap">
+                                    <span class="relative inline-flex shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            role="switch"
+                                            name="requiere_capacitacion"
+                                            value="1"
+                                            form="restriccion-{{ $categoria['id'] }}"
+                                            @checked($categoria['requiere_capacitacion'])
+                                            aria-describedby="ayuda-capacitacion-categoria"
+                                            data-capacitacion-categoria="{{ $categoria['id'] }}"
+                                            class="sr-only peer"
+                                        >
+                                        <span aria-hidden="true" class="w-10 h-5 bg-slate-300 rounded-full transition peer-checked:bg-marca-700 peer-focus-visible:ring-2 peer-focus-visible:ring-marca-500 peer-focus-visible:ring-offset-2 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></span>
+                                    </span>
+                                    <span class="text-xs font-medium text-slate-700">Requiere capacitación</span>
+                                </label>
+                                <p class="mt-1 text-xs {{ $categoria['requiere_capacitacion'] ? 'text-aviso-texto font-semibold' : 'text-slate-400' }}">
+                                    {{ $categoria['requiere_capacitacion'] ? 'Actual: exige capacitación' : 'Actual: sin requisito' }}
+                                </p>
+                            </td>
                             <td class="py-3.5 px-6 text-right sticky right-0 bg-white">
                                 <button type="submit" form="restriccion-{{ $categoria['id'] }}" class="h-9 px-3.5 bg-slate-100 hover:bg-marca-700 hover:text-white text-slate-700 text-sm font-semibold rounded-[10px] transition">
                                     Actualizar
@@ -311,7 +313,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="py-8 text-center text-slate-400">No hay categorías registradas en el inventario.</td>
+                            <td colspan="5" class="py-8 text-center text-slate-400">No hay categorías registradas en el inventario.</td>
                         </tr>
                     @endforelse
                 </tbody>

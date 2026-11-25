@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\CatalogoRoles;
+use App\Support\CapacitacionesVista;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -127,7 +128,10 @@ class UsuarioWebController extends Controller
         // RN-02: roles disponibles (incluye los personalizados que cree el admin).
         $roles = $this->consultarRoles($token);
 
-        return view('usuarios.index', compact('usuarios', 'total', 'activos', 'inactivos', 'roles'));
+        // RN-01: categorías en las que se puede capacitar a un usuario.
+        [$categorias, $errorCategorias] = $this->consultarCategorias($token, $usuarios);
+
+        return view('usuarios.index', compact('usuarios', 'total', 'activos', 'inactivos', 'roles', 'categorias', 'errorCategorias'));
     }
 
     public function store(Request $request)
@@ -141,8 +145,15 @@ class UsuarioWebController extends Controller
             'email' => 'required|email',
             'password' => 'required|min:8',
             'role' => ['required', 'string', 'max:125', 'regex:/^[a-z0-9_]+$/'],
-            'capacitado' => 'nullable|boolean',
+            ...$this->reglasCapacitaciones(),
         ]);
+
+        $payload = $request->only('name', 'email', 'password', 'role');
+
+        // RN-01: nadie arranca capacitado; solo viajan las categorías marcadas.
+        if ($request->boolean('capacitaciones_enviadas')) {
+            $payload['capacitaciones'] = $this->idsCapacitaciones($request);
+        }
 
         $token = $this->getToken();
 
@@ -150,11 +161,7 @@ class UsuarioWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->post($this->apiUrl().'/usuarios', array_merge(
-                    $request->only('name', 'email', 'password', 'role'),
-                    // RN-01: el alta llega capacitada por defecto (valor inicial del backend).
-                    ['capacitado' => $request->boolean('capacitado', true)],
-                ));
+                ->post($this->apiUrl().'/usuarios', $payload);
         } catch (ConnectionException $e) {
             return back()->withErrors(['store_error' => 'No se pudo conectar con el servicio backend.'])->withInput();
         }
@@ -183,7 +190,7 @@ class UsuarioWebController extends Controller
             'email' => 'required|email',
             'role' => ['required', 'string', 'max:125', 'regex:/^[a-z0-9_]+$/'],
             'password' => 'nullable|min:8',
-            'capacitado' => 'nullable|boolean',
+            ...$this->reglasCapacitaciones(),
         ]);
 
         $id = (int) $user;
@@ -192,9 +199,13 @@ class UsuarioWebController extends Controller
             'name' => $request->input('name'),
             'email' => $request->input('email'),
             'role' => $request->input('role'),
-            // RN-01: el checkbox desmarcado viaja como false (no capacitado).
-            'capacitado' => $request->boolean('capacitado'),
         ];
+
+        // RN-01: con el grupo de categorías en pantalla se envía siempre la lista
+        // completa (el backend la sincroniza); [] quita todas las capacitaciones.
+        if ($request->boolean('capacitaciones_enviadas')) {
+            $payload['capacitaciones'] = $this->idsCapacitaciones($request);
+        }
 
         if ($request->filled('password')) {
             $payload['password'] = $request->input('password');
@@ -249,5 +260,87 @@ class UsuarioWebController extends Controller
         }
 
         return redirect()->route('usuarios.index')->with('success', 'Estado actualizado.');
+    }
+
+    /**
+     * Reglas del grupo de capacitaciones (RN-01): ids de categoría.
+     * `capacitaciones_enviadas` indica que el formulario mostró el grupo, para
+     * distinguir «no marcó ninguna» (se envía []) de «no se tocó».
+     *
+     * @return array<string, mixed>
+     */
+    private function reglasCapacitaciones(): array
+    {
+        return [
+            'capacitaciones_enviadas' => 'nullable|boolean',
+            'capacitaciones' => 'nullable|array',
+            'capacitaciones.*' => 'integer|min:1|distinct',
+        ];
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function idsCapacitaciones(Request $request): array
+    {
+        return array_values(array_unique(array_map('intval', (array) $request->input('capacitaciones', []))));
+    }
+
+    /**
+     * Categorías del inventario para el grupo de capacitaciones (RN-01).
+     *
+     * El front no tiene un listado propio de categorías: se reutiliza
+     * GET /api/configuracion (solo admin, como esta pantalla), que trae
+     * `categorias[]` con `requiere_capacitacion`. Se añaden las categorías que
+     * ya figuran en las capacitaciones de los usuarios, para que editar a alguien
+     * nunca le quite una capacitación por no verla en la lista.
+     *
+     * @param  list<array<string, mixed>>  $usuarios
+     * @return array{0: list<array{id: int, nombre: string, requiere_capacitacion: bool}>, 1: string|null}
+     */
+    private function consultarCategorias(?string $token, array $usuarios): array
+    {
+        $categorias = [];
+        $error = null;
+
+        try {
+            $response = Http::withToken((string) $token)
+                ->acceptJson()
+                ->timeout(10)
+                ->get($this->apiUrl().'/configuracion');
+
+            if ($response->failed()) {
+                $error = 'No fue posible cargar todas las categorías; solo se muestran las que ya tienen usuarios capacitados.';
+            } else {
+                $lista = $response->json('data.categorias') ?? $response->json('categorias') ?? [];
+
+                foreach (is_array($lista) ? $lista : [] as $categoria) {
+                    if (is_array($categoria) && isset($categoria['id'])) {
+                        $id = (int) $categoria['id'];
+                        $categorias[$id] = [
+                            'id' => $id,
+                            'nombre' => (string) ($categoria['nombre'] ?? 'Categoría '.$id),
+                            'requiere_capacitacion' => filter_var($categoria['requiere_capacitacion'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                        ];
+                    }
+                }
+            }
+        } catch (ConnectionException $e) {
+            $error = 'No fue posible cargar todas las categorías; solo se muestran las que ya tienen usuarios capacitados.';
+        }
+
+        foreach ($usuarios as $usuario) {
+            foreach (CapacitacionesVista::desde($usuario) as $capacitacion) {
+                $categorias[$capacitacion['categoria_id']] ??= [
+                    'id' => $capacitacion['categoria_id'],
+                    'nombre' => $capacitacion['nombre'],
+                    'requiere_capacitacion' => false,
+                ];
+            }
+        }
+
+        ksort($categorias);
+
+        return [array_values($categorias), $error];
     }
 }

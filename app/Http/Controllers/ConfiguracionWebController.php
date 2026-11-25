@@ -15,7 +15,8 @@ use Illuminate\Validation\ValidationException;
  * Consume el contrato del backend:
  *  - GET   /api/configuracion                    → parámetros agrupados
  *  - PUT   /api/configuracion                    → mapa clave → valor
- *  - PATCH /api/categorias/{categoria}/restriccion → nivel 0/1/2 (RN-03)
+ *  - PATCH /api/categorias/{categoria}/restriccion → nivel 0/1/2 (RN-03) y/o
+ *    si la categoría exige capacitación (RN-01, por categoría)
  *
  * Los cupos por rol (RN-02) se gestionan en /roles; aquí solo se muestran.
  *
@@ -37,7 +38,6 @@ class ConfiguracionWebController extends Controller
         ],
         'mora.dias_bloqueo' => 1,
         'danos.dias_restriccion' => 7,
-        'elegibilidad.requiere_capacitacion' => false,
         'registro.correos_permitidos' => ['@ecci.edu.co'],
     ];
 
@@ -148,7 +148,6 @@ class ConfiguracionWebController extends Controller
             'mora_escala.*.dias_sancion' => ['required', 'integer', 'min:1', 'max:365'],
             'mora_dias_bloqueo' => ['required', 'integer', 'min:0', 'max:365'],
             'danos_dias_restriccion' => ['required', 'integer', 'min:0', 'max:365'],
-            'requiere_capacitacion' => ['nullable', 'boolean'],
             'correos_permitidos' => ['nullable', 'string'],
         ], [
             'duracion_categorias.required' => 'Debes indicar la duración máxima por categoría.',
@@ -171,7 +170,6 @@ class ConfiguracionWebController extends Controller
             'mora.escala' => $escala,
             'mora.dias_bloqueo' => (int) $datos['mora_dias_bloqueo'],
             'danos.dias_restriccion' => (int) $datos['danos_dias_restriccion'],
-            'elegibilidad.requiere_capacitacion' => $request->boolean('requiere_capacitacion'),
         ];
 
         if ($request->filled('correos_permitidos')) {
@@ -227,8 +225,10 @@ class ConfiguracionWebController extends Controller
     }
 
     /**
-     * Cambia el nivel de restricción de una categoría (RN-03).
+     * Cambia la restricción de una categoría: el nivel (RN-03) y si exige
+     * capacitación para solicitar sus equipos (RN-01, por categoría).
      * 0 = libre, 1 = requiere autorización, 2 = solo personal administrativo.
+     * Llega al menos uno de los dos campos; solo se envía al backend lo que llega.
      */
     public function actualizarRestriccion(Request $request, string $id): RedirectResponse
     {
@@ -237,11 +237,24 @@ class ConfiguracionWebController extends Controller
         }
 
         $datos = $request->validate([
-            'nivel_restriccion' => ['required', 'integer', 'in:0,1,2'],
+            'nivel_restriccion' => ['required_without:requiere_capacitacion', 'nullable', 'integer', 'in:0,1,2'],
+            'requiere_capacitacion' => ['required_without:nivel_restriccion', 'nullable', 'boolean'],
         ], [
-            'nivel_restriccion.required' => 'Debes indicar el nivel de restricción de la categoría.',
+            'nivel_restriccion.required_without' => 'Debes indicar el nivel de restricción o si la categoría requiere capacitación.',
+            'requiere_capacitacion.required_without' => 'Debes indicar el nivel de restricción o si la categoría requiere capacitación.',
             'nivel_restriccion.in' => 'El nivel de restricción debe ser 0, 1 o 2.',
+            'requiere_capacitacion.boolean' => 'Indica si la categoría requiere capacitación (sí o no).',
         ]);
+
+        $cambios = [];
+
+        if (isset($datos['nivel_restriccion'])) {
+            $cambios['nivel_restriccion'] = (int) $datos['nivel_restriccion'];
+        }
+
+        if (isset($datos['requiere_capacitacion'])) {
+            $cambios['requiere_capacitacion'] = $request->boolean('requiere_capacitacion');
+        }
 
         $token = $this->getToken();
 
@@ -249,9 +262,7 @@ class ConfiguracionWebController extends Controller
             $response = Http::withToken($token)
                 ->acceptJson()
                 ->timeout(10)
-                ->patch($this->apiUrl()."/categorias/{$id}/restriccion", [
-                    'nivel_restriccion' => (int) $datos['nivel_restriccion'],
-                ]);
+                ->patch($this->apiUrl()."/categorias/{$id}/restriccion", $cambios);
         } catch (ConnectionException $e) {
             return back()->withErrors(['restriccion_error' => 'No fue posible conectar con el servicio de configuración.']);
         }
@@ -269,13 +280,13 @@ class ConfiguracionWebController extends Controller
 
         if ($response->failed()) {
             $mensajes = $this->aplanarErrores($response->json('errors') ?? []);
-            $mensajeGeneral = $response->json('message') ?? 'No fue posible actualizar el nivel de restricción.';
+            $mensajeGeneral = $response->json('message') ?? 'No fue posible actualizar la restricción de la categoría.';
 
             return back()->withErrors(['restriccion_error' => $mensajes[0] ?? $mensajeGeneral]);
         }
 
         return redirect()->route('configuracion.index')
-            ->with('success', 'Nivel de restricción de la categoría actualizado correctamente.');
+            ->with('success', 'Restricción de la categoría actualizada correctamente.');
     }
 
     /**
@@ -407,13 +418,6 @@ class ConfiguracionWebController extends Controller
 
         if (array_key_exists('danos.dias_restriccion', $planos)) {
             $parametros['danos.dias_restriccion'] = max(0, (int) $planos['danos.dias_restriccion']);
-        }
-
-        if (array_key_exists('elegibilidad.requiere_capacitacion', $planos)) {
-            $parametros['elegibilidad.requiere_capacitacion'] = filter_var(
-                $planos['elegibilidad.requiere_capacitacion'],
-                FILTER_VALIDATE_BOOLEAN
-            );
         }
 
         if (is_array($planos['registro.correos_permitidos'] ?? null)) {
@@ -560,11 +564,12 @@ class ConfiguracionWebController extends Controller
     }
 
     /**
-     * Construye la lista de categorías con su nivel de restricción.
+     * Construye la lista de categorías con su nivel de restricción y si exigen
+     * capacitación (RN-01, por categoría; arrancan sin requisito).
      *
      * @param  array<string, mixed>  $datos
      * @param  array<string, mixed>  $parametros
-     * @return list<array{id: int, nombre: string, nivel_restriccion: int}>
+     * @return list<array{id: int, nombre: string, nivel_restriccion: int, requiere_capacitacion: bool}>
      */
     private function categoriasDesdeRespuesta(array $datos, array $parametros): array
     {
@@ -593,6 +598,7 @@ class ConfiguracionWebController extends Controller
                 'id' => $id,
                 'nombre' => (string) ($categoria['nombre'] ?? $this->nombreCategoria($id)),
                 'nivel_restriccion' => $this->nivelValido($categoria['nivel_restriccion'] ?? ($restricciones[$id] ?? 0)),
+                'requiere_capacitacion' => filter_var($categoria['requiere_capacitacion'] ?? false, FILTER_VALIDATE_BOOLEAN),
             ];
         }
 
@@ -604,6 +610,7 @@ class ConfiguracionWebController extends Controller
                     'id' => $id,
                     'nombre' => $this->nombreCategoria($id),
                     'nivel_restriccion' => $restricciones[$id] ?? 0,
+                    'requiere_capacitacion' => false,
                 ];
             }
         }

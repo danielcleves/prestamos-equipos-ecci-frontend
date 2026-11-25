@@ -11,8 +11,8 @@ use Tests\TestCase;
  * Iteración 2 · parámetros de las reglas de negocio.
  *
  * Cubre la pantalla /configuracion (solo administrador), el guardado de los
- * parámetros agrupados (RN-02, RN-04, RN-06, RN-08) y el cambio del nivel de
- * restricción de una categoría (RN-03).
+ * parámetros agrupados (RN-02, RN-04, RN-06, RN-08) y la restricción de una
+ * categoría: su nivel (RN-03) y si exige capacitación (RN-01, por categoría).
  */
 class ConfiguracionReglasTest extends TestCase
 {
@@ -39,11 +39,10 @@ class ConfiguracionReglasTest extends TestCase
                     ],
                     'mora.dias_bloqueo' => 2,
                     'danos.dias_restriccion' => 9,
-                    'elegibilidad.requiere_capacitacion' => true,
                 ],
                 'categorias' => [
-                    ['id' => 1, 'nombre' => 'Portátil', 'nivel_restriccion' => 1],
-                    ['id' => 2, 'nombre' => 'Tablet', 'nivel_restriccion' => 2],
+                    ['id' => 1, 'nombre' => 'Portátil', 'nivel_restriccion' => 1, 'requiere_capacitacion' => true],
+                    ['id' => 2, 'nombre' => 'Tablet', 'nivel_restriccion' => 2, 'requiere_capacitacion' => false],
                 ],
             ],
         ];
@@ -61,7 +60,6 @@ class ConfiguracionReglasTest extends TestCase
             ],
             'mora_dias_bloqueo' => 2,
             'danos_dias_restriccion' => 5,
-            'requiere_capacitacion' => '1',
             'correos_permitidos' => "@ecci.edu.co\ndocente@otro.edu.co",
         ], $sobrescribir);
     }
@@ -86,15 +84,20 @@ class ConfiguracionReglasTest extends TestCase
         $response->assertSee('name="mora_dias_bloqueo"', false);
         // Daños (RN-08)
         $response->assertSee('name="danos_dias_restriccion"', false);
-        // Elegibilidad (RN-01)
-        $response->assertSee('name="requiere_capacitacion"', false);
+        // Capacitación por categoría (RN-01): un interruptor por fila, sin parámetro global.
+        $response->assertSee('data-capacitacion-categoria="1"', false);
+        $response->assertSee('data-capacitacion-categoria="2"', false);
+        $response->assertSee('quien no esté capacitado en esa categoría no podrá solicitar sus equipos', false);
+        $response->assertDontSee('Exigir capacitación registrada para solicitar equipos');
         // Registro de solicitantes
         $response->assertSee('name="correos_permitidos"', false);
         $response->assertSee('@ecci.edu.co');
         // Restricción por categoría (RN-03)
         $response->assertSee('1 · Requiere autorización adicional');
         $response->assertSee('2 · Solo personal administrativo');
-        $response->assertViewHas('categorias', fn ($categorias) => count($categorias) === 2);
+        $response->assertViewHas('categorias', fn ($categorias) => count($categorias) === 2
+            && $categorias[0]['requiere_capacitacion'] === true
+            && $categorias[1]['requiere_capacitacion'] === false);
 
         Http::assertSent(fn ($request) => $request->method() === 'GET' &&
             str_ends_with($request->url(), '/configuracion')
@@ -194,7 +197,8 @@ class ConfiguracionReglasTest extends TestCase
                 && $request['mora.escala'][1]['hasta'] === null
                 && $request['mora.dias_bloqueo'] === 2
                 && $request['danos.dias_restriccion'] === 5
-                && $request['elegibilidad.requiere_capacitacion'] === true
+                // RN-01: la capacitación es por categoría; el parámetro global ya no existe.
+                && ! isset($request['elegibilidad.requiere_capacitacion'])
                 && $request['registro.correos_permitidos'] === ['@ecci.edu.co', 'docente@otro.edu.co'];
         });
     }
@@ -260,11 +264,11 @@ class ConfiguracionReglasTest extends TestCase
             ->patch('/categorias/2/restriccion', ['nivel_restriccion' => 2]);
 
         $response->assertRedirect(route('configuracion.index'));
-        $response->assertSessionHas('success', 'Nivel de restricción de la categoría actualizado correctamente.');
+        $response->assertSessionHas('success', 'Restricción de la categoría actualizada correctamente.');
 
         Http::assertSent(fn ($request) => $request->method() === 'PATCH' &&
             str_ends_with($request->url(), '/categorias/2/restriccion') &&
-            $request['nivel_restriccion'] === 2
+            $request->data() === ['nivel_restriccion' => 2]
         );
     }
 
@@ -285,5 +289,115 @@ class ConfiguracionReglasTest extends TestCase
             ->patch('/categorias/2/restriccion', ['nivel_restriccion' => 1])
             ->assertRedirect(route('inicio'))
             ->assertSessionHasErrors('inicio');
+    }
+
+    public function test_el_interruptor_exige_la_capacitacion_de_la_categoria(): void
+    {
+        Http::fake(['*' => Http::response(['data' => ['id' => 2]], 200)]);
+
+        // El formulario de la fila envía el oculto «0» y el checkbox marcado «1».
+        $this->withSession($this->sesionAdmin)
+            ->patch('/categorias/2/restriccion', ['nivel_restriccion' => 0, 'requiere_capacitacion' => '1'])
+            ->assertRedirect(route('configuracion.index'))
+            ->assertSessionHas('success', 'Restricción de la categoría actualizada correctamente.');
+
+        Http::assertSent(fn ($request) => $request->method() === 'PATCH' &&
+            str_ends_with($request->url(), '/categorias/2/restriccion') &&
+            $request['requiere_capacitacion'] === true &&
+            $request['nivel_restriccion'] === 0
+        );
+    }
+
+    public function test_el_interruptor_apagado_quita_el_requisito_de_capacitacion(): void
+    {
+        Http::fake(['*' => Http::response(['data' => ['id' => 1]], 200)]);
+
+        // Desmarcado solo viaja el oculto «0»: se envía false, no se omite.
+        $this->withSession($this->sesionAdmin)
+            ->patch('/categorias/1/restriccion', ['nivel_restriccion' => 1, 'requiere_capacitacion' => '0'])
+            ->assertRedirect(route('configuracion.index'));
+
+        Http::assertSent(fn ($request) => $request->method() === 'PATCH' &&
+            str_ends_with($request->url(), '/categorias/1/restriccion') &&
+            $request['requiere_capacitacion'] === false &&
+            $request['nivel_restriccion'] === 1
+        );
+    }
+
+    public function test_la_capacitacion_se_puede_cambiar_sin_enviar_el_nivel(): void
+    {
+        Http::fake(['*' => Http::response(['data' => ['id' => 3]], 200)]);
+
+        $this->withSession($this->sesionAdmin)
+            ->patch('/categorias/3/restriccion', ['requiere_capacitacion' => '1'])
+            ->assertRedirect(route('configuracion.index'));
+
+        Http::assertSent(fn ($request) => $request->data() === ['requiere_capacitacion' => true]);
+    }
+
+    public function test_la_restriccion_sin_nivel_ni_capacitacion_no_llega_al_backend(): void
+    {
+        $this->withSession($this->sesionAdmin)
+            ->patch('/categorias/2/restriccion', [])
+            ->assertSessionHasErrors(['nivel_restriccion', 'requiere_capacitacion']);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_un_valor_de_capacitacion_no_booleano_no_llega_al_backend(): void
+    {
+        $this->withSession($this->sesionAdmin)
+            ->patch('/categorias/2/restriccion', ['nivel_restriccion' => 0, 'requiere_capacitacion' => 'tal-vez'])
+            ->assertSessionHasErrors('requiere_capacitacion');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_el_interruptor_refleja_el_estado_de_cada_categoria(): void
+    {
+        Http::fake(['*/configuracion' => Http::response($this->respuestaConfiguracion(), 200)]);
+
+        $html = $this->withSession($this->sesionAdmin)->get('/configuracion')->assertOk()->getContent();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($html);
+        $xpath = new \DOMXPath($dom);
+
+        $portatil = $xpath->query('//input[@data-capacitacion-categoria="1"]')->item(0);
+        $tablet = $xpath->query('//input[@data-capacitacion-categoria="2"]')->item(0);
+
+        $this->assertTrue($portatil->hasAttribute('checked'));
+        $this->assertFalse($tablet->hasAttribute('checked'));
+        $this->assertSame('switch', $portatil->getAttribute('role'));
+        $this->assertSame('restriccion-1', $portatil->getAttribute('form'));
+        // El oculto que envía «0» va antes del checkbox y en el mismo formulario.
+        $this->assertSame(1, $xpath->query('//input[@type="hidden"][@name="requiere_capacitacion"][@value="0"][@form="restriccion-1"]')->length);
+    }
+
+    public function test_si_el_backend_aun_trae_el_parametro_global_no_se_pinta_ni_se_reenvia(): void
+    {
+        $respuesta = $this->respuestaConfiguracion();
+        $respuesta['data']['parametros']['elegibilidad.requiere_capacitacion'] = true;
+
+        Http::fake(['*/configuracion' => Http::response($respuesta, 200)]);
+
+        $this->withSession($this->sesionAdmin)
+            ->get('/configuracion')
+            ->assertOk()
+            ->assertDontSee('Exigir capacitación registrada para solicitar equipos')
+            ->assertViewHas('parametros', fn ($parametros) => ! array_key_exists('elegibilidad.requiere_capacitacion', $parametros));
+    }
+
+    public function test_una_categoria_sin_el_campo_arranca_sin_requisito(): void
+    {
+        $respuesta = $this->respuestaConfiguracion();
+        unset($respuesta['data']['categorias'][0]['requiere_capacitacion']);
+
+        Http::fake(['*/configuracion' => Http::response($respuesta, 200)]);
+
+        $this->withSession($this->sesionAdmin)
+            ->get('/configuracion')
+            ->assertOk()
+            ->assertViewHas('categorias', fn ($categorias) => $categorias[0]['requiere_capacitacion'] === false);
     }
 }

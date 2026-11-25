@@ -382,7 +382,7 @@ class UxAcabadoTest extends TestCase
         $this->withSession($this->sesionAdmin)
             ->get('/configuracion')
             ->assertOk()
-            ->assertSee('Desliza la tabla para cambiar el nivel de restricción.');
+            ->assertSee('Desliza la tabla para cambiar el nivel de restricción o la capacitación.');
     }
 
     /**
@@ -402,10 +402,9 @@ class UxAcabadoTest extends TestCase
                     'mora.escala' => [['desde' => 1, 'hasta' => 2, 'dias_sancion' => 3]],
                     'mora.dias_bloqueo' => 1,
                     'danos.dias_restriccion' => 7,
-                    'elegibilidad.requiere_capacitacion' => false,
                     'registro.correos_permitidos' => ['@ecci.edu.co'],
                 ],
-                'categorias' => [['id' => 1, 'nombre' => 'Portátil', 'nivel_restriccion' => 1]],
+                'categorias' => [['id' => 1, 'nombre' => 'Portátil', 'nivel_restriccion' => 1, 'requiere_capacitacion' => true]],
             ]], 200),
             '*/roles' => Http::response(['data' => [
                 ['id' => 1, 'nombre' => 'estudiante', 'etiqueta' => 'Estudiante', 'cupo_prestamos' => 3, 'es_predeterminado' => true],
@@ -420,8 +419,8 @@ class UxAcabadoTest extends TestCase
             ->assertSee('Duración máxima del préstamo')
             ->assertSee('Escala de mora')
             ->assertSee('Restricción por daños')
-            ->assertSee('Elegibilidad')
-            ->assertSee('Nivel de restricción por categoría');
+            ->assertSee('Restricciones por categoría')
+            ->assertSee('Requiere capacitación');
 
         $roles = $this->withSession($this->sesionAdmin)
             ->get('/roles')

@@ -7,6 +7,8 @@
     $etiquetasRol = collect($roles)->pluck('etiqueta', 'nombre')->all();
     $rolPredeterminado = collect($roles)->firstWhere('es_predeterminado', true)['nombre']
         ?? ($roles[0]['nombre'] ?? 'estudiante');
+    // Capacitación por categoría: lista de categorías del inventario.
+    $categorias = $categorias ?? [];
 @endphp
 <div x-data="{
     search: '',
@@ -14,9 +16,9 @@
     statusFilter: '',
     openModalCreate: false,
     openModalEdit: false,
-    editUser: { id: null, name: '', email: '', role: @js($rolPredeterminado), capacitado: true, sancion: null },
+    editUser: { id: null, name: '', email: '', role: @js($rolPredeterminado), capacitaciones: [], sancion: null },
     openEdit(user) {
-        this.editUser = { ...user };
+        this.editUser = { ...user, capacitaciones: [...user.capacitaciones] };
         this.openModalEdit = true;
     }
 }" class="space-y-6">
@@ -142,8 +144,9 @@
                                 'encargado' => 'bg-amber-700',
                                 default => 'bg-emerald-600'
                             };
-                            // RN-01: la capacitación del usuario decide si puede solicitar equipos.
-                            $capacitado = (bool) ($user['capacitado'] ?? true);
+                            // RN-01: capacitación por categoría (Portátil, Router…).
+                            $textoCapacitaciones = \App\Support\CapacitacionesVista::texto($user);
+                            $sinCapacitaciones = \App\Support\CapacitacionesVista::ids($user) === [];
                             $sancion = \App\Support\SancionVista::desde($user['sancion_activa'] ?? null);
                         @endphp
                         <tr
@@ -164,9 +167,13 @@
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border {{ $rolColor }}">
                                     {{ $rolLabel }}
                                 </span>
-                                <span class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $capacitado ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' : 'bg-slate-50 text-slate-500 border-slate-200' }}">
-                                    {{ $capacitado ? 'Capacitado' : 'Sin capacitación' }}
-                                </span>
+                                <p class="mt-1 max-w-[14rem] text-xs leading-snug {{ $sinCapacitaciones ? 'text-slate-400' : 'text-slate-600' }}" data-capacitaciones="{{ $user['id'] }}">
+                                    @if($sinCapacitaciones)
+                                        Sin capacitaciones
+                                    @else
+                                        <span class="font-semibold">Capacitado en:</span> {{ $textoCapacitaciones }}
+                                    @endif
+                                </p>
                             </td>
                             <td class="py-3.5 px-6">
                                 @if($user['is_active'])
@@ -187,7 +194,7 @@
                             <td class="py-3.5 px-6 text-right space-x-2">
                                 <button
                                     type="button"
-                                    @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol, 'capacitado' => (bool) ($user['capacitado'] ?? true), 'sancion' => $sancion]))"
+                                    @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol, 'capacitaciones' => \App\Support\CapacitacionesVista::ids($user), 'sancion' => $sancion]))"
                                     class="text-slate-500 hover:text-marca-700 font-medium transition"
                                 >
                                     Editar
@@ -235,8 +242,9 @@
                         'encargado' => 'bg-amber-700',
                         default => 'bg-emerald-600'
                     };
-                    // RN-01: la capacitación del usuario decide si puede solicitar equipos.
-                    $capacitado = (bool) ($user['capacitado'] ?? true);
+                    // RN-01: capacitación por categoría (Portátil, Router…).
+                    $textoCapacitaciones = \App\Support\CapacitacionesVista::texto($user);
+                    $sinCapacitaciones = \App\Support\CapacitacionesVista::ids($user) === [];
                     $sancion = \App\Support\SancionVista::desde($user['sancion_activa'] ?? null);
                 @endphp
                 <div
@@ -259,9 +267,6 @@
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border {{ $rolColor }}">
                             {{ $rolLabel }}
                         </span>
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border {{ $capacitado ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' : 'bg-slate-50 text-slate-500 border-slate-200' }}">
-                            {{ $capacitado ? 'Capacitado' : 'Sin capacitación' }}
-                        </span>
                         @if($user['is_active'])
                             <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Activo
@@ -276,10 +281,18 @@
                         @endif
                     </div>
 
+                    <p class="text-xs leading-snug {{ $sinCapacitaciones ? 'text-slate-400' : 'text-slate-600' }}" data-capacitaciones-movil="{{ $user['id'] }}">
+                        @if($sinCapacitaciones)
+                            Sin capacitaciones
+                        @else
+                            <span class="font-semibold">Capacitado en:</span> {{ $textoCapacitaciones }}
+                        @endif
+                    </p>
+
                     <div class="flex gap-2">
                         <button
                             type="button"
-                            @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol, 'capacitado' => (bool) ($user['capacitado'] ?? true), 'sancion' => $sancion]))"
+                            @click="openEdit(@js(['id' => $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $rol, 'capacitaciones' => \App\Support\CapacitacionesVista::ids($user), 'sancion' => $sancion]))"
                             class="flex-1 h-12 rounded-[10px] border border-borde bg-white text-xs font-semibold text-marca-700 hover:bg-slate-50 transition"
                         >
                             Editar
@@ -315,7 +328,7 @@
             tabindex="-1"
             x-foco-modal="openModalCreate"
             x-effect="openModalCreate && $nextTick(() => $refs.dialogoNuevoUsuario.focus())"
-            class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden"
+            class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto"
         >
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 id="modal-nuevo-usuario-titulo" class="font-bold text-slate-800 text-sm">Registrar nuevo usuario</h3>
@@ -343,14 +356,7 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Contraseña inicial</label>
                     <input type="password" name="password" required minlength="8" class="w-full h-12 text-sm px-3 border border-borde-campo rounded-[10px] focus:ring-1 focus:ring-marca-700 outline-none">
                 </div>
-                <div>
-                    {{-- RN-01: la capacitación habilita solicitar equipos cuando el parámetro lo exige. --}}
-                    <label class="flex items-center gap-2.5 text-sm font-semibold text-slate-700">
-                        <input type="checkbox" name="capacitado" value="1" checked class="w-4 h-4 rounded border-borde-campo text-marca-700 focus:ring-marca-700">
-                        <span>Capacitado para usar los equipos</span>
-                    </label>
-                    <p class="text-xs text-slate-400 mt-1">Si se exige capacitación, un usuario no capacitado no puede solicitar préstamos.</p>
-                </div>
+                @include('usuarios._capacitaciones', ['modo' => 'alta'])
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" @click="openModalCreate = false" class="h-12 px-4 border border-borde text-marca-700 text-sm font-semibold rounded-[10px] hover:bg-slate-50 transition">Cancelar</button>
                     <button type="submit" class="h-12 px-5 bg-marca-700 text-white text-sm font-semibold rounded-[10px] hover:bg-marca-500 transition">Guardar usuario</button>
@@ -370,7 +376,7 @@
             tabindex="-1"
             x-foco-modal="openModalEdit"
             x-effect="openModalEdit && $nextTick(() => $refs.dialogoEditarUsuario.focus())"
-            class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden"
+            class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto"
         >
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 id="modal-editar-usuario-titulo" class="font-bold text-slate-800 text-sm">Editar usuario</h3>
@@ -408,13 +414,7 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Nueva contraseña (opcional)</label>
                     <input type="password" name="password" minlength="8" placeholder="Dejar en blanco para no cambiarla" class="w-full h-12 text-sm px-3 border border-borde-campo rounded-[10px] focus:ring-1 focus:ring-marca-700 outline-none">
                 </div>
-                <div>
-                    {{-- RN-01: al desmarcarlo, el backend (PUT /usuarios/{id}) lo guarda como no capacitado. --}}
-                    <label class="flex items-center gap-2.5 text-sm font-semibold text-slate-700">
-                        <input type="checkbox" name="capacitado" value="1" x-model="editUser.capacitado" class="w-4 h-4 rounded border-borde-campo text-marca-700 focus:ring-marca-700">
-                        <span>Capacitado para usar los equipos</span>
-                    </label>
-                </div>
+                @include('usuarios._capacitaciones', ['modo' => 'edicion'])
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" @click="openModalEdit = false" class="h-12 px-4 border border-borde text-marca-700 text-sm font-semibold rounded-[10px] hover:bg-slate-50 transition">Cancelar</button>
                     <button type="submit" class="h-12 px-5 bg-marca-700 text-white text-sm font-semibold rounded-[10px] hover:bg-marca-500 transition">Actualizar</button>
