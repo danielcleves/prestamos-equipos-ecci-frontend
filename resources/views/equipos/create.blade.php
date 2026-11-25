@@ -8,16 +8,16 @@
 }">
     {{-- H-19: la miga la pinta el encabezado del layout; aquí solo el enlace de vuelta --}}
     <div>
-        <a href="{{ route('equipos.index') }}" class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-[#0B3D91] transition font-medium mb-1.5">
+        <a href="{{ route('equipos.index') }}" class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-marca-700 transition font-medium mb-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             <span>Volver a equipos</span>
         </a>
-        <h2 class="text-xl font-bold text-[#1F2937]">Registrar equipo</h2>
-        <p class="text-xs text-[#6B7280]">Registra un nuevo equipo para mantener actualizado el catálogo</p>
+        <h2 class="text-2xl font-bold text-texto">Registrar equipo</h2>
+        <p class="text-sm text-texto-suave">Registra un nuevo equipo para mantener actualizado el catálogo</p>
     </div>
 
     @if($errors->any())
-        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-[10px] space-y-1">
+        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-[10px] space-y-1">
             <p class="font-semibold">Corrige los siguientes errores antes de continuar:</p>
             <ul class="list-disc pl-5 space-y-0.5">
                 @foreach ($errors->all() as $error)
@@ -36,13 +36,13 @@
             <div class="lg:col-span-8 space-y-6">
                 
                 {{-- Tarjeta 1: Información básica --}}
-                <div class="bg-white rounded-xl border border-[#D9DEE7] p-6 shadow-sm space-y-4">
+                <div class="bg-white rounded-xl border border-borde p-6 shadow-sm space-y-4">
                     <h3 class="font-bold text-slate-800 text-sm">Información básica</h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">
-                                Código o serial <span class="text-rose-500">*</span>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">
+                                Código o serial <span class="text-rose-600">*</span>
                             </label>
                             <input 
                                 type="text" 
@@ -50,20 +50,20 @@
                                 x-model="codigo"
                                 placeholder="Ej. CP-011" 
                                 required
-                                class="w-full h-12 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none"
+                                class="w-full h-12 px-3 text-sm bg-white border border-borde-campo rounded-[10px] focus:ring-1 focus:ring-marca-700 outline-none"
                             >
-                            <p class="text-[11px] text-slate-400 mt-1">Identificador único del equipo</p>
+                            <p class="text-xs text-slate-400 mt-1">Identificador único del equipo</p>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">
-                                Tipo de equipo <span class="text-rose-500">*</span>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">
+                                Tipo de equipo <span class="text-rose-600">*</span>
                             </label>
                             <select 
                                 name="categoria_id" 
                                 x-model="categoriaId"
                                 required
-                                class="w-full h-12 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none"
+                                class="w-full h-12 px-3 text-sm bg-white border border-borde-campo rounded-[10px] focus:ring-1 focus:ring-marca-700 outline-none"
                             >
                                 <option value="">Seleccionar tipo</option>
                                 @foreach($categorias as $cat)
@@ -76,8 +76,8 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">
-                            Nombre del equipo <span class="text-rose-500">*</span>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">
+                            Nombre del equipo <span class="text-rose-600">*</span>
                         </label>
                         <input 
                             type="text" 
@@ -85,70 +85,70 @@
                             x-model="nombre"
                             placeholder="Ej. Portátil Dell Latitude 5520" 
                             required
-                            class="w-full h-12 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none"
+                            class="w-full h-12 px-3 text-sm bg-white border border-borde-campo rounded-[10px] focus:ring-1 focus:ring-marca-700 outline-none"
                         >
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Descripción</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Descripción</label>
                         <textarea 
                             name="descripcion" 
                             rows="3" 
                             placeholder="Especificaciones técnicas, características relevantes..."
-                            class="w-full p-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none"
+                            class="w-full p-3 text-sm bg-white border border-borde-campo rounded-[10px] focus:ring-1 focus:ring-marca-700 outline-none"
                         >{{ old('descripcion') }}</textarea>
                     </div>
                 </div>
 
                 {{-- Tarjeta 2: Estado y ubicación --}}
-                <div class="bg-white rounded-xl border border-[#D9DEE7] p-6 shadow-sm space-y-4">
+                <div class="bg-white rounded-xl border border-borde p-6 shadow-sm space-y-4">
                     <h3 class="font-bold text-slate-800 text-sm">Estado y ubicación</h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-2">
-                                Estado inicial <span class="text-rose-500">*</span>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                Estado inicial <span class="text-rose-600">*</span>
                             </label>
                             <div class="space-y-2">
-                                <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                                    <input type="radio" checked disabled class="text-[#0B3D91] focus:ring-[#0B3D91]">
+                                <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                                    <input type="radio" checked disabled class="text-marca-700 focus:ring-marca-700">
                                     <span class="font-medium">Disponible</span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">Recomendado</span>
+                                    <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">Recomendado</span>
                                 </label>
-                                <label class="flex items-center gap-2 text-xs text-slate-400 cursor-not-allowed">
+                                <label class="flex items-center gap-2 text-sm text-slate-400 cursor-not-allowed">
                                     <input type="radio" disabled class="text-slate-300">
                                     <span>En mantenimiento</span>
                                 </label>
-                                <label class="flex items-center gap-2 text-xs text-slate-400 cursor-not-allowed">
+                                <label class="flex items-center gap-2 text-sm text-slate-400 cursor-not-allowed">
                                     <input type="radio" disabled class="text-slate-300">
                                     <span>No disponible</span>
                                 </label>
                             </div>
-                            <p class="text-[11px] text-slate-400 mt-2">El sistema asigna automáticamente el estado inicial al registrar.</p>
+                            <p class="text-xs text-slate-400 mt-2">El sistema asigna automáticamente el estado inicial al registrar.</p>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Ubicación <span class="text-slate-400 font-normal">(opcional)</span></label>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Ubicación <span class="text-slate-400 font-normal">(opcional)</span></label>
                             <input
                                 type="text"
                                 name="ubicacion"
                                 value="{{ old('ubicacion') }}"
                                 placeholder="Ej. Bodega Principal"
-                                class="w-full h-12 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]"
+                                class="w-full h-12 px-3 text-sm bg-white border border-borde-campo rounded-[10px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-marca-700"
                             >
-                            <p class="text-[11px] text-slate-400 mt-1">Sala, bodega o lugar de almacenamiento</p>
+                            <p class="text-xs text-slate-400 mt-1">Sala, bodega o lugar de almacenamiento</p>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Observaciones</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Observaciones</label>
                         <textarea 
                             name="observaciones" 
                             rows="2" 
                             placeholder="Notas adicionales..."
-                            class="w-full p-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none"
+                            class="w-full p-3 text-sm bg-white border border-borde-campo rounded-[10px] focus:ring-1 focus:ring-marca-700 outline-none"
                         >{{ old('observaciones') }}</textarea>
-                        <p class="text-[11px] text-slate-400 mt-1">Campo opcional</p>
+                        <p class="text-xs text-slate-400 mt-1">Campo opcional</p>
                     </div>
                 </div>
 
@@ -158,20 +158,20 @@
             <div class="lg:col-span-4 space-y-6">
                 
                 {{-- Tarjeta Imagen del equipo --}}
-                <div class="bg-white rounded-xl border border-[#D9DEE7] p-6 shadow-sm space-y-3">
+                <div class="bg-white rounded-xl border border-borde p-6 shadow-sm space-y-3">
                     <h3 class="font-bold text-slate-800 text-sm">Imagen del equipo</h3>
-                    <div class="border-2 border-dashed border-[#D9DEE7] rounded-xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition cursor-pointer">
+                    <div class="border-2 border-dashed border-borde rounded-xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition cursor-pointer">
                         <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>
                         <p class="text-xs font-semibold text-slate-700">Cargar imagen</p>
-                        <p class="text-[11px] text-slate-400 mt-0.5">PNG, JPG hasta 5 MB</p>
+                        <p class="text-xs text-slate-400 mt-0.5">PNG, JPG hasta 5 MB</p>
                     </div>
-                    <p class="text-[11px] text-slate-400 text-center">La imagen ayuda a identificar visualmente el equipo</p>
+                    <p class="text-xs text-slate-400 text-center">La imagen ayuda a identificar visualmente el equipo</p>
                 </div>
 
                 {{-- Tarjeta Campos obligatorios dinámicos --}}
-                <div class="bg-white rounded-xl border border-[#D9DEE7] p-6 shadow-sm space-y-3">
+                <div class="bg-white rounded-xl border border-borde p-6 shadow-sm space-y-3">
                     <h3 class="font-bold text-slate-800 text-sm">Campos obligatorios</h3>
                     <ul class="space-y-2 text-xs">
                         <li class="flex items-center gap-2" :class="codigo.trim() !== '' ? 'text-emerald-600' : 'text-slate-400'">
@@ -195,10 +195,10 @@
 
                 {{-- Botones de Acción --}}
                 <div class="flex items-center justify-end gap-3 pt-2">
-                    <a href="{{ route('equipos.index') }}" class="h-12 px-5 rounded-[10px] border border-[#D9DEE7] text-slate-600 text-xs font-semibold flex items-center justify-center hover:bg-slate-50 transition">
+                    <a href="{{ route('equipos.index') }}" class="h-12 px-5 rounded-[10px] border border-borde text-slate-600 text-sm font-semibold flex items-center justify-center hover:bg-slate-50 transition">
                         Cancelar
                     </a>
-                    <button type="submit" class="h-12 px-5 rounded-[10px] bg-[#0B3D91] hover:bg-[#1D5FD0] text-white text-xs font-semibold shadow-sm transition">
+                    <button type="submit" class="h-12 px-5 rounded-[10px] bg-marca-700 hover:bg-marca-500 text-white text-sm font-semibold shadow-sm transition">
                         Registrar equipo
                     </button>
                 </div>

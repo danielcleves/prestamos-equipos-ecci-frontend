@@ -4,15 +4,15 @@
     <div class="min-h-screen flex flex-col justify-between">
 
         {{-- Barra superior institucional --}}
-        <header class="w-full py-3 px-6 bg-white/95 backdrop-blur border-b border-[#D9DEE7] flex justify-between items-center text-xs text-[#6B7280]">
+        <header class="w-full py-3 px-6 bg-white/95 backdrop-blur border-b border-borde flex justify-between items-center text-xs text-texto-suave">
             <div class="flex items-center gap-2">
-                <span class="font-bold text-[#0B3D91] tracking-wide">Universidad ECCI</span>
+                <span class="font-bold text-marca-700 tracking-wide">Universidad ECCI</span>
                 <span class="text-slate-300">|</span>
                 <span>PRÉSTAMO DE EQUIPOS</span>
             </div>
-            <div class="font-medium text-[#1F2937]">
+            <div class="font-medium text-texto">
                 Sistema de Préstamo de Equipos ECCI
-                <span class="text-[#6B7280] font-normal ml-2 hidden sm:inline">Gestión de equipos tecnológicos y audiovisuales</span>
+                <span class="text-texto-suave font-normal ml-2 hidden sm:inline">Gestión de equipos tecnológicos y audiovisuales</span>
             </div>
         </header>
 
@@ -45,15 +45,15 @@
             </section>
 
             {{-- Columna Derecha: Tarjeta de Formulario --}}
-            <section class="lg:col-span-5 bg-white rounded-2xl shadow-xl p-8 border border-[#D9DEE7]">
+            <section class="lg:col-span-5 bg-white rounded-2xl shadow-xl p-8 border border-borde">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-[#1F2937]">Iniciar sesión</h2>
-                    <p class="text-xs text-[#6B7280] mt-1">Ingresa tus credenciales para acceder al sistema de préstamo de equipos.</p>
+                    <h2 class="text-2xl font-bold text-texto">Iniciar sesión</h2>
+                    <p class="text-xs text-texto-suave mt-1">Ingresa tus credenciales para acceder al sistema de préstamo de equipos.</p>
                 </div>
 
                 {{-- Mensajes de Error de Validación --}}
                 @if ($errors->any())
-                    <div class="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-[#EF4444] text-xs">
+                    <div class="mb-4 p-3 rounded-xl bg-error-suave border border-rose-200 text-error-texto text-sm">
                         {{ $errors->first() }}
                     </div>
                 @endif
@@ -62,7 +62,7 @@
                     @csrf
 
                     <div>
-                        <label for="email" class="block text-xs font-bold text-[#1F2937] tracking-wider uppercase mb-1">
+                        <label for="email" class="block text-sm font-bold text-texto tracking-wider uppercase mb-1">
                             Usuario institucional
                         </label>
                         <div class="relative">
@@ -74,13 +74,13 @@
                                 required
                                 autofocus
                                 placeholder="ejemplo@ecci.edu.co"
-                                class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition"
+                                class="w-full h-12 px-4 bg-white border border-borde-campo rounded-[10px] text-sm focus:ring-2 focus:ring-marca-700 focus:border-transparent outline-none transition"
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label for="password" class="block text-xs font-bold text-[#1F2937] tracking-wider uppercase mb-1">
+                        <label for="password" class="block text-sm font-bold text-texto tracking-wider uppercase mb-1">
                             Contraseña
                         </label>
                         <input
@@ -89,28 +89,28 @@
                             name="password"
                             required
                             placeholder="••••••••••••"
-                            class="w-full h-12 px-4 bg-white border border-[#D9DEE7] rounded-[10px] text-sm focus:ring-2 focus:ring-[#0B3D91] focus:border-transparent outline-none transition"
+                            class="w-full h-12 px-4 bg-white border border-borde-campo rounded-[10px] text-sm focus:ring-2 focus:ring-marca-700 focus:border-transparent outline-none transition"
                         />
                     </div>
 
                     <div class="flex items-center justify-between text-xs">
-                        <label class="flex items-center gap-2 text-[#6B7280] cursor-pointer">
-                            <input type="checkbox" name="remember" class="rounded text-[#0B3D91] focus:ring-[#0B3D91]">
+                        <label class="flex items-center gap-2 text-texto-suave cursor-pointer">
+                            <input type="checkbox" name="remember" class="rounded text-marca-700 focus:ring-marca-700">
                             <span>Recordarme</span>
                         </label>
-                        <span class="text-[#6B7280]">Solicita el restablecimiento al administrador.</span>
+                        <span class="text-texto-suave">Solicita el restablecimiento al administrador.</span>
                     </div>
 
                     <button
                         type="submit"
-                        class="w-full h-12 px-4 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white font-medium rounded-[10px] text-sm shadow-md shadow-blue-950/20 transition duration-150">
+                        class="w-full h-12 px-4 bg-marca-700 hover:bg-marca-500 text-white font-medium rounded-[10px] text-sm shadow-md shadow-blue-950/20 transition duration-150">
                         Iniciar sesión
                     </button>
                 </form>
 
                 <p class="mt-5 text-center text-xs text-slate-500">
                     ¿No tienes cuenta?
-                    <a href="{{ route('registro') }}" class="text-[#0B3D91] font-semibold hover:underline">Crear cuenta</a>
+                    <a href="{{ route('registro') }}" class="text-marca-700 font-semibold hover:underline">Crear cuenta</a>
                 </p>
             </section>
         </main>

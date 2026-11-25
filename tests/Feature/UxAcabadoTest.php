@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Support\EstadoPildora;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -100,14 +102,257 @@ class UxAcabadoTest extends TestCase
             ->assertSee('for="fecha-hasta"', false);
     }
 
-    public function test_solicitudes_avisa_del_desplazamiento_de_la_tabla_en_movil(): void
+    /**
+     * A 390 px la tabla de solicitudes mide más de 1000 px y la píldora de estado
+     * quedaba fuera del viewport; el aviso «Desliza la tabla…» no lo resolvía. En
+     * móvil se pintan tarjetas con el estado y la tabla queda solo para escritorio.
+     */
+    public function test_solicitudes_muestra_tarjetas_en_movil_en_lugar_de_la_tabla(): void
     {
-        $this->fakeVacio();
+        Http::fake([
+            '*/prestamos/pendientes*' => Http::response([
+                'data' => [
+                    [
+                        'id' => 30,
+                        'solicitante' => ['name' => 'Laura Gómez', 'email' => 'laura@ecci.edu.co'],
+                        'equipo' => [
+                            'nombre' => 'Fuente de Poder',
+                            'codigo' => 'FUE-01',
+                            'estado' => 'disponible',
+                            'categoria' => ['nombre' => 'Electrónica'],
+                        ],
+                        'fecha_solicitud' => '2026-11-19T22:30:00-05:00',
+                        'fecha_inicio' => '2026-11-25T08:00:00-05:00',
+                        'fecha_devolucion_estimada' => '2026-11-28T18:00:00-05:00',
+                        'estado' => 'solicitado',
+                    ],
+                ],
+            ], 200),
+        ]);
 
-        $this->withSession($this->sesionEncargado)
+        $response = $this->withSession($this->sesionEncargado)
             ->get('/solicitudes')
-            ->assertOk()
-            ->assertSee('Desliza la tabla para ver todas las columnas.');
+            ->assertOk();
+
+        // El aviso de deslizar ya no aplica: en móvil no hay tabla que deslizar.
+        $response->assertDontSee('Desliza la tabla para ver todas las columnas.');
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        // La tabla de escritorio está oculta en móvil y la tarjeta es solo móvil.
+        $this->assertSame(
+            1,
+            $xpath->query('//div[contains(@class, "hidden md:block")]//table')->length,
+            'La tabla debe quedar dentro de un contenedor «hidden md:block»'
+        );
+
+        $contenedor = $xpath->query('//div[contains(@class, "md:hidden divide-y")]');
+        $this->assertSame(1, $contenedor->length, 'Debe existir una vista de tarjetas «md:hidden»');
+
+        $tarjeta = $limpiar($contenedor->item(0)->textContent);
+
+        foreach ([
+            'Laura Gómez',
+            'laura@ecci.edu.co',
+            'Fuente de Poder',
+            'FUE-01',
+            'Solicitado',
+            '19/11/2026',
+            '25/11/2026',
+            '28/11/2026',
+            'Ver detalle',
+        ] as $dato) {
+            $this->assertStringContainsString($dato, $tarjeta, "La tarjeta móvil no muestra «{$dato}»");
+        }
+
+        // Orden: solicitante, equipo con su código, estado, fechas y acción.
+        $orden = ['Laura Gómez', 'FUE-01', 'Solicitado', '19/11/2026', 'Ver detalle'];
+        $posiciones = array_map(fn (string $dato) => mb_strpos($tarjeta, $dato), $orden);
+        $this->assertSame(
+            $posiciones,
+            collect($posiciones)->sort()->values()->all(),
+            'La tarjeta debe mostrar solicitante, equipo, estado, fechas y acción en ese orden'
+        );
+
+        // El estado usa el componente x-estado (misma píldora que la tabla).
+        $pildora = EstadoPildora::clases('prestamo', 'solicitado')['pildora'];
+        $this->assertSame(
+            1,
+            $xpath->query('.//span[contains(@class, "'.$pildora.'")]', $contenedor->item(0))->length,
+            'La tarjeta debe pintar el estado con <x-estado>'
+        );
+
+        // La acción de la tarjeta es la misma de la fila: abre el modal de detalle.
+        $botones = $xpath->query('.//button[contains(@class, "w-full")]', $contenedor->item(0));
+        $this->assertSame(1, $botones->length, 'La tarjeta debe tener una acción a ancho completo');
+        $this->assertStringContainsString('Ver detalle', $limpiar($botones->item(0)->textContent));
+
+        // Las dos acciones (fila y tarjeta) llaman a abrirModal con los mismos
+        // datos, así que el modal, Escape y el foco son los mismos.
+        preg_match_all("/abrirModal\(JSON\.parse\('(\{.*?\})'\)\)/", $response->getContent(), $acciones);
+        $this->assertCount(2, $acciones[1], 'Fila y tarjeta deben ofrecer «Ver detalle»');
+        $this->assertSame($acciones[1][0], $acciones[1][1], 'Tarjeta y fila deben abrir el mismo detalle');
+
+        // Un solo modal: con Escape y el foco en el diálogo.
+        $response->assertSee('@keydown.escape.window="openModalDetalle = false"', false);
+        $response->assertSee('x-ref="dialogoDetalleSolicitud"', false);
+        $response->assertSee('$refs.dialogoDetalleSolicitud.focus()', false);
+    }
+
+    /**
+     * El estado es el dato que se mira primero: su columna va justo después del
+     * equipo y antes de las tres fechas. Al final de la tabla, en pantallas
+     * medianas, quedaba tapada por la columna fija de acciones.
+     */
+    public function test_solicitudes_pone_el_estado_antes_de_las_fechas(): void
+    {
+        Http::fake([
+            '*/prestamos/pendientes*' => Http::response([
+                'data' => [
+                    [
+                        'id' => 30,
+                        'solicitante' => ['name' => 'Laura Gómez', 'email' => 'laura@ecci.edu.co'],
+                        'equipo' => [
+                            'nombre' => 'Fuente de Poder',
+                            'codigo' => 'FUE-01',
+                            'estado' => 'disponible',
+                            'categoria' => ['nombre' => 'Electrónica'],
+                        ],
+                        'fecha_solicitud' => '2026-11-19T22:30:00-05:00',
+                        'fecha_inicio' => '2026-11-25T08:00:00-05:00',
+                        'fecha_devolucion_estimada' => '2026-11-28T18:00:00-05:00',
+                        'estado' => 'solicitado',
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/solicitudes')
+            ->assertOk();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        $encabezados = [];
+        foreach ($xpath->query('//table/thead/tr/th') as $th) {
+            $encabezados[] = $limpiar($th->textContent);
+        }
+
+        $this->assertSame(
+            ['#', 'Solicitante', 'Equipo', 'Estado', 'F. Solicitud', 'F. Inicio', 'F. Devolución', 'Acciones'],
+            $encabezados,
+            '«Estado» debe ir después del equipo y antes de las fechas'
+        );
+
+        $celdas = [];
+        foreach ($xpath->query('//table/tbody/tr[1]/td') as $td) {
+            $celdas[] = $limpiar($td->textContent);
+        }
+
+        $this->assertCount(8, $celdas, 'La fila debe tener las mismas celdas que encabezados');
+        $this->assertStringContainsString('Solicitado', $celdas[3], 'La cuarta celda es la píldora de estado');
+        $this->assertSame('19/11/2026', $celdas[4]);
+        $this->assertSame('25/11/2026', $celdas[5]);
+        $this->assertSame('28/11/2026', $celdas[6]);
+    }
+
+    /**
+     * A 1024 px la tabla de entregas mide 939 px y la píldora de estado quedaba
+     * pegada a la columna fija «Acciones», que recortaba la última letra. Se
+     * mueve «Estado» antes de las fechas y, como la tabla sigue sin caber en los
+     * 702 px del contenedor, debajo de 1280 px se pintan las tarjetas.
+     */
+    public function test_entregas_pone_el_estado_antes_de_las_fechas(): void
+    {
+        $this->unaEntregaPendiente();
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/entregas-pendientes')
+            ->assertOk();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        $encabezados = [];
+        foreach ($xpath->query('//table/thead/tr/th') as $th) {
+            $encabezados[] = $limpiar($th->textContent);
+        }
+
+        $this->assertSame(
+            ['Solicitante', 'Equipo', 'Estado', 'F. Préstamo', 'F. Devolución', 'Acciones'],
+            $encabezados,
+            '«Estado» debe ir después del equipo y antes de las fechas'
+        );
+
+        $celdas = [];
+        foreach ($xpath->query('//table/tbody/tr[1]/td') as $td) {
+            $celdas[] = $limpiar($td->textContent);
+        }
+
+        $this->assertCount(6, $celdas, 'La fila debe tener las mismas celdas que encabezados');
+        $this->assertStringContainsString('Pendiente de entrega', $celdas[2], 'La tercera celda es la píldora de estado');
+        $this->assertSame('20/11/2026', $celdas[3]);
+        $this->assertSame('27/11/2026', $celdas[4]);
+    }
+
+    public function test_entregas_usa_tarjetas_por_debajo_de_1280(): void
+    {
+        $this->unaEntregaPendiente();
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/entregas-pendientes')
+            ->assertOk();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        // La tabla queda solo para escritorio ancho; las tarjetas cubren el resto.
+        $this->assertSame(
+            1,
+            $xpath->query('//div[contains(@class, "hidden xl:block")]//table')->length,
+            'La tabla debe quedar dentro de un contenedor «hidden xl:block»'
+        );
+
+        $contenedor = $xpath->query('//div[contains(@class, "xl:hidden")]');
+        $this->assertSame(1, $contenedor->length, 'Debe existir una vista de tarjetas «xl:hidden»');
+
+        $tarjeta = $limpiar($contenedor->item(0)->textContent);
+
+        foreach (['Laura Gómez', 'Osciloscopio', 'Pendiente de entrega', '20/11/2026', 'Registrar entrega'] as $dato) {
+            $this->assertStringContainsString($dato, $tarjeta, "La tarjeta no muestra «{$dato}»");
+        }
+
+        // El estado va en la primera línea de la tarjeta, junto al solicitante.
+        $this->assertLessThan(
+            mb_strpos($tarjeta, 'Osciloscopio'),
+            mb_strpos($tarjeta, 'Pendiente'),
+            'El estado debe verse antes que el equipo'
+        );
+    }
+
+    /**
+     * Una entrega pendiente (aprobada) con fechas, como la que sirve el backend.
+     */
+    private function unaEntregaPendiente(): void
+    {
+        Http::fake(['*' => Http::response(['data' => [[
+            'id' => 4,
+            'estado' => 'aprobado',
+            'solicitante' => ['name' => 'Laura Gómez', 'email' => 'laura@ecci.edu.co'],
+            'equipo' => ['nombre' => 'Osciloscopio', 'codigo' => 'OSC-01'],
+            'fecha_inicio' => '2026-11-20 08:00:00',
+            'fecha_devolucion_estimada' => '2026-11-27 18:00:00',
+        ]]], 200)]);
     }
 
     public function test_la_miga_del_catalogo_del_estudiante_dice_catalogo_de_equipos(): void
@@ -118,7 +363,7 @@ class UxAcabadoTest extends TestCase
             ->get('/equipos')
             ->assertOk();
 
-        $dom = new \DOMDocument();
+        $dom = new \DOMDocument;
         @$dom->loadHTML($response->getContent());
         $xpath = new \DOMXPath($dom);
         $nodos = $xpath->query('//header//span[contains(@class, "text-slate-700")]');
@@ -155,5 +400,97 @@ class UxAcabadoTest extends TestCase
             ->assertOk()
             ->assertSee('Desliza la tabla para ver estado y acciones.')
             ->assertSee('Restringido hasta');
+    }
+
+    /**
+     * El velo de un modal es hijo del contenedor `space-y-*` de la página, que
+     * reparte 24 px de margen entre hermanos; en un elemento `fixed` ese margen
+     * encoge la caja y deja una franja del viewport sin oscurecer. Todas las
+     * raíces `fixed inset-0` llevan `m-0` para que el velo mida el viewport.
+     */
+    public function test_los_velos_de_los_modales_ocupan_todo_el_viewport(): void
+    {
+        $vistas = collect(File::allFiles(resource_path('views')))
+            ->filter(fn ($archivo) => str_ends_with($archivo->getFilename(), '.blade.php'))
+            ->reject(fn ($archivo) => str_starts_with($archivo->getRelativePathname(), 'layouts'));
+
+        $velos = 0;
+
+        foreach ($vistas as $vista) {
+            preg_match_all('/class="([^"]*)"/', $vista->getContents(), $coincidencias);
+
+            foreach ($coincidencias[1] as $clases) {
+                if (! preg_match('/\bfixed\b/', $clases) || ! preg_match('/\binset-0\b/', $clases)) {
+                    continue;
+                }
+
+                $velos++;
+
+                $this->assertMatchesRegularExpression(
+                    '/\bm-0\b/',
+                    $clases,
+                    $vista->getRelativePathname().' tiene un velo fijo sin «m-0»: el margen del contenedor «space-y-*» lo encoge y deja una franja del viewport sin oscurecer'
+                );
+            }
+        }
+
+        // 9 velos: usuarios (2), equipos (2), catálogo, entregas, devoluciones,
+        // solicitudes y roles.
+        $this->assertSame(9, $velos, 'Cambió el número de velos de modal: revisa que cada uno lleve «m-0»');
+    }
+
+    /**
+     * El halo de foco (§13) es de 2 px y vive en app.css, compartido por los
+     * layouts app y guest. Al ir fuera de todo @layer gana a las utilidades
+     * `outline-none`/`focus:outline-none` de Tailwind sin `!important`; pero
+     * en Chrome los campos de texto coinciden con :focus-visible también con
+     * el ratón, así que app.js marca la modalidad y el halo solo se pinta con
+     * teclado.
+     */
+    public function test_el_halo_de_foco_es_de_2_px_y_solo_con_teclado(): void
+    {
+        $css = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertMatchesRegularExpression(
+            '/a:focus-visible,\s*button:focus-visible,\s*input:focus-visible,\s*select:focus-visible,\s*textarea:focus-visible,\s*\[tabindex\]:focus-visible\s*\{\s*outline:\s*2px solid var\(--color-marca-700\);\s*outline-offset:\s*2px;/',
+            $css,
+            'app.css debe definir el halo de 2 px con el azul de la marca para enlaces, botones y campos'
+        );
+
+        $this->assertMatchesRegularExpression(
+            "/html\[data-entrada='puntero'\]\s*:focus-visible\s*\{\s*outline:\s*0;/",
+            $css,
+            'app.css debe apagar el halo cuando el último gesto fue el ratón'
+        );
+
+        $js = file_get_contents(resource_path('js/app.js'));
+
+        $this->assertStringContainsString("setAttribute('data-entrada', 'puntero')", $js);
+        $this->assertStringContainsString("removeAttribute('data-entrada')", $js);
+
+        // Una sola fuente: el layout no repite la regla ni el layout guest se queda sin ella.
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $guest = file_get_contents(resource_path('views/layouts/guest.blade.php'));
+
+        $this->assertStringNotContainsString(':focus-visible', $layout);
+        $this->assertStringContainsString("@vite(['resources/css/app.css', 'resources/js/app.js'])", $guest);
+    }
+
+    /**
+     * El documento declara su idioma, que es lo que usan los navegadores para
+     * las pistas de los campos nativos (p. ej. la fecha de /solicitudes).
+     */
+    public function test_los_layouts_declaran_el_idioma_es(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('<html lang="es">', false);
+
+        $this->fakeVacio();
+
+        $this->withSession($this->sesionAdmin)
+            ->get('/solicitudes')
+            ->assertOk()
+            ->assertSee('<html lang="es"', false);
     }
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-[#F8FAFC]">
+<html lang="es" class="h-full bg-fondo">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,44 +9,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        ecci: {
-                            sidebar: '#0B3D91',
-                            blue: '#1D5FD0',
-                            dark: '#082E6D',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    {{-- La paleta y los tokens viven en resources/css/app.css (guía UI/UX §16). --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
         [x-cloak] { display: none !important; }
-        body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        /* H-26: halo de foco de 2 px en enlaces y campos (guía UI/UX §13). */
-        a:focus-visible,
-        button:focus-visible,
-        input:focus-visible,
-        select:focus-visible,
-        textarea:focus-visible,
-        [tabindex]:focus-visible {
-            outline: 2px solid #0B3D91;
-            outline-offset: 2px;
-        }
     </style>
+
+    {{-- H-26: el halo de foco de 2 px vive en resources/css/app.css, compartido con el layout guest. --}}
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
 <body x-data="{ menuAbierto: false }" class="h-full flex overflow-hidden text-slate-800 antialiased">
 
     {{-- H-26: primer elemento enfocable; permite saltar el menú lateral con el teclado --}}
-    <a href="#contenido-principal" class="sr-only focus:not-sr-only focus:absolute focus:z-[70] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-white focus:text-[#0B3D91] focus:text-xs focus:font-semibold focus:rounded-[10px] focus:shadow-md">Saltar al contenido</a>
+    <a href="#contenido-principal" class="sr-only focus:not-sr-only focus:absolute focus:z-[70] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-white focus:text-marca-700 focus:text-xs focus:font-semibold focus:rounded-[10px] focus:shadow-md">Saltar al contenido</a>
 
     {{-- Overlay móvil --}}
     <div x-show="menuAbierto" @click="menuAbierto = false" x-cloak class="fixed inset-0 bg-slate-900/50 z-30 md:hidden"></div>
@@ -97,7 +74,7 @@
     {{-- Sidebar Lateral --}}
     <aside
         :class="menuAbierto ? 'translate-x-0' : 'max-md:-translate-x-full'"
-        class="fixed md:static inset-y-0 left-0 w-64 bg-[#0B3D91] text-white flex flex-col justify-between shrink-0 h-screen z-40 select-none transition-transform duration-200">
+        class="fixed md:static inset-y-0 left-0 w-64 bg-marca-700 text-white flex flex-col justify-between shrink-0 h-screen z-40 select-none transition-transform duration-200">
         
         <div class="flex flex-col flex-1 overflow-y-auto">
 
@@ -109,18 +86,18 @@
                     </div>
                     <div>
                         <span class="text-xs font-bold tracking-tight text-white block leading-tight">Universidad ECCI</span>
-                        <span class="text-[10px] text-blue-300 font-medium block">Sistema de Préstamo de Equipos</span>
+                        <span class="text-xs text-blue-300 font-medium block">Sistema de Préstamo de Equipos</span>
                     </div>
                 </div>
 
                 {{-- Badge de Rol: Solicitante, Encargado o Administrador --}}
                 <div class="mt-4">
                     @if($modoAdminSidebar)
-                        <span class="inline-block px-2.5 py-1 bg-blue-500/20 border border-blue-400/30 rounded-md text-[11px] font-semibold text-blue-200">
+                        <span class="inline-block px-2.5 py-1 bg-blue-500/20 border border-blue-400/30 rounded-md text-xs font-semibold text-blue-200">
                             {{ $esAdmin ? 'Administrador' : 'Encargado' }}
                         </span>
                     @else
-                        <span class="inline-block px-2.5 py-1 bg-white/10 border border-white/15 rounded-md text-[11px] font-medium text-blue-100">
+                        <span class="inline-block px-2.5 py-1 bg-white/10 border border-white/15 rounded-md text-xs font-medium text-blue-100">
                             {{ $esAdmin ? 'Administrador · vista de solicitante' : 'Solicitante' }}
                         </span>
                     @endif
@@ -130,8 +107,8 @@
             {{-- Navegación Principal --}}
             <div class="px-4 py-5 flex-1 space-y-6">
                 <div>
-                    <span class="px-3 text-[10px] font-bold uppercase tracking-wider text-blue-300/60">Menú</span>
-                    <nav class="mt-2 space-y-1 text-xs font-medium">
+                    <span class="px-3 text-xs font-bold uppercase tracking-wider text-blue-200">Menú</span>
+                    <nav class="mt-2 space-y-1 text-sm font-medium">
 
                         {{-- Inicio --}}
                         <a href="{{ route('inicio') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-200 hover:bg-white/10 hover:text-white transition">
@@ -231,14 +208,14 @@
         </div>
 
         {{-- Footer Sidebar: Perfil del Usuario --}}
-        <div class="p-4 border-t border-blue-900/60 flex items-center justify-between bg-[#082E6D] shrink-0">
+        <div class="p-4 border-t border-blue-900/60 flex items-center justify-between bg-blue-800 shrink-0">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-8 h-8 rounded-full bg-blue-500/40 border border-blue-400/40 flex items-center justify-center font-bold text-xs text-white shrink-0">
                     {{ strtoupper(substr($user['name'] ?? 'US', 0, 2)) }}
                 </div>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold text-white truncate">{{ $user['name'] ?? 'Usuario' }}</p>
-                    <p class="text-[10px] text-blue-300 truncate">{{ $user['email'] ?? 'usuario@ecci.edu.co' }}</p>
+                    <p class="text-xs text-blue-300 truncate">{{ $user['email'] ?? 'usuario@ecci.edu.co' }}</p>
                 </div>
             </div>
             <form method="POST" action="{{ route('logout') }}" class="shrink-0 ml-1">
@@ -251,7 +228,7 @@
     </aside>
 
     {{-- Contenedor Principal --}}
-    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F8FAFC]">
+    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-fondo">
 
         {{-- Topbar Superior con Breadcrumb sincronizado --}}
         <header class="h-14 bg-white border-b border-slate-200/80 px-4 md:px-8 flex justify-between items-center shrink-0 z-10">
@@ -269,7 +246,7 @@
                 <button type="button" aria-label="Notificaciones" title="Notificaciones" class="text-slate-400 hover:text-slate-600 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                 </button>
-                <div class="w-7 h-7 rounded-full bg-[#0B3D91] text-white flex items-center justify-center font-bold text-[10px]">
+                <div class="w-7 h-7 rounded-full bg-marca-700 text-white flex items-center justify-center font-bold text-xs">
                     {{ strtoupper(substr($user['name'] ?? 'US', 0, 2)) }}
                 </div>
             </div>

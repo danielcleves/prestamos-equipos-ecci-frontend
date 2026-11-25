@@ -24,12 +24,12 @@
     {{-- Encabezado --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h2 class="text-xl font-bold text-[#1F2937]">Catálogo de equipos</h2>
-            <p class="text-xs text-[#6B7280]">Consulta los equipos disponibles para solicitar en préstamo.</p>
+            <h2 class="text-2xl font-bold text-texto">Catálogo de equipos</h2>
+            <p class="text-sm text-texto-suave">Consulta los equipos disponibles para solicitar en préstamo.</p>
         </div>
 
         @if($esAdmin ?? false)
-            <a href="{{ route('equipos.index') }}" class="h-10 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-[10px] flex items-center gap-2 transition border border-slate-300">
+            <a href="{{ route('equipos.index') }}" class="h-10 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-[10px] flex items-center gap-2 transition border border-slate-300">
                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Volver a gestión</span>
             </a>
@@ -41,7 +41,7 @@
 
     {{-- Banner de error de carga --}}
     @if(isset($errorConexion))
-        <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-[10px] flex items-center gap-3 shadow-sm">
+        <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-[10px] flex items-center gap-3 shadow-sm">
             <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
             <span>{{ $errorConexion }}</span>
         </div>
@@ -49,27 +49,27 @@
 
     {{-- Banner Informativo --}}
     <div class="p-4 bg-blue-50/70 border border-blue-100 text-slate-700 text-xs rounded-[10px] flex items-center gap-3 shadow-sm">
-        <div class="w-8 h-8 rounded-lg bg-blue-100/70 text-[#0B3D91] flex items-center justify-center shrink-0">
+        <div class="w-8 h-8 rounded-lg bg-blue-100/70 text-marca-700 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <div>
             {{-- H-17: concordancia en singular y plural --}}
-            <span class="font-bold text-[#0B3D91]">{{ $metricas['disponibles'] ?? 0 }} {{ ($metricas['disponibles'] ?? 0) === 1 ? 'equipo disponible' : 'equipos disponibles' }} para solicitar.</span>
+            <span class="font-bold text-marca-700">{{ $metricas['disponibles'] ?? 0 }} {{ ($metricas['disponibles'] ?? 0) === 1 ? 'equipo disponible' : 'equipos disponibles' }} para solicitar.</span>
             <span class="text-slate-500"> Los equipos marcados como no disponibles pueden consultarse pero no pueden solicitarse.</span>
         </div>
     </div>
 
     {{-- Filtros: Buscador, Categoría, Toggle Solo Disponibles y Contador --}}
-    <div class="bg-white p-4 rounded-xl border border-[#D9DEE7] shadow-sm flex flex-wrap gap-4 items-center justify-between">
+    <div class="bg-white p-4 rounded-xl border border-borde shadow-sm flex flex-wrap gap-4 items-center justify-between">
         <div class="flex flex-wrap flex-1 gap-3 items-center min-w-[280px]">
             <div class="relative flex-1 min-w-[220px]">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </span>
-                <input x-model="search" type="text" placeholder="Buscar equipo..." class="w-full h-11 pl-9 pr-3 text-xs bg-slate-50/60 border border-[#D9DEE7] rounded-[10px] focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
+                <input x-model="search" type="text" placeholder="Buscar equipo..." class="w-full h-11 pl-9 pr-3 text-sm bg-slate-50/60 border border-borde-campo rounded-[10px] focus:outline-none focus:ring-1 focus:ring-marca-700">
             </div>
 
-            <select x-model="categoryFilter" aria-label="Tipo de equipo" class="text-xs bg-slate-50/60 border border-[#D9DEE7] rounded-[10px] px-3 h-11 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
+            <select x-model="categoryFilter" aria-label="Tipo de equipo" class="text-sm bg-slate-50/60 border border-borde-campo rounded-[10px] px-3 h-11 text-slate-600 focus:outline-none focus:ring-1 focus:ring-marca-700">
                 <option value="">Tipo de equipo</option>
                 @foreach (collect($equipos)->map(fn ($e) => $e['categoria']['nombre'] ?? ($e['categoria_nombre'] ?? 'General'))->unique()->sort()->values() as $categoriaOpcion)
                     <option value="{{ $categoriaOpcion }}">{{ $categoriaOpcion }}</option>
@@ -82,7 +82,7 @@
             <label class="flex items-center gap-2.5 cursor-pointer select-none">
                 <div class="relative">
                     <input type="checkbox" x-model="onlyAvailable" class="sr-only peer">
-                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0B3D91]"></div>
+                    <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-marca-700"></div>
                 </div>
                 <span class="text-xs font-medium text-slate-600">Solo disponibles</span>
             </label>
@@ -123,22 +123,16 @@
                         @js(strtolower($categoria)).includes(search.toLowerCase())) &&
                         (categoryFilter === '' || @js($categoria) === categoryFilter) &&
                         (!onlyAvailable || @js($isDisponible))"
-                class="bg-white rounded-xl border border-[#D9DEE7] shadow-sm flex flex-col justify-between overflow-hidden transition hover:shadow-md {{ $isDisponible ? 'border-t-4 border-t-emerald-500' : 'opacity-70 bg-slate-50/50' }}"
+                class="bg-white rounded-xl border border-borde shadow-sm flex flex-col justify-between overflow-hidden transition hover:shadow-md {{ $isDisponible ? 'border-t-4 border-t-emerald-500' : 'opacity-70 bg-slate-50/50' }}"
             >
                 <div class="p-5 space-y-3">
                     {{-- Cabecera Tarjeta: Categoría y Badge Estado --}}
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">{{ $categoria }}</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 truncate">{{ $categoria }}</span>
                         @if($isDisponible)
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                Disponible
-                            </span>
+                            <x-estado tipo="equipo" estado="disponible" />
                         @else
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                                No disponible
-                            </span>
+                            <x-estado tipo="equipo" estado="no_disponible" />
                         @endif
                     </div>
 
@@ -149,7 +143,7 @@
                     </div>
 
                     {{-- Código --}}
-                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 font-mono">
                         <span class="px-2 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ $codigo }}</span>
                     </div>
                 </div>
@@ -160,7 +154,7 @@
                         <button 
                             type="button" 
                             @click="abrirDetalle(@js($equipoJson))"
-                            class="w-full h-11 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white text-xs font-semibold rounded-[10px] flex items-center justify-center gap-1.5 transition shadow-sm"
+                            class="w-full h-12 bg-marca-700 hover:bg-marca-500 text-white text-sm font-semibold rounded-[10px] flex items-center justify-center gap-1.5 transition shadow-sm"
                         >
                             <span>Ver detalle</span>
                         </button>
@@ -168,7 +162,7 @@
                         <button 
                             type="button" 
                             @click="abrirDetalle(@js($equipoJson))"
-                            class="w-full h-11 bg-slate-100 text-slate-400 text-xs font-medium rounded-[10px] flex items-center justify-center gap-1.5 cursor-pointer hover:bg-slate-200/80 transition"
+                            class="w-full h-12 bg-slate-100 text-slate-400 text-sm font-medium rounded-[10px] flex items-center justify-center gap-1.5 cursor-pointer hover:bg-slate-200/80 transition"
                         >
                             <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                             <span>No disponible</span>
@@ -177,14 +171,14 @@
                 </div>
             </div>
         @empty
-            <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-xl border border-[#D9DEE7]">
+            <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-xl border border-borde">
                 No hay equipos registrados en el catálogo.
             </div>
         @endforelse
     </div>
 
     {{-- MODAL DE DETALLE Y SOLICITUD (HU-05) --}}
-    <div x-show="openModalView" x-cloak @keydown.escape.window="openModalView = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div x-show="openModalView" x-cloak @keydown.escape.window="openModalView = false" class="fixed inset-0 m-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div
             @click.away="openModalView = false"
             role="dialog"
@@ -193,13 +187,13 @@
             x-ref="dialogoInfoEquipo"
             tabindex="-1"
             x-effect="openModalView && $nextTick(() => $refs.dialogoInfoEquipo.focus())"
-            class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-lg overflow-hidden"
+            class="bg-white rounded-xl shadow-xl border border-borde w-full max-w-lg overflow-hidden"
         >
-            <div class="px-6 py-4 border-b border-[#D9DEE7] flex justify-between items-center bg-slate-50">
+            <div class="px-6 py-4 border-b border-borde flex justify-between items-center bg-slate-50">
                 <h3 id="modal-info-equipo-titulo" class="font-bold text-slate-800 text-sm">Información del equipo</h3>
                 <button @click="openModalView = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
             </div>
-            <div class="p-6 space-y-4 text-xs">
+            <div class="p-6 space-y-4 text-sm">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <span class="text-slate-400 block font-medium">Código / Serial</span>
@@ -233,12 +227,12 @@
                 </div>
 
                 <div class="flex justify-between items-center pt-3 border-t border-slate-100">
-                    <button type="button" @click="openModalView = false" class="h-10 px-4 border border-[#D9DEE7] text-slate-700 text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition">
+                    <button type="button" @click="openModalView = false" class="h-10 px-4 border border-borde text-slate-700 text-sm font-semibold rounded-[10px] hover:bg-slate-50 transition">
                         Cerrar
                     </button>
 
                     <template x-if="selectedEquipo.estado === 'disponible'">
-                        <a :href="'{{ url('/prestamos/solicitar') }}/' + selectedEquipo.id" class="h-10 px-5 bg-[#1D5FD0] hover:bg-[#184ea8] text-white text-xs font-semibold rounded-[10px] transition shadow-sm flex items-center justify-center">
+                        <a :href="'{{ url('/prestamos/solicitar') }}/' + selectedEquipo.id" class="h-12 px-5 bg-marca-500 hover:bg-marca-700 text-white text-sm font-semibold rounded-[10px] transition shadow-sm flex items-center justify-center">
                             Solicitar préstamo
                         </a>
                     </template>

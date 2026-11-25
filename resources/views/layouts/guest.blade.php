@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#0B3D91] min-h-screen text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
+<body class="bg-marca-700 min-h-screen text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
     @yield('content')
 </body>
 </html>
