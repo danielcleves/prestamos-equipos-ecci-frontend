@@ -194,4 +194,59 @@ class UxAcabadoTest extends TestCase
         // solicitudes y roles.
         $this->assertSame(9, $velos, 'Cambió el número de velos de modal: revisa que cada uno lleve «m-0»');
     }
+
+    /**
+     * El halo de foco (§13) es de 2 px y vive en app.css, compartido por los
+     * layouts app y guest. Al ir fuera de todo @layer gana a las utilidades
+     * `outline-none`/`focus:outline-none` de Tailwind sin `!important`; pero
+     * en Chrome los campos de texto coinciden con :focus-visible también con
+     * el ratón, así que app.js marca la modalidad y el halo solo se pinta con
+     * teclado.
+     */
+    public function test_el_halo_de_foco_es_de_2_px_y_solo_con_teclado(): void
+    {
+        $css = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertMatchesRegularExpression(
+            '/a:focus-visible,\s*button:focus-visible,\s*input:focus-visible,\s*select:focus-visible,\s*textarea:focus-visible,\s*\[tabindex\]:focus-visible\s*\{\s*outline:\s*2px solid var\(--color-marca-700\);\s*outline-offset:\s*2px;/',
+            $css,
+            'app.css debe definir el halo de 2 px con el azul de la marca para enlaces, botones y campos'
+        );
+
+        $this->assertMatchesRegularExpression(
+            "/html\[data-entrada='puntero'\]\s*:focus-visible\s*\{\s*outline:\s*0;/",
+            $css,
+            'app.css debe apagar el halo cuando el último gesto fue el ratón'
+        );
+
+        $js = file_get_contents(resource_path('js/app.js'));
+
+        $this->assertStringContainsString("setAttribute('data-entrada', 'puntero')", $js);
+        $this->assertStringContainsString("removeAttribute('data-entrada')", $js);
+
+        // Una sola fuente: el layout no repite la regla ni el layout guest se queda sin ella.
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $guest = file_get_contents(resource_path('views/layouts/guest.blade.php'));
+
+        $this->assertStringNotContainsString(':focus-visible', $layout);
+        $this->assertStringContainsString("@vite(['resources/css/app.css', 'resources/js/app.js'])", $guest);
+    }
+
+    /**
+     * El documento declara su idioma, que es lo que usan los navegadores para
+     * las pistas de los campos nativos (p. ej. la fecha de /solicitudes).
+     */
+    public function test_los_layouts_declaran_el_idioma_es(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('<html lang="es">', false);
+
+        $this->fakeVacio();
+
+        $this->withSession($this->sesionAdmin)
+            ->get('/solicitudes')
+            ->assertOk()
+            ->assertSee('<html lang="es"', false);
+    }
 }

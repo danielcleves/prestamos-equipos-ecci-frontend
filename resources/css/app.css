@@ -121,3 +121,32 @@
         opacity: 1;
     }
 }
+
+/*
+ * §13 · halo de foco de 2 px solo con teclado (H-26).
+ *
+ * Va fuera de todo @layer a propósito: las utilidades de Tailwind viven en
+ * `@layer utilities`, así que un `focus:outline-none` (especificidad 0-2-0) o
+ * un `outline-none` apagaría el halo si la regla estuviera en una capa. Al ser
+ * CSS sin capa gana sin necesidad de `!important`, y vale igual para los
+ * layouts app y guest (antes solo lo tenía app y el login se quedaba sin halo).
+ */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--color-marca-700);
+    outline-offset: 2px;
+}
+
+/*
+ * Chrome hace coincidir :focus-visible en los campos de texto incluso cuando se
+ * entra con el ratón, así que la modalidad del último gesto la marca app.js:
+ * tras un clic el halo no se pinta (el anillo `focus:ring-*` de cada campo
+ * sigue señalando el foco) y vuelve en cuanto se usa el teclado.
+ */
+html[data-entrada='puntero'] :focus-visible {
+    outline: 0;
+}

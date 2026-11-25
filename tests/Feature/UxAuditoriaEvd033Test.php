@@ -358,7 +358,16 @@ class UxAuditoriaEvd033Test extends TestCase
             ->assertSee('Saltar al contenido')
             ->assertSee('href="#contenido-principal"', false)
             ->assertSee('id="contenido-principal"', false)
-            ->assertSee(':focus-visible', false);
+            ->assertSee('build/assets/app-', false);
+
+        // El halo de foco dejó de estar incrustado en el layout: vive en
+        // app.css, el bundle compartido con el layout guest que carga esta
+        // página. UxAcabadoTest comprueba las dos reglas (halo y modalidad).
+        $this->assertStringContainsString(
+            ':focus-visible',
+            file_get_contents(resource_path('css/app.css')),
+            'app.css debe seguir definiendo el halo de foco de 2 px'
+        );
     }
 
     // ---------------------------------------------------------------------

@@ -14,17 +14,9 @@
 
     <style>
         [x-cloak] { display: none !important; }
-        /* H-26: halo de foco de 2 px enlaces y campos (guía UI/UX §13). */
-        a:focus-visible,
-        button:focus-visible,
-        input:focus-visible,
-        select:focus-visible,
-        textarea:focus-visible,
-        [tabindex]:focus-visible {
-            outline: 2px solid #0B3D91;
-            outline-offset: 2px;
-        }
     </style>
+
+    {{-- H-26: el halo de foco de 2 px vive en resources/css/app.css, compartido con el layout guest. --}}
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
