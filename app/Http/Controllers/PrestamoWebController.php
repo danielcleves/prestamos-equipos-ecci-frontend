@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SancionVista;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -498,6 +499,11 @@ class PrestamoWebController extends Controller
             if (! empty($restriccion)) {
                 $mensajeExito .= ' Restringido hasta el '.Carbon::parse($restriccion)->timezone('America/Bogota')->format('d/m/Y H:i').'.';
             }
+        }
+
+        // La mora crea una sanción en el backend: se avisa al encargado en el mismo mensaje.
+        if ($avisoSancion = SancionVista::mensajeDevolucion($response->json('sancion'))) {
+            $mensajeExito .= ' '.$avisoSancion;
         }
 
         return redirect()->route('prestamos.devoluciones')->with('success', $mensajeExito);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\FechaNegocio;
+use App\Support\SancionVista;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -197,8 +198,35 @@ class InicioController extends Controller
             'misPrestamos' => $misPrestamos,
             'misRetrasados' => count(array_filter($misPrestamos, fn ($p) => $p['dias'] > 0)),
             'hayFallos' => $activos === null,
-            // Hueco para el aviso de sanción activa: se conecta cuando el backend exponga `sancion_activa`.
-            'sancionActiva' => null,
+            'sancionActiva' => $this->sancionActiva($token),
         ];
+    }
+
+    /**
+     * Sanción vigente del usuario (GET /api/me). Si la consulta falla no se
+     * inventa nada: simplemente no se muestra el aviso.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function sancionActiva(string $token): ?array
+    {
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(10)
+                ->get(config('services.backend.url').'/me');
+        } catch (ConnectionException $e) {
+            return null;
+        }
+
+        if ($response->status() === 401) {
+            $this->sesionExpirada = true;
+
+            return null;
+        }
+
+        return $response->successful()
+            ? SancionVista::desde($response->json('user.sancion_activa') ?? $response->json('data.sancion_activa'))
+            : null;
     }
 }
