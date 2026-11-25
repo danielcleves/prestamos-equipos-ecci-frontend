@@ -28,6 +28,21 @@ class AutenticacionTest extends TestCase
         ];
     }
 
+    /**
+     * El panel del login conserva los consejos que rotan, pero el reloj se
+     * retiró a pedido de Daniel (25 nov 2026).
+     */
+    public function test_el_login_muestra_los_consejos_y_no_el_reloj(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('aria-label="Consejos de uso"', false)
+            ->assertSee('data-consejo', false)
+            ->assertDontSee('role="timer"', false)
+            ->assertDontSee('reloj-', false)
+            ->assertDontSee('Hora de Bogotá');
+    }
+
     public function test_login_de_encargado_redirige_a_las_entregas_pendientes(): void
     {
         Http::fake(['*/login' => Http::response($this->respuestaLogin('encargado'), 200)]);

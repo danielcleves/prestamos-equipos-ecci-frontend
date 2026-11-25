@@ -153,7 +153,7 @@ html[data-entrada='puntero'] :focus-visible {
 
 
 /* ---------------------------------------------------------------------
-   Panel del login (solo ≥1024 px): consejos rotativos, reloj y decoración
+   Panel del login (solo ≥1024 px): consejos rotativos y decoración
    --------------------------------------------------------------------- */
 .login-panel {
     background:
