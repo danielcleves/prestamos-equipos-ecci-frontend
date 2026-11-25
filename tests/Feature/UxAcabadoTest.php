@@ -385,6 +385,68 @@ class UxAcabadoTest extends TestCase
             ->assertSee('Desliza la tabla para cambiar el nivel de restricción.');
     }
 
+    /**
+     * Las siglas RN-0x son la numeración interna del backlog y quien configura
+     * los parámetros no las conoce: los rótulos perdieron el «(RN-0x)». La
+     * prueba falla si alguna sigla vuelve al texto que se pinta (los comentarios
+     * Blade no cuentan).
+     */
+    public function test_la_configuracion_no_muestra_las_siglas_internas_de_las_reglas(): void
+    {
+        Http::fake([
+            '*/configuracion' => Http::response(['data' => [
+                'parametros' => [
+                    'cupos.roles' => ['estudiante' => 3, 'encargado' => 5, 'admin' => 10],
+                    'duracion.categorias' => ['1' => 7, '2' => 5],
+                    'duracion.roles_extra' => ['estudiante' => 0, 'encargado' => 2, 'admin' => 3],
+                    'mora.escala' => [['desde' => 1, 'hasta' => 2, 'dias_sancion' => 3]],
+                    'mora.dias_bloqueo' => 1,
+                    'danos.dias_restriccion' => 7,
+                    'elegibilidad.requiere_capacitacion' => false,
+                    'registro.correos_permitidos' => ['@ecci.edu.co'],
+                ],
+                'categorias' => [['id' => 1, 'nombre' => 'Portátil', 'nivel_restriccion' => 1]],
+            ]], 200),
+            '*/roles' => Http::response(['data' => [
+                ['id' => 1, 'nombre' => 'estudiante', 'etiqueta' => 'Estudiante', 'cupo_prestamos' => 3, 'es_predeterminado' => true],
+            ]], 200),
+        ]);
+
+        $configuracion = $this->withSession($this->sesionAdmin)
+            ->get('/configuracion')
+            ->assertOk()
+            // Los rótulos siguen ahí, ahora sin el código de la regla.
+            ->assertSee('Cupos por rol')
+            ->assertSee('Duración máxima del préstamo')
+            ->assertSee('Escala de mora')
+            ->assertSee('Restricción por daños')
+            ->assertSee('Elegibilidad')
+            ->assertSee('Nivel de restricción por categoría');
+
+        $roles = $this->withSession($this->sesionAdmin)
+            ->get('/roles')
+            ->assertOk()
+            ->assertSee('Roles y cupos de préstamo');
+
+        foreach (['/configuracion' => $configuracion, '/roles' => $roles] as $ruta => $response) {
+            $dom = new \DOMDocument;
+            @$dom->loadHTML($response->getContent());
+            $xpath = new \DOMXPath($dom);
+
+            // Solo el texto que se pinta: fuera scripts, estilos y comentarios HTML.
+            $visible = '';
+            foreach ($xpath->query('//body//text()[not(ancestor::script) and not(ancestor::style)]') as $nodo) {
+                $visible .= ' '.$nodo->nodeValue;
+            }
+
+            $this->assertDoesNotMatchRegularExpression(
+                '/RN-0\d/u',
+                $visible,
+                "La pantalla {$ruta} muestra las siglas internas de una regla en el texto visible"
+            );
+        }
+    }
+
     public function test_incidencias_avisa_del_desplazamiento_y_muestra_estado_en_movil(): void
     {
         Http::fake([

@@ -90,6 +90,9 @@ class DevolucionesIncidenciaTest extends TestCase
         $this->withSession($this->sesionEncargado)
             ->get('/devoluciones')
             ->assertOk()
-            ->assertSee('incidencia (RN-08)');
+            ->assertSee('Además se abrirá una')
+            ->assertSee('<strong>incidencia</strong>', false)
+            // El código de la regla no se muestra al encargado.
+            ->assertDontSee('RN-0');
     }
 }

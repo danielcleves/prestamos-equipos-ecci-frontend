@@ -17,7 +17,7 @@
     {{-- Encabezado --}}
     <div>
         <h2 class="text-2xl font-bold text-texto">Roles y cupos de préstamo</h2>
-        <p class="text-sm text-texto-suave">Crea roles para los solicitantes (estudiante, profesor, coordinador…) y define cuántos préstamos vivos puede tener cada uno (RN-02).</p>
+        <p class="text-sm text-texto-suave">Crea roles para los solicitantes (estudiante, profesor, coordinador…) y define cuántos préstamos vivos puede tener cada uno.</p>
     </div>
 
     {{-- Alertas --}}

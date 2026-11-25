@@ -493,7 +493,7 @@ class PrestamoWebController extends Controller
             $incidencia = $response->json('data.incidencia') ?? $response->json('incidencia');
             $restriccion = is_array($incidencia) ? ($incidencia['restringe_hasta'] ?? null) : null;
 
-            $mensajeExito = '¡Devolución registrada con éxito! Debido a la condición reportada, el equipo ha pasado a "En mantenimiento" y se abrió una incidencia (RN-08) que restringe su uso.';
+            $mensajeExito = '¡Devolución registrada con éxito! Debido a la condición reportada, el equipo ha pasado a "En mantenimiento" y se abrió una incidencia que restringe su uso.';
 
             if (! empty($restriccion)) {
                 $mensajeExito .= ' Restringido hasta el '.Carbon::parse($restriccion)->timezone('America/Bogota')->format('d/m/Y H:i').'.';

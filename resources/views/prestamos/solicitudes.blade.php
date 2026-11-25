@@ -425,7 +425,7 @@
                 <div x-show="selected.requiere_autorizacion" x-cloak class="p-4 rounded-xl border text-xs leading-relaxed"
                      :class="selected.autorizado ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'">
                     <template x-if="!selected.autorizado">
-                        <p>La categoría de este equipo es <strong>restringida</strong>: la solicitud necesita autorización adicional antes de poder aprobarse (RN-03).</p>
+                        <p>La categoría de este equipo es <strong>restringida</strong>: la solicitud necesita autorización adicional antes de poder aprobarse.</p>
                     </template>
                     <template x-if="selected.autorizado">
                         <p>Solicitud <strong>autorizada</strong><span x-show="selected.autorizado_por" x-text="selected.autorizado_por ? ' por ' + selected.autorizado_por : ''"></span>. Ya puede aprobarse.</p>

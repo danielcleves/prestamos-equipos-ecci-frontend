@@ -63,7 +63,7 @@
         <div class="bg-white p-6 rounded-xl border border-borde shadow-sm space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
-                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Cupos por rol (RN-02)</h3>
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Cupos por rol</h3>
                     <p class="text-xs text-slate-400 mt-0.5">Máximo de préstamos vivos (solicitado, aprobado o entregado) por rol. Los roles y sus cupos se gestionan en «Roles y cupos».</p>
                 </div>
                 <a href="{{ route('roles.index') }}" class="inline-flex items-center justify-center h-9 px-3.5 bg-slate-100 hover:bg-marca-700 hover:text-white text-slate-700 text-sm font-semibold rounded-[10px] transition shrink-0">
@@ -83,7 +83,7 @@
         {{-- RN-06: duración máxima --}}
         <div class="bg-white p-6 rounded-xl border border-borde shadow-sm space-y-4">
             <div>
-                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Duración máxima del préstamo (RN-06)</h3>
+                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Duración máxima del préstamo</h3>
                 <p class="text-xs text-slate-400 mt-0.5">Días base por categoría más los días extra del rol del solicitante.</p>
             </div>
 
@@ -130,7 +130,7 @@
         <div class="bg-white p-6 rounded-xl border border-borde shadow-sm space-y-4">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Escala de mora (RN-04)</h3>
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Escala de mora</h3>
                     <p class="text-xs text-slate-400 mt-0.5">Días de retraso → días de sanción. Deja «hasta» vacío para el último tramo (sin tope).</p>
                 </div>
                 <button type="button" @click="agregarTramo()" class="h-9 px-3.5 bg-slate-100 hover:bg-marca-700 hover:text-white text-slate-700 text-sm font-semibold rounded-[10px] transition shrink-0 inline-flex items-center gap-1.5">
@@ -196,7 +196,7 @@
         {{-- RN-08: daños --}}
         <div class="bg-white p-6 rounded-xl border border-borde shadow-sm space-y-4">
             <div>
-                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Restricción por daños (RN-08)</h3>
+                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Restricción por daños</h3>
                 <p class="text-xs text-slate-400 mt-0.5">Días que permanece restringido el usuario tras una devolución con incidencia.</p>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -234,7 +234,7 @@
         {{-- RN-01: elegibilidad --}}
         <div class="bg-white p-6 rounded-xl border border-borde shadow-sm space-y-4">
             <div>
-                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Elegibilidad (RN-01)</h3>
+                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Elegibilidad</h3>
                 <p class="text-xs text-slate-400 mt-0.5">Requisitos que se validan antes de registrar una solicitud.</p>
             </div>
             <label class="flex items-center gap-2.5 text-sm text-slate-700 font-medium">
@@ -262,7 +262,7 @@
     {{-- RN-03: nivel de restricción por categoría --}}
     <div class="bg-white rounded-xl border border-borde shadow-sm overflow-hidden">
         <div class="p-6 border-b border-borde">
-            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Nivel de restricción por categoría (RN-03)</h3>
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Nivel de restricción por categoría</h3>
             <p class="text-xs text-slate-400 mt-0.5">Una categoría restringida marca la solicitud con «Requiere autorización» antes de poder aprobarse.</p>
         </div>
 
