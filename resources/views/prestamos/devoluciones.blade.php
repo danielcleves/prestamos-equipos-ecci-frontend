@@ -127,8 +127,13 @@
                 $solicitanteEmail = $item['solicitante']['email'] ?? ($item['usuario']['email'] ?? 'N/D');
                 $equipoNombre = $item['equipo']['nombre'] ?? 'Equipo';
                 $equipoCodigo = $item['equipo']['codigo'] ?? 'S/C';
-                $fechaEntrega = ! empty($item['fecha_entrega_real']) ? date('Y-m-d', strtotime($item['fecha_entrega_real'])) : (! empty($item['fecha_inicio']) ? date('Y-m-d', strtotime($item['fecha_inicio'])) : '—');
-                $fechaEsperada = ! empty($item['fecha_devolucion_estimada']) ? date('Y-m-d', strtotime($item['fecha_devolucion_estimada'])) : '—';
+                // H-20: un solo formato de fecha en la app, d/m/Y con Carbon.
+                $fechaEntrega = ! empty($item['fecha_entrega_real'])
+                    ? \Illuminate\Support\Carbon::parse($item['fecha_entrega_real'])->format('d/m/Y')
+                    : (! empty($item['fecha_inicio']) ? \Illuminate\Support\Carbon::parse($item['fecha_inicio'])->format('d/m/Y') : '—');
+                $fechaEsperada = ! empty($item['fecha_devolucion_estimada'])
+                    ? \Illuminate\Support\Carbon::parse($item['fecha_devolucion_estimada'])->format('d/m/Y')
+                    : '—';
 
                 return [
                     'solicitante' => $solicitanteNombre,
@@ -322,7 +327,8 @@
                             $solic = $dev['solicitante']['name'] ?? ($dev['usuario']['name'] ?? 'Solicitante');
                             $eqNom = $dev['equipo']['nombre'] ?? 'Equipo';
                             $eqCod = $dev['equipo']['codigo'] ?? 'S/C';
-                            $fDevReal = !empty($dev['fecha_devolucion_real']) ? date('Y-m-d H:i', strtotime($dev['fecha_devolucion_real'])) : '—';
+                            // H-20: la devolución real conserva la hora (d/m/Y H:i).
+                            $fDevReal = !empty($dev['fecha_devolucion_real']) ? \Illuminate\Support\Carbon::parse($dev['fecha_devolucion_real'])->format('d/m/Y H:i') : '—';
                             $cond = $dev['condicion_devolucion_etiqueta'] ?? ($dev['condicion_devolucion'] ?? 'Bueno');
                         @endphp
                         <tr class="hover:bg-slate-50/80 transition">

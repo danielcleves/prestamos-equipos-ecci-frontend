@@ -84,8 +84,13 @@
                 $solicitanteDoc = $item['solicitante']['email'] ?? ($item['usuario']['email'] ?? 'N/D');
                 $equipoNombre = $item['equipo']['nombre'] ?? 'Equipo';
                 $equipoCodigo = $item['equipo']['codigo'] ?? 'S/C';
-                $fechaPrestamo = ! empty($item['fecha_inicio']) ? date('Y-m-d', strtotime($item['fecha_inicio'])) : '—';
-                $fechaDevolucion = ! empty($item['fecha_devolucion_estimada']) ? date('Y-m-d', strtotime($item['fecha_devolucion_estimada'])) : '—';
+                // H-20: un solo formato de fecha en la app, d/m/Y con Carbon.
+                $fechaPrestamo = ! empty($item['fecha_inicio'])
+                    ? \Illuminate\Support\Carbon::parse($item['fecha_inicio'])->format('d/m/Y')
+                    : '—';
+                $fechaDevolucion = ! empty($item['fecha_devolucion_estimada'])
+                    ? \Illuminate\Support\Carbon::parse($item['fecha_devolucion_estimada'])->format('d/m/Y')
+                    : '—';
 
                 return [
                     'solicitante' => $solicitanteNombre,

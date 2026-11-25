@@ -178,9 +178,10 @@
                                 'id' => $id,
                                 'solicitante' => $solic,
                                 'documento' => $doc,
-                                'fecha_solicitud' => $fSol,
-                                'fecha_inicio' => $fIni,
-                                'fecha_devolucion' => $fFin,
+                                // H-20: el modal mostraba la fecha en ISO (2026-10-14).
+                                'fecha_solicitud' => \Illuminate\Support\Carbon::parse($fSol)->format('d/m/Y'),
+                                'fecha_inicio' => $fIni !== '—' ? \Illuminate\Support\Carbon::parse($fIni)->format('d/m/Y') : '—',
+                                'fecha_devolucion' => $fFin !== '—' ? \Illuminate\Support\Carbon::parse($fFin)->format('d/m/Y') : '—',
                                 'estado' => ucfirst($st),
                                 'equipo_nombre' => $eqNom,
                                 'equipo_codigo' => $eqCod,

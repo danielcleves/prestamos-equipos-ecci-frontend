@@ -55,8 +55,9 @@
                             $fechaEntregaRaw = $item['fecha_entrega_real'] ?? $item['fecha_inicio'] ?? null;
                             $fechaDevolucionRaw = $item['fecha_devolucion_estimada'] ?? null;
 
+                            // H-20: la entrega va sin hora; la devolución la conserva porque es el plazo.
                             $fechaEntrega = $fechaEntregaRaw
-                                ? \Carbon\Carbon::parse($fechaEntregaRaw)->timezone('America/Bogota')->format('d/m/Y H:i')
+                                ? \Carbon\Carbon::parse($fechaEntregaRaw)->timezone('America/Bogota')->format('d/m/Y')
                                 : '—';
 
                             $fechaDevolucion = $fechaDevolucionRaw
