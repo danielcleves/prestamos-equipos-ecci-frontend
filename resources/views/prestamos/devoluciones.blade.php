@@ -455,7 +455,7 @@
                         <p>Al confirmar, el préstamo quedará cerrado como <strong>"Devuelto"</strong> y el equipo volverá a estar <strong>"Disponible"</strong> en el catálogo.</p>
                     </template>
                     <template x-if="condicion !== 'bueno'">
-                        <p>Al confirmar con daños o mantenimiento, el préstamo quedará como <strong>"Devuelto"</strong> y el equipo pasará a <strong>"En mantenimiento"</strong> (no volverá a disponible hasta ser reparado). Además se abrirá una <strong>incidencia (RN-08)</strong> que restringe nuevos préstamos del equipo.</p>
+                        <p>Al confirmar con daños o mantenimiento, el préstamo quedará como <strong>"Devuelto"</strong> y el equipo pasará a <strong>"En mantenimiento"</strong> (no volverá a disponible hasta ser reparado). Además se abrirá una <strong>incidencia</strong> que restringe nuevos préstamos del equipo.</p>
                     </template>
                 </div>
 
