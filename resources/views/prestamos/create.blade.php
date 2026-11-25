@@ -48,16 +48,21 @@
         fn (string $mensaje) => ! in_array($mensaje, $mensajesMostrados, true)
     ));
     $hayErroresGenerales = $erroresGenerales !== [];
+
+    // BUG-0013: el «hoy» del formulario (valor inicial y `min` del calendario) va en la
+    // zona del campus. Con la zona del servidor (UTC), después de las 19:00 de Bogotá el
+    // formulario proponía el día siguiente y no dejaba elegir hoy.
+    $hoyBogota = now('America/Bogota')->toDateString();
 @endphp
 
 <div x-data="{
-    fechaInicio: '{{ old('fecha_inicio', date('Y-m-d')) }}',
+    fechaInicio: '{{ old('fecha_inicio', $hoyBogota) }}',
     fechaDevolucion: '{{ old('fecha_devolucion', '') }}',
     motivo: @js(old('motivo', '')),
     errorFechaInicio: '',
     errorFechaDevolucion: '',
     errorMotivo: '',
-    hoy: '{{ date('Y-m-d') }}',
+    hoy: '{{ $hoyBogota }}',
     maxDias: {{ $maxDias }},
     get minDevolucion() {
         if (!this.fechaInicio) return '';
@@ -246,7 +251,7 @@
                                 name="fecha_inicio"
                                 x-model="fechaInicio"
                                 @change="validarFechaInicio(); fechaDevolucion && validarFechaDevolucion()"
-                                min="{{ date('Y-m-d') }}"
+                                min="{{ $hoyBogota }}"
                                 required
                                 :class="errorFechaInicio ? 'border-rose-400 focus:ring-rose-400' : 'border-borde-campo focus:ring-marca-700'"
                                 class="w-full h-11 px-3 text-sm bg-white border rounded-[10px] focus:outline-none focus:ring-1 text-slate-700"
