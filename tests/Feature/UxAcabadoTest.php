@@ -262,6 +262,99 @@ class UxAcabadoTest extends TestCase
         $this->assertSame('28/11/2026', $celdas[6]);
     }
 
+    /**
+     * A 1024 px la tabla de entregas mide 939 px y la píldora de estado quedaba
+     * pegada a la columna fija «Acciones», que recortaba la última letra. Se
+     * mueve «Estado» antes de las fechas y, como la tabla sigue sin caber en los
+     * 702 px del contenedor, debajo de 1280 px se pintan las tarjetas.
+     */
+    public function test_entregas_pone_el_estado_antes_de_las_fechas(): void
+    {
+        $this->unaEntregaPendiente();
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/entregas-pendientes')
+            ->assertOk();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        $encabezados = [];
+        foreach ($xpath->query('//table/thead/tr/th') as $th) {
+            $encabezados[] = $limpiar($th->textContent);
+        }
+
+        $this->assertSame(
+            ['Solicitante', 'Equipo', 'Estado', 'F. Préstamo', 'F. Devolución', 'Acciones'],
+            $encabezados,
+            '«Estado» debe ir después del equipo y antes de las fechas'
+        );
+
+        $celdas = [];
+        foreach ($xpath->query('//table/tbody/tr[1]/td') as $td) {
+            $celdas[] = $limpiar($td->textContent);
+        }
+
+        $this->assertCount(6, $celdas, 'La fila debe tener las mismas celdas que encabezados');
+        $this->assertStringContainsString('Pendiente de entrega', $celdas[2], 'La tercera celda es la píldora de estado');
+        $this->assertSame('20/11/2026', $celdas[3]);
+        $this->assertSame('27/11/2026', $celdas[4]);
+    }
+
+    public function test_entregas_usa_tarjetas_por_debajo_de_1280(): void
+    {
+        $this->unaEntregaPendiente();
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/entregas-pendientes')
+            ->assertOk();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        // La tabla queda solo para escritorio ancho; las tarjetas cubren el resto.
+        $this->assertSame(
+            1,
+            $xpath->query('//div[contains(@class, "hidden xl:block")]//table')->length,
+            'La tabla debe quedar dentro de un contenedor «hidden xl:block»'
+        );
+
+        $contenedor = $xpath->query('//div[contains(@class, "xl:hidden")]');
+        $this->assertSame(1, $contenedor->length, 'Debe existir una vista de tarjetas «xl:hidden»');
+
+        $tarjeta = $limpiar($contenedor->item(0)->textContent);
+
+        foreach (['Laura Gómez', 'Osciloscopio', 'Pendiente de entrega', '20/11/2026', 'Registrar entrega'] as $dato) {
+            $this->assertStringContainsString($dato, $tarjeta, "La tarjeta no muestra «{$dato}»");
+        }
+
+        // El estado va en la primera línea de la tarjeta, junto al solicitante.
+        $this->assertLessThan(
+            mb_strpos($tarjeta, 'Osciloscopio'),
+            mb_strpos($tarjeta, 'Pendiente'),
+            'El estado debe verse antes que el equipo'
+        );
+    }
+
+    /**
+     * Una entrega pendiente (aprobada) con fechas, como la que sirve el backend.
+     */
+    private function unaEntregaPendiente(): void
+    {
+        Http::fake(['*' => Http::response(['data' => [[
+            'id' => 4,
+            'estado' => 'aprobado',
+            'solicitante' => ['name' => 'Laura Gómez', 'email' => 'laura@ecci.edu.co'],
+            'equipo' => ['nombre' => 'Osciloscopio', 'codigo' => 'OSC-01'],
+            'fecha_inicio' => '2026-11-20 08:00:00',
+            'fecha_devolucion_estimada' => '2026-11-27 18:00:00',
+        ]]], 200)]);
+    }
+
     public function test_la_miga_del_catalogo_del_estudiante_dice_catalogo_de_equipos(): void
     {
         $this->fakeVacio();

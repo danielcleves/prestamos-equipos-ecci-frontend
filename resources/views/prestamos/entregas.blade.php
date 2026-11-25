@@ -117,8 +117,8 @@
             });
         @endphp
 
-        {{-- Escritorio: tabla compacta con la acción fija a la derecha (H-14) --}}
-        <div class="hidden md:block overflow-x-auto">
+        {{-- Escritorio (≥1280 px): tabla compacta con la acción fija a la derecha (H-14) --}}
+        <div class="hidden xl:block overflow-x-auto">
             <table class="w-full text-left border-collapse text-sm">
                 {{-- H-22: sin filas no se muestra el encabezado de columnas --}}
                 @if($filasEntrega->isNotEmpty())
@@ -126,9 +126,9 @@
                     <tr class="border-b border-borde text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
                         <th class="py-3 px-3">Solicitante</th>
                         <th class="py-3 px-3">Equipo</th>
+                        <th class="py-3 px-3">Estado</th>
                         <th class="py-3 px-3">F. Préstamo</th>
                         <th class="py-3 px-3">F. Devolución</th>
-                        <th class="py-3 px-3">Estado</th>
                         <th class="py-3 px-3 text-right sticky right-0 bg-slate-50/70">Acciones</th>
                     </tr>
                 </thead>
@@ -161,14 +161,14 @@
                                 <span class="font-mono text-xs text-slate-400">{{ $fila['codigo'] }}</span>
                             </td>
 
-                            {{-- Fechas --}}
-                            <td class="py-3.5 px-3 text-slate-600 whitespace-nowrap">{{ $fila['fecha_prestamo'] }}</td>
-                            <td class="py-3.5 px-3 text-slate-600 whitespace-nowrap">{{ $fila['fecha_devolucion'] }}</td>
-
                             {{-- Estado: el componente x-estado unifica la píldora (guía UI/UX §15) --}}
                             <td class="py-3.5 px-3">
                                 <x-estado estado="aprobado" texto="Pendiente de entrega" />
                             </td>
+
+                            {{-- Fechas --}}
+                            <td class="py-3.5 px-3 text-slate-600 whitespace-nowrap">{{ $fila['fecha_prestamo'] }}</td>
+                            <td class="py-3.5 px-3 text-slate-600 whitespace-nowrap">{{ $fila['fecha_devolucion'] }}</td>
 
                             {{-- Botón Registrar entrega --}}
                             <td class="py-3.5 px-3 text-right sticky right-0 bg-white">
@@ -197,8 +197,11 @@
             </table>
         </div>
 
-        {{-- Móvil: una tarjeta por entrega (guía UI/UX §9 y §6.4) --}}
-        <div class="md:hidden divide-y divide-slate-100">
+        {{-- Tarjetas por debajo de 1280 px: una por entrega, con el estado en la
+             primera línea (guía UI/UX §9 y §6.4). A 1024 px la tabla mide 939 px,
+             desborda los 702 px del contenedor y la columna fija de acciones tapa
+             el final de la píldora de estado. --}}
+        <div class="xl:hidden divide-y divide-slate-100">
             @forelse($filasEntrega as $fila)
                 <div
                     x-show="search === '' ||
