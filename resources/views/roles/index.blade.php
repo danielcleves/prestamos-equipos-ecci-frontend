@@ -16,11 +16,6 @@
 
     {{-- Encabezado --}}
     <div>
-        <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Administración</span>
-            <span>></span>
-            <span class="text-slate-700 font-medium">Roles y cupos</span>
-        </div>
         <h2 class="text-xl font-bold text-[#1F2937]">Roles y cupos de préstamo</h2>
         <p class="text-xs text-[#6B7280]">Crea roles para los solicitantes (estudiante, profesor, coordinador…) y define cuántos préstamos vivos puede tener cada uno (RN-02).</p>
     </div>

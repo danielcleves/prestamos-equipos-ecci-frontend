@@ -22,11 +22,6 @@
 }" class="space-y-6">
 
     <div>
-        <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Administración</span>
-            <span>></span>
-            <span class="text-slate-700 font-medium">Usuarios</span>
-        </div>
         <h2 class="text-xl font-bold text-[#1F2937]">Gestión de usuarios</h2>
         <p class="text-sm text-slate-500">Administra los usuarios, roles y permisos de acceso al sistema.</p>
     </div>

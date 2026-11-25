@@ -28,14 +28,9 @@
     }
 }" class="space-y-6 max-w-7xl mx-auto">
 
-    {{-- Breadcrumb y Cabecera Institucional --}}
+    {{-- Cabecera --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                <span>Sistema</span>
-                <span>></span>
-                <span class="text-slate-700 font-medium">Equipos</span>
-            </div>
             <h2 class="text-xl font-bold text-[#1F2937]">Gestión de equipos</h2>
             <p class="text-xs text-[#6B7280]">Administra el inventario de equipos tecnológicos y audiovisuales disponibles para préstamo.</p>
         </div>

@@ -27,11 +27,6 @@
 
     {{-- Encabezado --}}
     <div>
-        <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Administración</span>
-            <span>></span>
-            <span class="text-slate-700 font-medium">Configuración</span>
-        </div>
         <h2 class="text-xl font-bold text-[#1F2937]">Configuración de reglas de negocio</h2>
         <p class="text-xs text-[#6B7280]">Parámetros de cupos, duración, mora, daños y elegibilidad. Los cambios aplican a las solicitudes nuevas.</p>
     </div>

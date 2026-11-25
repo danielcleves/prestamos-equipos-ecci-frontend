@@ -3,13 +3,8 @@
 @section('content')
 <div class="max-w-7xl mx-auto space-y-6">
 
-    {{-- Breadcrumb y Cabecera --}}
+    {{-- Cabecera --}}
     <div>
-        <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Solicitante</span>
-            <span>></span>
-            <span class="text-slate-700 font-medium">Mis préstamos vigentes</span>
-        </div>
         <h2 class="text-xl font-bold text-[#1F2937]">Mis préstamos vigentes</h2>
         <p class="text-xs text-[#6B7280]">Consulta los equipos que actualmente tienes en préstamo.</p>
     </div>

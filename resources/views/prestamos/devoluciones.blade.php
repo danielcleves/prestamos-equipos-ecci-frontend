@@ -23,13 +23,8 @@
     }
 }" class="max-w-7xl mx-auto space-y-6">
 
-    {{-- Breadcrumb y Cabecera --}}
+    {{-- Cabecera --}}
     <div>
-        <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Personal de préstamo</span>
-            <span>></span>
-            <span class="text-slate-700 font-medium">Devoluciones</span>
-        </div>
         <h2 class="text-xl font-bold text-[#1F2937]">Devoluciones</h2>
         <p class="text-xs text-[#6B7280]">Registra la devolución de equipos prestados, el estado en que son devueltos y las observaciones correspondientes.</p>
     </div>
