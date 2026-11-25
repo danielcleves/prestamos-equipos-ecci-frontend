@@ -124,78 +124,99 @@
             </div>
         </div>
 
-        {{-- Tabla de Devoluciones Pendientes --}}
-        <div class="overflow-x-auto">
+        @php
+            // H-27: los datos se preparan una sola vez para la tabla (escritorio) y las
+            // tarjetas (móvil), y para el modal de devolución.
+            $filasDevolucion = collect($pendientes)->map(function ($item) {
+                $solicitanteNombre = $item['solicitante']['name'] ?? ($item['usuario']['name'] ?? 'Solicitante');
+                $solicitanteEmail = $item['solicitante']['email'] ?? ($item['usuario']['email'] ?? 'N/D');
+                $equipoNombre = $item['equipo']['nombre'] ?? 'Equipo';
+                $equipoCodigo = $item['equipo']['codigo'] ?? 'S/C';
+                $fechaEntrega = ! empty($item['fecha_entrega_real']) ? date('Y-m-d', strtotime($item['fecha_entrega_real'])) : (! empty($item['fecha_inicio']) ? date('Y-m-d', strtotime($item['fecha_inicio'])) : '—');
+                $fechaEsperada = ! empty($item['fecha_devolucion_estimada']) ? date('Y-m-d', strtotime($item['fecha_devolucion_estimada'])) : '—';
+
+                return [
+                    'solicitante' => $solicitanteNombre,
+                    'iniciales' => strtoupper(substr($solicitanteNombre, 0, 2)),
+                    'email' => $solicitanteEmail,
+                    'equipo' => $equipoNombre,
+                    'codigo' => $equipoCodigo,
+                    'fecha_entrega' => $fechaEntrega,
+                    'fecha_devolucion' => $fechaEsperada,
+                    'busqueda' => [
+                        'solicitante' => strtolower($solicitanteNombre),
+                        'equipo' => strtolower($equipoNombre),
+                        'codigo' => strtolower($equipoCodigo),
+                    ],
+                    'json' => [
+                        'id' => $item['id'],
+                        'solicitante' => $solicitanteNombre,
+                        'equipo' => $equipoNombre,
+                        'codigo' => $equipoCodigo,
+                        'fecha_entrega' => $fechaEntrega,
+                        'fecha_devolucion' => $fechaEsperada,
+                    ],
+                ];
+            });
+        @endphp
+
+        {{-- Escritorio: tabla compacta con la acción fija a la derecha (H-27) --}}
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
                 {{-- H-22: sin filas no se muestra el encabezado de columnas --}}
-                @if(count($pendientes) > 0)
+                @if($filasDevolucion->isNotEmpty())
                 <thead>
                     <tr class="border-b border-[#D9DEE7] text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
-                        <th class="py-3 px-6">Solicitante</th>
-                        <th class="py-3 px-6">Equipo</th>
-                        <th class="py-3 px-6">Código</th>
-                        <th class="py-3 px-6">F. Entrega</th>
-                        <th class="py-3 px-6">F. Devolución Esperada</th>
-                        <th class="py-3 px-6">Estado</th>
-                        <th class="py-3 px-6 text-right">Acciones</th>
+                        <th class="py-3 px-3">Solicitante</th>
+                        <th class="py-3 px-3">Equipo</th>
+                        <th class="py-3 px-3">F. Entrega</th>
+                        <th class="py-3 px-3">F. Devolución Esperada</th>
+                        <th class="py-3 px-3">Estado</th>
+                        <th class="py-3 px-3 text-right sticky right-0 bg-slate-50/70">Acciones</th>
                     </tr>
                 </thead>
                 @endif
                 <tbody class="divide-y divide-slate-100">
-                    @forelse($pendientes as $item)
-                        @php
-                            $solicitanteNombre = $item['solicitante']['name'] ?? ($item['usuario']['name'] ?? 'Solicitante');
-                            $solicitanteEmail = $item['solicitante']['email'] ?? ($item['usuario']['email'] ?? 'N/D');
-                            $equipoNombre = $item['equipo']['nombre'] ?? 'Equipo';
-                            $equipoCodigo = $item['equipo']['codigo'] ?? 'S/C';
-                            $fechaEntrega = !empty($item['fecha_entrega_real']) ? date('Y-m-d', strtotime($item['fecha_entrega_real'])) : (!empty($item['fecha_inicio']) ? date('Y-m-d', strtotime($item['fecha_inicio'])) : '—');
-                            $fechaEsperada = !empty($item['fecha_devolucion_estimada']) ? date('Y-m-d', strtotime($item['fecha_devolucion_estimada'])) : '—';
-
-                            $itemJson = [
-                                'id' => $item['id'],
-                                'solicitante' => $solicitanteNombre,
-                                'equipo' => $equipoNombre,
-                                'codigo' => $equipoCodigo,
-                                'fecha_entrega' => $fechaEntrega,
-                                'fecha_devolucion' => $fechaEsperada,
-                            ];
-                        @endphp
-                        <tr 
-                            x-show="search === '' || 
-                                    @js(strtolower($solicitanteNombre)).includes(search.toLowerCase()) || 
-                                    @js(strtolower($equipoNombre)).includes(search.toLowerCase()) ||
-                                    @js(strtolower($equipoCodigo)).includes(search.toLowerCase())"
+                    @forelse($filasDevolucion as $fila)
+                        <tr
+                            x-show="search === '' ||
+                                    @js($fila['busqueda']['solicitante']).includes(search.toLowerCase()) ||
+                                    @js($fila['busqueda']['equipo']).includes(search.toLowerCase()) ||
+                                    @js($fila['busqueda']['codigo']).includes(search.toLowerCase())"
                             class="hover:bg-slate-50/80 transition"
                         >
-                            <td class="py-3.5 px-6">
-                                <div class="flex items-center gap-3">
+                            <td class="py-3.5 px-3">
+                                <div class="flex items-center gap-2.5">
                                     <div class="w-8 h-8 rounded-full bg-[#1D5FD0] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                                        {{ strtoupper(substr($solicitanteNombre, 0, 2)) }}
+                                        {{ $fila['iniciales'] }}
                                     </div>
-                                    <div>
-                                        <p class="font-bold text-slate-800">{{ $solicitanteNombre }}</p>
-                                        <p class="text-[11px] text-slate-400">{{ $solicitanteEmail }}</p>
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-slate-800">{{ $fila['solicitante'] }}</p>
+                                        <p class="text-[11px] text-slate-400">{{ $fila['email'] }}</p>
                                     </div>
                                 </div>
                             </td>
 
-                            <td class="py-3.5 px-6 font-semibold text-slate-700">{{ $equipoNombre }}</td>
-                            <td class="py-3.5 px-6 font-mono text-slate-500 text-[11px]">{{ $equipoCodigo }}</td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ $fechaEntrega }}</td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ $fechaEsperada }}</td>
+                            <td class="py-3.5 px-3">
+                                <p class="font-semibold text-slate-700">{{ $fila['equipo'] }}</p>
+                                <span class="font-mono text-[11px] text-slate-400">{{ $fila['codigo'] }}</span>
+                            </td>
 
-                            <td class="py-3.5 px-6">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-blue-50 text-[#1D5FD0] border border-blue-200">
+                            <td class="py-3.5 px-3 text-slate-600 whitespace-nowrap">{{ $fila['fecha_entrega'] }}</td>
+                            <td class="py-3.5 px-3 text-slate-600 whitespace-nowrap">{{ $fila['fecha_devolucion'] }}</td>
+
+                            <td class="py-3.5 px-3">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-blue-50 text-[#1D5FD0] border border-blue-200 whitespace-nowrap">
                                     <span class="w-1.5 h-1.5 rounded-full bg-[#1D5FD0]"></span>
                                     Entregado
                                 </span>
                             </td>
 
-                            <td class="py-3.5 px-6 text-right">
-                                <button 
-                                    type="button" 
-                                    @click="abrirModal(@js($itemJson))"
-                                    class="h-9 px-4 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white text-xs font-semibold rounded-[10px] inline-flex items-center gap-1.5 transition shadow-sm"
+                            <td class="py-3.5 px-3 text-right sticky right-0 bg-white">
+                                <button
+                                    type="button"
+                                    @click="abrirModal(@js($fila['json']))"
+                                    class="h-9 px-3.5 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white text-xs font-semibold rounded-[10px] inline-flex items-center gap-1.5 transition shadow-sm whitespace-nowrap"
                                 >
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                     <span>Registrar devolución</span>
@@ -204,7 +225,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center">
+                            <td colspan="6" class="px-4 py-12 text-center">
                                 <div class="flex flex-col items-center gap-3 text-slate-400">
                                     <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                     <p class="text-sm font-medium text-slate-500">No hay préstamos activos pendientes de devolución.</p>
@@ -215,6 +236,66 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        {{-- Móvil: una tarjeta por devolución pendiente (H-27) --}}
+        <div class="md:hidden divide-y divide-slate-100">
+            @forelse($filasDevolucion as $fila)
+                <div
+                    x-show="search === '' ||
+                            @js($fila['busqueda']['solicitante']).includes(search.toLowerCase()) ||
+                            @js($fila['busqueda']['equipo']).includes(search.toLowerCase()) ||
+                            @js($fila['busqueda']['codigo']).includes(search.toLowerCase())"
+                    class="p-4 space-y-3"
+                >
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-full bg-[#1D5FD0] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
+                            {{ $fila['iniciales'] }}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-slate-900 truncate">{{ $fila['solicitante'] }}</p>
+                            <p class="text-[11px] text-slate-500 truncate">{{ $fila['email'] }}</p>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-blue-50 text-[#1D5FD0] border border-blue-200 shrink-0">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#1D5FD0]"></span>
+                            Entregado
+                        </span>
+                    </div>
+
+                    <dl class="grid grid-cols-2 gap-3 text-[11px]">
+                        <div>
+                            <dt class="text-slate-400">Equipo</dt>
+                            <dd class="font-semibold text-slate-700">{{ $fila['equipo'] }}</dd>
+                            <dd class="font-mono text-slate-400">{{ $fila['codigo'] }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-slate-400">F. entrega</dt>
+                            <dd class="text-slate-600">{{ $fila['fecha_entrega'] }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-slate-400">F. devolución esperada</dt>
+                            <dd class="text-slate-600">{{ $fila['fecha_devolucion'] }}</dd>
+                        </div>
+                    </dl>
+
+                    <button
+                        type="button"
+                        @click="abrirModal(@js($fila['json']))"
+                        class="w-full h-11 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white text-xs font-semibold rounded-[10px] inline-flex items-center justify-center gap-1.5 transition shadow-sm"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <span>Registrar devolución</span>
+                    </button>
+                </div>
+            @empty
+                <div class="px-4 py-12 text-center">
+                    <div class="flex flex-col items-center gap-3 text-slate-400">
+                        <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <p class="text-sm font-medium text-slate-500">No hay préstamos activos pendientes de devolución.</p>
+                        <p class="text-xs text-slate-400 max-w-xs">Cuando entregues un equipo, aparecerá aquí hasta que se registre su devolución.</p>
+                    </div>
+                </div>
+            @endforelse
         </div>
     </div>
 
