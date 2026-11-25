@@ -28,7 +28,7 @@ class UxAcabadoTest extends TestCase
     /** @var array<string, mixed> */
     private array $sesionUsuario = [
         'auth_token' => 'token-usuario',
-        'user' => ['id' => 5, 'name' => 'Estudiante', 'roles' => ['usuario']],
+        'user' => ['id' => 5, 'name' => 'Estudiante', 'roles' => ['estudiante']],
     ];
 
     private function fakeVacio(): void

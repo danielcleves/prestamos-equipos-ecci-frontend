@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\CatalogoRoles;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,15 +17,19 @@ use Illuminate\Validation\ValidationException;
  *  - PUT   /api/configuracion                    → mapa clave → valor
  *  - PATCH /api/categorias/{categoria}/restriccion → nivel 0/1/2 (RN-03)
  *
+ * Los cupos por rol (RN-02) se gestionan en /roles; aquí solo se muestran.
+ *
  * Solo el rol administrador puede entrar; el backend lo vuelve a validar.
  */
 class ConfiguracionWebController extends Controller
 {
+    use CatalogoRoles;
+
     /** Valores iniciales acordados con el PO (Diseño - Reglas de negocio iteración 2). */
     private const VALORES_POR_DEFECTO = [
-        'cupos.roles' => ['usuario' => 3, 'encargado' => 5, 'admin' => 10],
+        'cupos.roles' => ['estudiante' => 3, 'encargado' => 5, 'admin' => 10],
         'duracion.categorias' => [1 => 7, 2 => 5, 3 => 3],
-        'duracion.roles_extra' => ['usuario' => 0, 'encargado' => 2, 'admin' => 3],
+        'duracion.roles_extra' => ['estudiante' => 0, 'encargado' => 2, 'admin' => 3],
         'mora.escala' => [
             ['desde' => 1, 'hasta' => 2, 'dias_sancion' => 3],
             ['desde' => 3, 'hasta' => 5, 'dias_sancion' => 7],
@@ -38,8 +43,6 @@ class ConfiguracionWebController extends Controller
 
     /** Nombres conocidos de las categorías del inventario (las crea el admin en Equipos). */
     private const NOMBRES_CATEGORIA = [1 => 'Portátil', 2 => 'Tablet', 3 => 'De mesa'];
-
-    private const ROLES = ['usuario', 'encargado', 'admin'];
 
     private function apiUrl(): string
     {
@@ -134,16 +137,11 @@ class ConfiguracionWebController extends Controller
         }
 
         $datos = $request->validate([
-            'cupos' => ['required', 'array'],
-            'cupos.usuario' => ['required', 'integer', 'min:0', 'max:1000'],
-            'cupos.encargado' => ['required', 'integer', 'min:0', 'max:1000'],
-            'cupos.admin' => ['required', 'integer', 'min:0', 'max:1000'],
             'duracion_categorias' => ['required', 'array', 'min:1'],
             'duracion_categorias.*' => ['required', 'integer', 'min:1', 'max:365'],
-            'duracion_extra' => ['required', 'array'],
-            'duracion_extra.usuario' => ['required', 'integer', 'min:0', 'max:365'],
-            'duracion_extra.encargado' => ['required', 'integer', 'min:0', 'max:365'],
-            'duracion_extra.admin' => ['required', 'integer', 'min:0', 'max:365'],
+            // RN-06: un campo por rol, también los personalizados (profesor…).
+            'duracion_extra' => ['required', 'array', 'min:1'],
+            'duracion_extra.*' => ['required', 'integer', 'min:0', 'max:365'],
             'mora_escala' => ['nullable', 'array'],
             'mora_escala.*.desde' => ['required', 'integer', 'min:1', 'max:365'],
             'mora_escala.*.hasta' => ['nullable', 'integer', 'min:1', 'max:365'],
@@ -153,14 +151,12 @@ class ConfiguracionWebController extends Controller
             'requiere_capacitacion' => ['nullable', 'boolean'],
             'correos_permitidos' => ['nullable', 'string'],
         ], [
-            'cupos.required' => 'Debes indicar el cupo de cada rol.',
-            'cupos.*.required' => 'Todos los cupos por rol son obligatorios.',
-            'cupos.*.integer' => 'Los cupos deben ser números enteros.',
-            'cupos.*.min' => 'Los cupos no pueden ser negativos.',
             'duracion_categorias.required' => 'Debes indicar la duración máxima por categoría.',
             'duracion_categorias.*.integer' => 'Las duraciones deben ser números enteros.',
             'duracion_categorias.*.min' => 'La duración máxima debe ser de al menos 1 día.',
+            'duracion_extra.*.required' => 'Indica los días extra de cada rol (0 si no tiene).',
             'duracion_extra.*.integer' => 'Los días extra por rol deben ser números enteros.',
+            'duracion_extra.*.min' => 'Los días extra por rol no pueden ser negativos.',
             'mora_escala.*.desde.required' => 'Cada tramo de mora necesita el día "desde".',
             'mora_escala.*.dias_sancion.required' => 'Cada tramo de mora necesita los días de sanción.',
             'mora_dias_bloqueo.required' => 'Debes indicar el umbral de bloqueo por mora.',
@@ -170,17 +166,8 @@ class ConfiguracionWebController extends Controller
         $escala = $this->escalaDesdeFormulario($datos['mora_escala'] ?? []);
 
         $parametros = [
-            'cupos.roles' => [
-                'usuario' => (int) $datos['cupos']['usuario'],
-                'encargado' => (int) $datos['cupos']['encargado'],
-                'admin' => (int) $datos['cupos']['admin'],
-            ],
             'duracion.categorias' => $this->mapaEnteros($datos['duracion_categorias']),
-            'duracion.roles_extra' => [
-                'usuario' => (int) $datos['duracion_extra']['usuario'],
-                'encargado' => (int) $datos['duracion_extra']['encargado'],
-                'admin' => (int) $datos['duracion_extra']['admin'],
-            ],
+            'duracion.roles_extra' => $this->extraPorRol($datos['duracion_extra']),
             'mora.escala' => $escala,
             'mora.dias_bloqueo' => (int) $datos['mora_dias_bloqueo'],
             'danos.dias_restriccion' => (int) $datos['danos_dias_restriccion'],
@@ -301,12 +288,14 @@ class ConfiguracionWebController extends Controller
         $datos = $this->cuerpoUtil($respuesta);
 
         $fuenteParametros = is_array($datos['parametros'] ?? null) ? $datos['parametros'] : $datos;
-        $parametros = $this->normalizarParametros($this->parametrosPlanos($fuenteParametros));
+        $roles = $this->normalizarRoles($datos['roles'] ?? null);
+        $parametros = $this->normalizarParametros($this->parametrosPlanos($fuenteParametros), $roles);
         $categorias = $this->categoriasDesdeRespuesta($datos, $parametros);
 
         return view('configuracion.index', [
             'parametros' => $parametros,
             'categorias' => $categorias,
+            'roles' => $roles,
             'errorConexion' => $errorConexion,
             'title' => 'Configuración',
         ]);
@@ -380,12 +369,15 @@ class ConfiguracionWebController extends Controller
      * @param  array<string, mixed>  $planos
      * @return array<string, mixed>
      */
-    private function normalizarParametros(array $planos): array
+    private function normalizarParametros(array $planos, array $roles): array
     {
         $parametros = self::VALORES_POR_DEFECTO;
 
-        if (is_array($planos['cupos.roles'] ?? null)) {
-            $parametros['cupos.roles'] = $this->completarRoles($planos['cupos.roles'], self::VALORES_POR_DEFECTO['cupos.roles']);
+        // RN-02: el cupo viene en el catálogo de roles; cupos.roles es respaldo.
+        $cupos = is_array($planos['cupos.roles'] ?? null) ? $planos['cupos.roles'] : [];
+        $parametros['cupos.roles'] = [];
+        foreach ($roles as $rol) {
+            $parametros['cupos.roles'][$rol['nombre']] = max(0, (int) ($cupos[$rol['nombre']] ?? $rol['cupo_prestamos']));
         }
 
         if (is_array($planos['duracion.categorias'] ?? null)) {
@@ -393,8 +385,14 @@ class ConfiguracionWebController extends Controller
         }
 
         if (is_array($planos['duracion.roles_extra'] ?? null)) {
-            $parametros['duracion.roles_extra'] = $this->completarRoles($planos['duracion.roles_extra'], self::VALORES_POR_DEFECTO['duracion.roles_extra']);
+            $parametros['duracion.roles_extra'] = $planos['duracion.roles_extra'];
         }
+
+        $parametros['duracion.roles_extra'] = $this->completarRoles(
+            $roles,
+            $parametros['duracion.roles_extra'],
+            self::VALORES_POR_DEFECTO['duracion.roles_extra']
+        );
 
         if (is_array($planos['mora.escala'] ?? null)) {
             $escala = $this->escalaDesdeRespuesta($planos['mora.escala']);
@@ -429,19 +427,48 @@ class ConfiguracionWebController extends Controller
     }
 
     /**
+     * Un valor por cada rol del catálogo: el guardado, el inicial o 0.
+     *
+     * @param  list<array<string, mixed>>  $roles
      * @param  array<mixed>  $valores
      * @param  array<string, int>  $porDefecto
      * @return array<string, int>
      */
-    private function completarRoles(array $valores, array $porDefecto): array
+    private function completarRoles(array $roles, array $valores, array $porDefecto): array
     {
-        $roles = [];
+        $resultado = [];
 
-        foreach (self::ROLES as $rol) {
-            $roles[$rol] = max(0, (int) ($valores[$rol] ?? $porDefecto[$rol]));
+        foreach ($roles as $rol) {
+            $nombre = $rol['nombre'];
+            $resultado[$nombre] = max(0, (int) ($valores[$nombre] ?? $porDefecto[$nombre] ?? 0));
         }
 
-        return $roles;
+        return $resultado;
+    }
+
+    /**
+     * Mapa «rol => días extra» del formulario, solo con nombres de rol válidos.
+     *
+     * @param  array<mixed>  $valores
+     * @return array<string, int>
+     */
+    private function extraPorRol(array $valores): array
+    {
+        $mapa = [];
+
+        foreach ($valores as $rol => $dias) {
+            if (is_string($rol) && preg_match('/^[a-z0-9_]{1,60}$/', $rol)) {
+                $mapa[$rol] = max(0, (int) $dias);
+            }
+        }
+
+        if ($mapa === []) {
+            throw ValidationException::withMessages([
+                'duracion_extra' => 'Indica los días extra de cada rol.',
+            ]);
+        }
+
+        return $mapa;
     }
 
     /**

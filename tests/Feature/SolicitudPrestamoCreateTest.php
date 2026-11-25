@@ -18,7 +18,7 @@ class SolicitudPrestamoCreateTest extends TestCase
     /** @var array<string, mixed> */
     private array $sesionUsuario = [
         'auth_token' => 'token-usuario-test',
-        'user' => ['id' => 5, 'name' => 'Estudiante ECCI', 'roles' => ['usuario']],
+        'user' => ['id' => 5, 'name' => 'Estudiante ECCI', 'roles' => ['estudiante']],
     ];
 
     public function test_create_muestra_el_formulario_con_un_equipo_disponible(): void

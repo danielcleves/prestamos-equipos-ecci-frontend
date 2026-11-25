@@ -26,7 +26,7 @@ class UsuariosCapacitacionTest extends TestCase
             'name' => 'Nuevo Docente',
             'email' => 'docente@ecci.edu.co',
             'password' => 'secreta123',
-            'role' => 'usuario',
+            'role' => 'estudiante',
         ], $sobrescribir);
     }
 
@@ -36,7 +36,7 @@ class UsuariosCapacitacionTest extends TestCase
         return array_merge([
             'name' => 'Docente Editado',
             'email' => 'editado@ecci.edu.co',
-            'role' => 'usuario',
+            'role' => 'estudiante',
         ], $sobrescribir);
     }
 
@@ -105,8 +105,8 @@ class UsuariosCapacitacionTest extends TestCase
     {
         Http::fake(['*' => Http::response([
             'data' => [
-                ['id' => 3, 'name' => 'Ana Capacitada', 'email' => 'ana@ecci.edu.co', 'roles' => ['usuario'], 'is_active' => true, 'capacitado' => true],
-                ['id' => 4, 'name' => 'Beto Sin Curso', 'email' => 'beto@ecci.edu.co', 'roles' => ['usuario'], 'is_active' => true, 'capacitado' => false],
+                ['id' => 3, 'name' => 'Ana Capacitada', 'email' => 'ana@ecci.edu.co', 'roles' => ['estudiante'], 'is_active' => true, 'capacitado' => true],
+                ['id' => 4, 'name' => 'Beto Sin Curso', 'email' => 'beto@ecci.edu.co', 'roles' => ['estudiante'], 'is_active' => true, 'capacitado' => false],
             ],
             'meta' => ['total' => 2, 'last_page' => 1],
         ], 200)]);

@@ -47,7 +47,7 @@ class NavegacionPorRolTest extends TestCase
     {
         $this->cargarEquipos();
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->get('/equipos')
             ->assertOk()
             ->assertSee('Solicitante')

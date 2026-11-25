@@ -34,7 +34,7 @@ class RegistroEquipoTest extends TestCase
 
     public function test_usuario_no_admin_es_bloqueado_de_la_creacion_de_equipos(): void
     {
-        $this->withSession($this->authHeaders('usuario'))
+        $this->withSession($this->authHeaders('estudiante'))
             ->get(route('equipos.create'))
             ->assertRedirect(route('inicio'));
     }
@@ -93,7 +93,7 @@ class RegistroEquipoTest extends TestCase
 
     public function test_usuario_no_admin_es_bloqueado_al_actualizar_estado(): void
     {
-        $this->withSession($this->authHeaders('usuario'))
+        $this->withSession($this->authHeaders('estudiante'))
             ->patch(route('equipos.updateEstado', 1), ['estado' => 'mantenimiento'])
             ->assertRedirect(route('inicio'));
     }

@@ -1,13 +1,20 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    // RN-02: etiquetas de los roles del backend (incluye los personalizados).
+    $roles = $roles ?? \App\Http\Controllers\Concerns\CatalogoRoles::rolesPorDefecto();
+    $etiquetasRol = collect($roles)->pluck('etiqueta', 'nombre')->all();
+    $rolPredeterminado = collect($roles)->firstWhere('es_predeterminado', true)['nombre']
+        ?? ($roles[0]['nombre'] ?? 'estudiante');
+@endphp
 <div x-data="{
     search: '',
     roleFilter: '',
     statusFilter: '',
     openModalCreate: false,
     openModalEdit: false,
-    editUser: { id: null, name: '', email: '', role: 'usuario', capacitado: true },
+    editUser: { id: null, name: '', email: '', role: @js($rolPredeterminado), capacitado: true },
     openEdit(user) {
         this.editUser = { ...user };
         this.openModalEdit = true;
@@ -96,9 +103,9 @@
 
             <select x-model="roleFilter" aria-label="Filtrar por rol" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
                 <option value="">Filtrar por rol</option>
-                <option value="admin">Administrador</option>
-                <option value="encargado">Personal de préstamo</option>
-                <option value="usuario">Solicitante</option>
+                @foreach($roles as $opcionRol)
+                    <option value="{{ $opcionRol['nombre'] }}">{{ $opcionRol['etiqueta'] }}</option>
+                @endforeach
             </select>
 
             <select x-model="statusFilter" aria-label="Filtrar por estado" class="text-xs bg-white border border-[#D9DEE7] rounded-[10px] px-3 h-12 text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#0B3D91]">
@@ -128,12 +135,8 @@
                             $username = $emailParts[0];
                             $nameWords = explode(' ', trim($user['name']));
                             $iniciales = strtoupper(substr($nameWords[0], 0, 1) . (isset($nameWords[1]) ? substr($nameWords[1], 0, 1) : ''));
-                            $rol = !empty($user['roles']) ? (is_array($user['roles'][0]) ? ($user['roles'][0]['name'] ?? 'usuario') : $user['roles'][0]) : ($user['role'] ?? 'usuario');
-                            $rolLabel = match($rol) {
-                                'admin' => 'Administrador',
-                                'encargado' => 'Personal de préstamo',
-                                default => 'Solicitante'
-                            };
+                            $rol = $user['rol_principal'] ?? (!empty($user['roles']) ? (is_array($user['roles'][0]) ? ($user['roles'][0]['name'] ?? $rolPredeterminado) : $user['roles'][0]) : ($user['role'] ?? $rolPredeterminado));
+                            $rolLabel = $etiquetasRol[$rol] ?? ($user['rol_etiqueta'] ?? ucfirst(str_replace('_', ' ', $rol)));
                             $rolColor = match($rol) {
                                 'admin' => 'bg-purple-50 text-purple-700 border-purple-200/60',
                                 'encargado' => 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
@@ -219,12 +222,8 @@
                     $username = $emailParts[0];
                     $nameWords = explode(' ', trim($user['name']));
                     $iniciales = strtoupper(substr($nameWords[0], 0, 1) . (isset($nameWords[1]) ? substr($nameWords[1], 0, 1) : ''));
-                    $rol = !empty($user['roles']) ? (is_array($user['roles'][0]) ? ($user['roles'][0]['name'] ?? 'usuario') : $user['roles'][0]) : ($user['role'] ?? 'usuario');
-                    $rolLabel = match($rol) {
-                        'admin' => 'Administrador',
-                        'encargado' => 'Personal de préstamo',
-                        default => 'Solicitante'
-                    };
+                    $rol = $user['rol_principal'] ?? (!empty($user['roles']) ? (is_array($user['roles'][0]) ? ($user['roles'][0]['name'] ?? $rolPredeterminado) : $user['roles'][0]) : ($user['role'] ?? $rolPredeterminado));
+                    $rolLabel = $etiquetasRol[$rol] ?? ($user['rol_etiqueta'] ?? ucfirst(str_replace('_', ' ', $rol)));
                     $rolColor = match($rol) {
                         'admin' => 'bg-purple-50 text-purple-700 border-purple-200/60',
                         'encargado' => 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
@@ -320,9 +319,9 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Rol en el Sistema</label>
                     <select name="role" required class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none bg-white">
-                        <option value="usuario">Solicitante</option>
-                        <option value="encargado">Personal de préstamo</option>
-                        <option value="admin">Administrador</option>
+                        @foreach($roles as $opcionRol)
+                            <option value="{{ $opcionRol['nombre'] }}" @selected(old('role', $rolPredeterminado) === $opcionRol['nombre'])>{{ $opcionRol['etiqueta'] }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>
@@ -368,9 +367,9 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Rol</label>
                     <select name="role" x-model="editUser.role" required class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none bg-white">
-                        <option value="usuario">Solicitante</option>
-                        <option value="encargado">Personal de préstamo</option>
-                        <option value="admin">Administrador</option>
+                        @foreach($roles as $opcionRol)
+                            <option value="{{ $opcionRol['nombre'] }}">{{ $opcionRol['etiqueta'] }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>

@@ -23,7 +23,7 @@ class IncidenciasWebTest extends TestCase
     /** @var array<string, mixed> */
     private array $sesionUsuario = [
         'auth_token' => 'token-usuario-test',
-        'user' => ['id' => 5, 'name' => 'Estudiante ECCI', 'roles' => ['usuario']],
+        'user' => ['id' => 5, 'name' => 'Estudiante ECCI', 'roles' => ['estudiante']],
     ];
 
     private function incidencia(string $estado = 'abierta'): array

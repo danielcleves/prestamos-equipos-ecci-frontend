@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\CatalogoRoles;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Http;
 
 class UsuarioWebController extends Controller
 {
+    use CatalogoRoles;
+
     /** Tope de páginas de 100 usuarios que se recorren en la consulta (1000 usuarios). */
     private const MAX_PAGINAS = 10;
 
@@ -121,7 +124,10 @@ class UsuarioWebController extends Controller
         $activos = collect($usuarios)->where('is_active', true)->count();
         $inactivos = count($usuarios) - $activos;
 
-        return view('usuarios.index', compact('usuarios', 'total', 'activos', 'inactivos'));
+        // RN-02: roles disponibles (incluye los personalizados que cree el admin).
+        $roles = $this->consultarRoles($token);
+
+        return view('usuarios.index', compact('usuarios', 'total', 'activos', 'inactivos', 'roles'));
     }
 
     public function store(Request $request)
@@ -134,7 +140,7 @@ class UsuarioWebController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'password' => 'required|min:8',
-            'role' => 'required|in:admin,encargado,usuario',
+            'role' => ['required', 'string', 'max:125', 'regex:/^[a-z0-9_]+$/'],
             'capacitado' => 'nullable|boolean',
         ]);
 
@@ -175,7 +181,7 @@ class UsuarioWebController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email',
-            'role' => 'required|in:admin,encargado,usuario',
+            'role' => ['required', 'string', 'max:125', 'regex:/^[a-z0-9_]+$/'],
             'password' => 'nullable|min:8',
             'capacitado' => 'nullable|boolean',
         ]);

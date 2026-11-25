@@ -60,7 +60,7 @@ class CatalogoEquiposTest extends TestCase
     {
         Http::fake(['*' => Http::response(['data' => [$this->equipo(1, 'Osciloscopio', 'disponible')]], 200)]);
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->get('/equipos')
             ->assertOk()
             ->assertViewIs('equipos.catalogo');
@@ -93,7 +93,7 @@ class CatalogoEquiposTest extends TestCase
     {
         Http::fake(['*' => Http::response(['data' => []], 200)]);
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->get('/equipos')
             ->assertOk()
             ->assertSee('No hay equipos registrados en el catálogo.');
@@ -120,7 +120,7 @@ class CatalogoEquiposTest extends TestCase
             ], 200),
         ]);
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->get('/equipos')
             ->assertOk()
             ->assertSee('Equipo Libre')
@@ -133,7 +133,7 @@ class CatalogoEquiposTest extends TestCase
     {
         Http::fake(['*' => Http::response(['message' => 'Unauthenticated.'], 401)]);
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->get('/equipos')
             ->assertRedirect(route('login'))
             ->assertSessionHasErrors('email')
@@ -157,7 +157,7 @@ class CatalogoEquiposTest extends TestCase
     {
         Http::fake(['*' => Http::response(['message' => 'Servicio de equipos no disponible.'], 500)]);
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->get('/equipos')
             ->assertOk()
             ->assertViewIs('equipos.catalogo')
@@ -168,7 +168,7 @@ class CatalogoEquiposTest extends TestCase
     {
         Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('backend caído'));
 
-        $this->withSession($this->sesion('usuario'))
+        $this->withSession($this->sesion('estudiante'))
             ->get('/equipos')
             ->assertOk()
             ->assertSee('No fue posible conectar con el inventario de equipos.');

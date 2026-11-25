@@ -30,9 +30,9 @@ class ConfiguracionReglasTest extends TestCase
         return [
             'data' => [
                 'parametros' => [
-                    'cupos.roles' => ['usuario' => 4, 'encargado' => 6, 'admin' => 12],
+                    'cupos.roles' => ['estudiante' => 4, 'encargado' => 6, 'admin' => 12],
                     'duracion.categorias' => ['1' => 8, '2' => 4],
-                    'duracion.roles_extra' => ['usuario' => 1, 'encargado' => 2, 'admin' => 3],
+                    'duracion.roles_extra' => ['estudiante' => 1, 'encargado' => 2, 'admin' => 3],
                     'mora.escala' => [
                         ['desde' => 1, 'hasta' => 2, 'dias_sancion' => 4],
                         ['desde' => 6, 'hasta' => null, 'dias_sancion' => 20],
@@ -53,9 +53,8 @@ class ConfiguracionReglasTest extends TestCase
     private function formularioValido(array $sobrescribir = []): array
     {
         return array_merge([
-            'cupos' => ['usuario' => 5, 'encargado' => 6, 'admin' => 7],
             'duracion_categorias' => [1 => 10, 2 => 6, 3 => 4],
-            'duracion_extra' => ['usuario' => 0, 'encargado' => 2, 'admin' => 3],
+            'duracion_extra' => ['estudiante' => 0, 'encargado' => 2, 'admin' => 3],
             'mora_escala' => [
                 ['desde' => 1, 'hasta' => 2, 'dias_sancion' => 3],
                 ['desde' => 3, 'hasta' => null, 'dias_sancion' => 10],
@@ -75,9 +74,10 @@ class ConfiguracionReglasTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Configuración de reglas de negocio');
-        // Cupos por rol (RN-02)
-        $response->assertSee('name="cupos[usuario]"', false);
-        $response->assertSee('value="4"', false);
+        // Cupos por rol (RN-02): solo lectura, se gestionan en /roles
+        $response->assertDontSee('name="cupos[', false);
+        $response->assertSee('Gestionar roles y cupos');
+        $response->assertSee(route('roles.index'), false);
         // Duración por categoría (RN-06)
         $response->assertSee('name="duracion_categorias[1]"', false);
         $response->assertSee('name="duracion_extra[encargado]"', false);
@@ -109,8 +109,9 @@ class ConfiguracionReglasTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Configuración no disponible.');
+        // Días extra por rol con los roles iniciales y sus valores por defecto.
+        $response->assertSee('name="duracion_extra[estudiante]"', false);
         $response->assertSee('value="3"', false);
-        $response->assertSee('value="10"', false);
     }
 
     public function test_configuracion_avisa_si_no_hay_conexion(): void
@@ -186,7 +187,9 @@ class ConfiguracionReglasTest extends TestCase
                 return false;
             }
 
-            return $request['cupos.roles']['usuario'] === 5
+            // RN-02: el cupo ya no viaja desde esta pantalla.
+            return ! isset($request['cupos.roles'])
+                && $request['duracion.roles_extra'] === ['estudiante' => 0, 'encargado' => 2, 'admin' => 3]
                 && $request['duracion.categorias'][1] === 10
                 && $request['mora.escala'][1]['hasta'] === null
                 && $request['mora.dias_bloqueo'] === 2
@@ -196,13 +199,13 @@ class ConfiguracionReglasTest extends TestCase
         });
     }
 
-    public function test_el_cupo_negativo_no_se_envia_al_backend(): void
+    public function test_los_dias_extra_negativos_no_se_envian_al_backend(): void
     {
         $this->withSession($this->sesionAdmin)
             ->put('/configuracion', $this->formularioValido([
-                'cupos' => ['usuario' => -1, 'encargado' => 6, 'admin' => 7],
+                'duracion_extra' => ['estudiante' => -1, 'encargado' => 2, 'admin' => 3],
             ]))
-            ->assertSessionHasErrors('cupos.usuario');
+            ->assertSessionHasErrors('duracion_extra.estudiante');
 
         Http::assertNothingSent();
     }
