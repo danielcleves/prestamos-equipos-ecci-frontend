@@ -143,6 +143,7 @@
             aria-labelledby="modal-editar-rol-titulo"
             x-ref="dialogoEditarRol"
             tabindex="-1"
+            x-foco-modal="openModalEdit"
             x-effect="openModalEdit && $nextTick(() => $refs.dialogoEditarRol.focus())"
             class="w-full max-w-md bg-white rounded-xl shadow-xl border border-borde"
         >

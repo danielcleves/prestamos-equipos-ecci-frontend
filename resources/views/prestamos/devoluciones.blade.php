@@ -390,6 +390,7 @@
             aria-labelledby="modal-devolucion-titulo"
             x-ref="dialogoDevolucion"
             tabindex="-1"
+            x-foco-modal="openModalDevolucion"
             x-effect="openModalDevolucion && $nextTick(() => $refs.dialogoDevolucion.focus())"
             class="bg-white rounded-xl shadow-xl border border-borde w-full max-w-md overflow-hidden"
         >

@@ -480,6 +480,174 @@ class UxAcabadoTest extends TestCase
     }
 
     /**
+     * Cerrar un modal (Escape o «×») dejaba el foco en <body>: el siguiente Tab
+     * reiniciaba desde «Saltar al contenido». Los nueve diálogos montan la
+     * misma directiva x-foco-modal, con el mismo estado que ya abre y cierra el
+     * modal, para que el mecanismo sea uno solo y no se desincronice.
+     */
+    public function test_cada_modal_declara_la_devolucion_del_foco_con_su_mismo_estado(): void
+    {
+        $vistas = collect(File::allFiles(resource_path('views')))
+            ->filter(fn ($archivo) => str_ends_with($archivo->getFilename(), '.blade.php'))
+            ->reject(fn ($archivo) => str_starts_with($archivo->getRelativePathname(), 'layouts'));
+
+        $modales = 0;
+
+        foreach ($vistas as $vista) {
+            // Etiquetas de apertura <div …>: los atributos de Alpine llevan «>»
+            // dentro del valor (`() => …`), así que no sirve `[^>]*`.
+            preg_match_all('/<div\b(?:"[^"]*"|\'[^\']*\'|[^>"\'])*>/s', $vista->getContents(), $etiquetas);
+
+            foreach ($etiquetas[0] as $etiqueta) {
+                if (! str_contains($etiqueta, 'role="dialog"')) {
+                    continue;
+                }
+
+                $modales++;
+                $archivo = $vista->getRelativePathname();
+
+                $this->assertMatchesRegularExpression(
+                    '/\sx-foco-modal="open[A-Za-z]+"/',
+                    $etiqueta,
+                    "El diálogo de {$archivo} no declara x-foco-modal: al cerrarlo el foco se perdería"
+                );
+
+                preg_match('/x-foco-modal="([^"]+)"/', $etiqueta, $foco);
+                preg_match('/x-effect="([^"\s]+)/', $etiqueta, $efecto);
+
+                $this->assertSame(
+                    $efecto[1],
+                    $foco[1],
+                    "El diálogo de {$archivo} observa «{$foco[1]}» pero se abre con «{$efecto[1]}»"
+                );
+            }
+        }
+
+        // usuarios (2), equipos (2), catálogo, entregas, devoluciones,
+        // solicitudes y roles.
+        $this->assertSame(9, $modales, 'Cambió el número de diálogos: revisa que cada uno devuelva el foco');
+    }
+
+    public function test_el_mecanismo_de_foco_cae_en_el_contenido_cuando_el_disparador_desaparece(): void
+    {
+        $js = file_get_contents(resource_path('js/app.js'));
+
+        // La lógica es una sola y vive en app.js: directiva de Alpine + respaldo.
+        $this->assertStringContainsString("window.Alpine.directive('foco-modal'", $js);
+        $this->assertStringContainsString('disparadorDelDialogo', $js);
+        $this->assertStringContainsString('devolverFoco', $js);
+
+        // Si la fila que abrió el modal ya no existe, el foco va al mismo
+        // destino que «Saltar al contenido», que es enfocable (tabindex="-1").
+        $this->assertStringContainsString("const ID_CONTENIDO = 'contenido-principal';", $js);
+        $this->assertStringContainsString('getElementById(ID_CONTENIDO)', $js);
+
+        // Tras enviar un formulario del modal la página se recarga: el foco
+        // vuelve al contenido en lugar de quedarse en <body>.
+        $this->assertStringContainsString('sessionStorage.setItem(CLAVE_RETORNO', $js);
+        $this->assertStringContainsString('sessionStorage.getItem(CLAVE_RETORNO)', $js);
+
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        $this->assertMatchesRegularExpression(
+            '/<main id="contenido-principal" tabindex="-1"/',
+            $layout,
+            'El respaldo necesita un <main> enfocable con el id de «Saltar al contenido»'
+        );
+    }
+
+    public function test_las_pantallas_con_modales_sirven_la_directiva_de_foco(): void
+    {
+        $this->fakeVacio();
+
+        foreach (['/usuarios', '/equipos', '/equipos?vista=catalogo', '/roles', '/entregas-pendientes', '/devoluciones', '/solicitudes'] as $url) {
+            $response = $this->withSession($this->sesionAdmin)->get($url)->assertOk();
+
+            $this->assertSame(
+                substr_count($response->getContent(), 'role="dialog"'),
+                substr_count($response->getContent(), 'x-foco-modal='),
+                "Cada diálogo de {$url} debe devolver el foco al cerrarse"
+            );
+        }
+    }
+
+    /**
+     * Un modal sin ciclo de foco no atrapa la atención: con Tab desde el último
+     * control el foco salía al menú lateral, detrás del velo, y el usuario
+     * dejaba de saber en qué diálogo estaba. La directiva x-foco-modal cierra
+     * el ciclo: Tab en la última parada vuelve a la primera y Shift+Tab en la
+     * primera salta a la última. Medido en Chromium con dos vueltas completas
+     * en usuarios, entregas y devoluciones: cero salidas del diálogo.
+     *
+     * Aquí se comprueba la lógica y sus bordes sobre app.js, que es donde vive
+     * el mecanismo (una sola fuente para los nueve diálogos); la prueba de
+     * navegador no forma parte de la suite porque el proyecto no instala Dusk.
+     */
+    public function test_el_dialogo_atrapa_el_foco_con_tab_mientras_esta_abierto(): void
+    {
+        $js = file_get_contents(resource_path('js/app.js'));
+
+        // Paradas reales: enlaces con href, controles habilitados y tabindex
+        // de recorrido; el `-1` del propio diálogo no es una parada.
+        foreach ([
+            'a[href]',
+            'button:not([disabled])',
+            'input:not([disabled])',
+            'select',
+            'textarea',
+            '[tabindex]:not([tabindex="-1"])',
+        ] as $selector) {
+            $this->assertStringContainsString(
+                $selector,
+                $js,
+                "El recorrido del diálogo debe considerar «{$selector}»"
+            );
+        }
+
+        // Lo oculto y lo apagado no cuentan aunque esté en el HTML.
+        $this->assertStringContainsString('!elemento.disabled', $js);
+        $this->assertStringContainsString("!elemento.closest('[hidden]')", $js);
+        $this->assertStringContainsString('getClientRects().length > 0', $js);
+
+        // La decisión del ciclo: Tab en la última va a la primera…
+        $this->assertMatchesRegularExpression(
+            '/if \(!evento\.shiftKey && activo === ultima\) \{\s*evento\.preventDefault\(\);\s*primera\.focus\(\);/',
+            $js,
+            'Tab desde la última parada debe volver a la primera'
+        );
+
+        // …y Shift+Tab en la primera va a la última.
+        $this->assertMatchesRegularExpression(
+            '/if \(evento\.shiftKey && activo === primera\) \{\s*evento\.preventDefault\(\);\s*ultima\.focus\(\);/',
+            $js,
+            'Shift+Tab desde la primera parada debe saltar a la última'
+        );
+
+        // Borde: el foco entra por el extremo que toca cuando está en el
+        // contenedor (tabindex="-1") o se perdió fuera del diálogo.
+        $this->assertMatchesRegularExpression(
+            '/if \(!el\.contains\(activo\) \|\| activo === el\) \{\s*evento\.preventDefault\(\);\s*\(evento\.shiftKey \? ultima : primera\)\.focus\(\);/',
+            $js
+        );
+
+        // Borde: un diálogo sin paradas no deja escapar la tecla.
+        $this->assertMatchesRegularExpression(
+            '/if \(paradas\.length === 0\) \{\s*evento\.preventDefault\(\);/',
+            $js
+        );
+
+        // Cerrado no se atrapa nada: el guardia es el mismo estado que abre el
+        // modal y el listener se retira al desmontarse la directiva.
+        $this->assertStringContainsString(
+            "if (evento.key !== 'Tab' || !estabaAbierto) return;",
+            $js,
+            'Con el diálogo cerrado el Tab no debe quedar atrapado'
+        );
+        $this->assertStringContainsString("el.addEventListener('keydown', alTeclear)", $js);
+        $this->assertStringContainsString("el.removeEventListener('keydown', alTeclear)", $js);
+    }
+
+    /**
      * El documento declara su idioma, que es lo que usan los navegadores para
      * las pistas de los campos nativos (p. ej. la fecha de /solicitudes).
      */

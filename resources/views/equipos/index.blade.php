@@ -243,6 +243,7 @@
             aria-labelledby="modal-detalle-equipo-titulo"
             x-ref="dialogoDetalleEquipo"
             tabindex="-1"
+            x-foco-modal="openModalView"
             x-effect="openModalView && $nextTick(() => $refs.dialogoDetalleEquipo.focus())"
             class="bg-white rounded-xl shadow-xl border border-borde w-full max-w-lg overflow-hidden"
         >
@@ -311,6 +312,7 @@
             aria-labelledby="modal-estado-equipo-titulo"
             x-ref="dialogoEstadoEquipo"
             tabindex="-1"
+            x-foco-modal="openModalEdit"
             x-effect="openModalEdit && $nextTick(() => $refs.dialogoEstadoEquipo.focus())"
             class="bg-white rounded-xl shadow-xl border border-borde w-full max-w-md overflow-hidden"
         >

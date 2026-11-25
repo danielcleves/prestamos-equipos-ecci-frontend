@@ -186,6 +186,7 @@
             aria-labelledby="modal-info-equipo-titulo"
             x-ref="dialogoInfoEquipo"
             tabindex="-1"
+            x-foco-modal="openModalView"
             x-effect="openModalView && $nextTick(() => $refs.dialogoInfoEquipo.focus())"
             class="bg-white rounded-xl shadow-xl border border-borde w-full max-w-lg overflow-hidden"
         >
