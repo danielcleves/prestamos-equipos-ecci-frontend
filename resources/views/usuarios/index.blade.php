@@ -303,6 +303,7 @@
             aria-labelledby="modal-nuevo-usuario-titulo"
             x-ref="dialogoNuevoUsuario"
             tabindex="-1"
+            x-foco-modal="openModalCreate"
             x-effect="openModalCreate && $nextTick(() => $refs.dialogoNuevoUsuario.focus())"
             class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden"
         >
@@ -357,6 +358,7 @@
             aria-labelledby="modal-editar-usuario-titulo"
             x-ref="dialogoEditarUsuario"
             tabindex="-1"
+            x-foco-modal="openModalEdit"
             x-effect="openModalEdit && $nextTick(() => $refs.dialogoEditarUsuario.focus())"
             class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden"
         >

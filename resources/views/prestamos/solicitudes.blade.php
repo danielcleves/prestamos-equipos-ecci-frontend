@@ -368,6 +368,7 @@
             aria-labelledby="modal-detalle-solicitud-titulo"
             x-ref="dialogoDetalleSolicitud"
             tabindex="-1"
+            x-foco-modal="openModalDetalle"
             x-effect="openModalDetalle && $nextTick(() => $refs.dialogoDetalleSolicitud.focus())"
             class="bg-white rounded-2xl shadow-2xl border border-borde w-full max-w-xl overflow-hidden animate-fade-in"
         >

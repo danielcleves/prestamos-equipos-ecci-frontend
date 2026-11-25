@@ -480,6 +480,98 @@ class UxAcabadoTest extends TestCase
     }
 
     /**
+     * Cerrar un modal (Escape o «×») dejaba el foco en <body>: el siguiente Tab
+     * reiniciaba desde «Saltar al contenido». Los nueve diálogos montan la
+     * misma directiva x-foco-modal, con el mismo estado que ya abre y cierra el
+     * modal, para que el mecanismo sea uno solo y no se desincronice.
+     */
+    public function test_cada_modal_declara_la_devolucion_del_foco_con_su_mismo_estado(): void
+    {
+        $vistas = collect(File::allFiles(resource_path('views')))
+            ->filter(fn ($archivo) => str_ends_with($archivo->getFilename(), '.blade.php'))
+            ->reject(fn ($archivo) => str_starts_with($archivo->getRelativePathname(), 'layouts'));
+
+        $modales = 0;
+
+        foreach ($vistas as $vista) {
+            // Etiquetas de apertura <div …>: los atributos de Alpine llevan «>»
+            // dentro del valor (`() => …`), así que no sirve `[^>]*`.
+            preg_match_all('/<div\b(?:"[^"]*"|\'[^\']*\'|[^>"\'])*>/s', $vista->getContents(), $etiquetas);
+
+            foreach ($etiquetas[0] as $etiqueta) {
+                if (! str_contains($etiqueta, 'role="dialog"')) {
+                    continue;
+                }
+
+                $modales++;
+                $archivo = $vista->getRelativePathname();
+
+                $this->assertMatchesRegularExpression(
+                    '/\sx-foco-modal="open[A-Za-z]+"/',
+                    $etiqueta,
+                    "El diálogo de {$archivo} no declara x-foco-modal: al cerrarlo el foco se perdería"
+                );
+
+                preg_match('/x-foco-modal="([^"]+)"/', $etiqueta, $foco);
+                preg_match('/x-effect="([^"\s]+)/', $etiqueta, $efecto);
+
+                $this->assertSame(
+                    $efecto[1],
+                    $foco[1],
+                    "El diálogo de {$archivo} observa «{$foco[1]}» pero se abre con «{$efecto[1]}»"
+                );
+            }
+        }
+
+        // usuarios (2), equipos (2), catálogo, entregas, devoluciones,
+        // solicitudes y roles.
+        $this->assertSame(9, $modales, 'Cambió el número de diálogos: revisa que cada uno devuelva el foco');
+    }
+
+    public function test_el_mecanismo_de_foco_cae_en_el_contenido_cuando_el_disparador_desaparece(): void
+    {
+        $js = file_get_contents(resource_path('js/app.js'));
+
+        // La lógica es una sola y vive en app.js: directiva de Alpine + respaldo.
+        $this->assertStringContainsString("window.Alpine.directive('foco-modal'", $js);
+        $this->assertStringContainsString('disparadorDelDialogo', $js);
+        $this->assertStringContainsString('devolverFoco', $js);
+
+        // Si la fila que abrió el modal ya no existe, el foco va al mismo
+        // destino que «Saltar al contenido», que es enfocable (tabindex="-1").
+        $this->assertStringContainsString("const ID_CONTENIDO = 'contenido-principal';", $js);
+        $this->assertStringContainsString('getElementById(ID_CONTENIDO)', $js);
+
+        // Tras enviar un formulario del modal la página se recarga: el foco
+        // vuelve al contenido en lugar de quedarse en <body>.
+        $this->assertStringContainsString('sessionStorage.setItem(CLAVE_RETORNO', $js);
+        $this->assertStringContainsString('sessionStorage.getItem(CLAVE_RETORNO)', $js);
+
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        $this->assertMatchesRegularExpression(
+            '/<main id="contenido-principal" tabindex="-1"/',
+            $layout,
+            'El respaldo necesita un <main> enfocable con el id de «Saltar al contenido»'
+        );
+    }
+
+    public function test_las_pantallas_con_modales_sirven_la_directiva_de_foco(): void
+    {
+        $this->fakeVacio();
+
+        foreach (['/usuarios', '/equipos', '/equipos?vista=catalogo', '/roles', '/entregas-pendientes', '/devoluciones', '/solicitudes'] as $url) {
+            $response = $this->withSession($this->sesionAdmin)->get($url)->assertOk();
+
+            $this->assertSame(
+                substr_count($response->getContent(), 'role="dialog"'),
+                substr_count($response->getContent(), 'x-foco-modal='),
+                "Cada diálogo de {$url} debe devolver el foco al cerrarse"
+            );
+        }
+    }
+
+    /**
      * El documento declara su idioma, que es lo que usan los navegadores para
      * las pistas de los campos nativos (p. ej. la fecha de /solicitudes).
      */

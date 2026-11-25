@@ -271,6 +271,7 @@
             aria-labelledby="modal-entrega-titulo"
             x-ref="dialogoEntrega"
             tabindex="-1"
+            x-foco-modal="openModalEntrega"
             x-effect="openModalEntrega && $nextTick(() => $refs.dialogoEntrega.focus())"
             class="bg-white rounded-xl shadow-xl border border-borde w-full max-w-md overflow-hidden"
         >
