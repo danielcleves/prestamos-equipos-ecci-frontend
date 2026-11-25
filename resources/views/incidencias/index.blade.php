@@ -56,10 +56,14 @@
         </div>
 
         <div class="overflow-x-auto">
+            {{-- H-22: sin filas no hay tabla que deslizar ni encabezado que mostrar --}}
+            @if(count($incidencias) > 0)
             <div class="md:hidden px-4 py-2 text-[11px] text-slate-400 bg-slate-50/60 border-b border-slate-100">
                 Desliza la tabla para ver estado y acciones.
             </div>
+            @endif
             <table class="w-full text-left border-collapse text-xs">
+                @if(count($incidencias) > 0)
                 <thead>
                     <tr class="border-b border-[#D9DEE7] text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
                         <th class="py-3 px-6">#</th>
@@ -71,6 +75,7 @@
                         <th class="py-3 px-6 text-right sticky right-0 bg-slate-50/70">Acciones</th>
                     </tr>
                 </thead>
+                @endif
                 <tbody class="divide-y divide-slate-100">
                     @forelse($incidencias as $inc)
                         @php
@@ -118,8 +123,12 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-12 text-center text-slate-400">
-                                No hay incidencias registradas.
+                            <td colspan="7" class="px-4 py-12 text-center">
+                                <div class="flex flex-col items-center gap-3 text-slate-400">
+                                    <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                                    <p class="text-sm font-medium text-slate-500">No hay incidencias registradas.</p>
+                                    <p class="text-xs text-slate-400 max-w-xs">Las devoluciones con daños o mantenimiento se registran aquí y restringen al solicitante.</p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

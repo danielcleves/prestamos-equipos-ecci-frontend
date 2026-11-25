@@ -37,6 +37,8 @@
 
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
+                {{-- H-22: sin filas no se muestra el encabezado de columnas --}}
+                @if(count($prestamos) > 0)
                 <thead>
                     <tr class="border-b border-[#D9DEE7] text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
                         <th class="py-3 px-6">#</th>
@@ -46,6 +48,7 @@
                         <th class="py-3 px-6">Estado</th>
                     </tr>
                 </thead>
+                @endif
                 <tbody class="divide-y divide-slate-100">
                     @forelse($prestamos as $item)
                         @php
@@ -123,11 +126,11 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-12 text-center">
+                            <td colspan="5" class="px-4 py-12 text-center">
                                 <div class="flex flex-col items-center gap-3 text-slate-400">
                                     <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                     <p class="text-sm font-medium text-slate-500">No tienes préstamos vigentes</p>
-                                    <p class="text-xs text-slate-400">Puedes solicitar un equipo desde el catálogo.</p>
+                                    <p class="text-xs text-slate-400 max-w-xs">Puedes solicitar un equipo desde el catálogo.</p>
                                     <a href="{{ route('equipos.index', ['vista' => 'catalogo']) }}" class="mt-1 h-9 px-4 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white text-xs font-semibold rounded-[10px] inline-flex items-center gap-1.5 transition shadow-sm">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                                         Ver catálogo

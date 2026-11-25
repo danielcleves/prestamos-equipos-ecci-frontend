@@ -110,7 +110,7 @@
             @if($esAdmin ?? false)
                 <a href="{{ route('equipos.create') }}" class="h-12 px-5 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white text-xs font-semibold rounded-[10px] flex items-center gap-2 transition shadow-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    <span>+ Nuevo equipo</span>
+                    <span>Nuevo equipo</span>
                 </a>
             @endif
         </div>

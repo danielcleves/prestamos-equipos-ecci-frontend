@@ -127,6 +127,8 @@
         {{-- Tabla de Devoluciones Pendientes --}}
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
+                {{-- H-22: sin filas no se muestra el encabezado de columnas --}}
+                @if(count($pendientes) > 0)
                 <thead>
                     <tr class="border-b border-[#D9DEE7] text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
                         <th class="py-3 px-6">Solicitante</th>
@@ -138,6 +140,7 @@
                         <th class="py-3 px-6 text-right">Acciones</th>
                     </tr>
                 </thead>
+                @endif
                 <tbody class="divide-y divide-slate-100">
                     @forelse($pendientes as $item)
                         @php
@@ -201,8 +204,12 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-12 text-center text-slate-400">
-                                No hay préstamos activos pendientes de devolución.
+                            <td colspan="7" class="px-4 py-12 text-center">
+                                <div class="flex flex-col items-center gap-3 text-slate-400">
+                                    <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    <p class="text-sm font-medium text-slate-500">No hay préstamos activos pendientes de devolución.</p>
+                                    <p class="text-xs text-slate-400 max-w-xs">Cuando entregues un equipo, aparecerá aquí hasta que se registre su devolución.</p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse
@@ -220,6 +227,8 @@
 
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
+                {{-- H-22: sin filas no se muestra el encabezado de columnas --}}
+                @if(count($historial) > 0)
                 <thead>
                     <tr class="border-b border-[#D9DEE7] text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
                         <th class="py-3 px-6">Solicitante</th>
@@ -230,6 +239,7 @@
                         <th class="py-3 px-6">Estado</th>
                     </tr>
                 </thead>
+                @endif
                 <tbody class="divide-y divide-slate-100">
                     @forelse($historial as $dev)
                         @php
@@ -258,8 +268,12 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="py-12 text-center text-slate-400">
-                                Aún no hay devoluciones completadas registradas en el historial.
+                            <td colspan="6" class="px-4 py-12 text-center">
+                                <div class="flex flex-col items-center gap-3 text-slate-400">
+                                    <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
+                                    <p class="text-sm font-medium text-slate-500">Aún no hay devoluciones completadas registradas en el historial.</p>
+                                    <p class="text-xs text-slate-400 max-w-xs">Cuando registres la devolución de un equipo, quedará listada aquí.</p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

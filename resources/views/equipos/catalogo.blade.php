@@ -50,7 +50,8 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <div>
-            <span class="font-bold text-[#0B3D91]">{{ $metricas['disponibles'] ?? 0 }} equipos disponibles para solicitar.</span>
+            {{-- H-17: concordancia en singular y plural --}}
+            <span class="font-bold text-[#0B3D91]">{{ $metricas['disponibles'] ?? 0 }} {{ ($metricas['disponibles'] ?? 0) === 1 ? 'equipo disponible' : 'equipos disponibles' }} para solicitar.</span>
             <span class="text-slate-500"> Los equipos marcados como no disponibles pueden consultarse pero no pueden solicitarse.</span>
         </div>
     </div>
