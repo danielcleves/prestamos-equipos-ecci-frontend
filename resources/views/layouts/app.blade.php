@@ -121,7 +121,7 @@
                         </span>
                     @else
                         <span class="inline-block px-2.5 py-1 bg-white/10 border border-white/15 rounded-md text-[11px] font-medium text-blue-100">
-                            Solicitante
+                            {{ $esAdmin ? 'Administrador · vista de solicitante' : 'Solicitante' }}
                         </span>
                     @endif
                 </div>
@@ -169,10 +169,10 @@
                                 </a>
                             @endif
 
-                            {{-- Préstamos Pendientes --}}
+                            {{-- Entregas pendientes (HU-09) --}}
                             <a href="{{ route('prestamos.entregas') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-200 hover:bg-white/10 hover:text-white transition">
                                 <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                <span>Préstamos</span>
+                                <span>Entregas</span>
                             </a>
 
                             {{-- Devoluciones --}}
@@ -219,12 +219,12 @@
                 </div>
             </div>
 
-            {{-- Botón "Ver como administrador" si estamos en vista catálogo y el usuario es admin --}}
+            {{-- H-18: un único texto para volver a la vista de gestión --}}
             @if($esAdmin && $vistaCatalogo)
                 <div class="px-4 pb-2">
                     <a href="{{ route('equipos.index') }}" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-blue-200 hover:bg-white/10 hover:text-white transition border border-white/10">
                         <svg class="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                        <span>Ver como administrador</span>
+                        <span>Volver a gestión</span>
                     </a>
                 </div>
             @endif
