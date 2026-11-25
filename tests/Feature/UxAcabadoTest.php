@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Support\EstadoPildora;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -101,14 +102,104 @@ class UxAcabadoTest extends TestCase
             ->assertSee('for="fecha-hasta"', false);
     }
 
-    public function test_solicitudes_avisa_del_desplazamiento_de_la_tabla_en_movil(): void
+    /**
+     * A 390 px la tabla de solicitudes mide más de 1000 px y la píldora de estado
+     * quedaba fuera del viewport; el aviso «Desliza la tabla…» no lo resolvía. En
+     * móvil se pintan tarjetas con el estado y la tabla queda solo para escritorio.
+     */
+    public function test_solicitudes_muestra_tarjetas_en_movil_en_lugar_de_la_tabla(): void
     {
-        $this->fakeVacio();
+        Http::fake([
+            '*/prestamos/pendientes*' => Http::response([
+                'data' => [
+                    [
+                        'id' => 30,
+                        'solicitante' => ['name' => 'Laura Gómez', 'email' => 'laura@ecci.edu.co'],
+                        'equipo' => [
+                            'nombre' => 'Fuente de Poder',
+                            'codigo' => 'FUE-01',
+                            'estado' => 'disponible',
+                            'categoria' => ['nombre' => 'Electrónica'],
+                        ],
+                        'fecha_solicitud' => '2026-11-19T22:30:00-05:00',
+                        'fecha_inicio' => '2026-11-25T08:00:00-05:00',
+                        'fecha_devolucion_estimada' => '2026-11-28T18:00:00-05:00',
+                        'estado' => 'solicitado',
+                    ],
+                ],
+            ], 200),
+        ]);
 
-        $this->withSession($this->sesionEncargado)
+        $response = $this->withSession($this->sesionEncargado)
             ->get('/solicitudes')
-            ->assertOk()
-            ->assertSee('Desliza la tabla para ver todas las columnas.');
+            ->assertOk();
+
+        // El aviso de deslizar ya no aplica: en móvil no hay tabla que deslizar.
+        $response->assertDontSee('Desliza la tabla para ver todas las columnas.');
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        // La tabla de escritorio está oculta en móvil y la tarjeta es solo móvil.
+        $this->assertSame(
+            1,
+            $xpath->query('//div[contains(@class, "hidden md:block")]//table')->length,
+            'La tabla debe quedar dentro de un contenedor «hidden md:block»'
+        );
+
+        $contenedor = $xpath->query('//div[contains(@class, "md:hidden divide-y")]');
+        $this->assertSame(1, $contenedor->length, 'Debe existir una vista de tarjetas «md:hidden»');
+
+        $tarjeta = $limpiar($contenedor->item(0)->textContent);
+
+        foreach ([
+            'Laura Gómez',
+            'laura@ecci.edu.co',
+            'Fuente de Poder',
+            'FUE-01',
+            'Solicitado',
+            '19/11/2026',
+            '25/11/2026',
+            '28/11/2026',
+            'Ver detalle',
+        ] as $dato) {
+            $this->assertStringContainsString($dato, $tarjeta, "La tarjeta móvil no muestra «{$dato}»");
+        }
+
+        // Orden: solicitante, equipo con su código, estado, fechas y acción.
+        $orden = ['Laura Gómez', 'FUE-01', 'Solicitado', '19/11/2026', 'Ver detalle'];
+        $posiciones = array_map(fn (string $dato) => mb_strpos($tarjeta, $dato), $orden);
+        $this->assertSame(
+            $posiciones,
+            collect($posiciones)->sort()->values()->all(),
+            'La tarjeta debe mostrar solicitante, equipo, estado, fechas y acción en ese orden'
+        );
+
+        // El estado usa el componente x-estado (misma píldora que la tabla).
+        $pildora = EstadoPildora::clases('prestamo', 'solicitado')['pildora'];
+        $this->assertSame(
+            1,
+            $xpath->query('.//span[contains(@class, "'.$pildora.'")]', $contenedor->item(0))->length,
+            'La tarjeta debe pintar el estado con <x-estado>'
+        );
+
+        // La acción de la tarjeta es la misma de la fila: abre el modal de detalle.
+        $botones = $xpath->query('.//button[contains(@class, "w-full")]', $contenedor->item(0));
+        $this->assertSame(1, $botones->length, 'La tarjeta debe tener una acción a ancho completo');
+        $this->assertStringContainsString('Ver detalle', $limpiar($botones->item(0)->textContent));
+
+        // Las dos acciones (fila y tarjeta) llaman a abrirModal con los mismos
+        // datos, así que el modal, Escape y el foco son los mismos.
+        preg_match_all("/abrirModal\(JSON\.parse\('(\{.*?\})'\)\)/", $response->getContent(), $acciones);
+        $this->assertCount(2, $acciones[1], 'Fila y tarjeta deben ofrecer «Ver detalle»');
+        $this->assertSame($acciones[1][0], $acciones[1][1], 'Tarjeta y fila deben abrir el mismo detalle');
+
+        // Un solo modal: con Escape y el foco en el diálogo.
+        $response->assertSee('@keydown.escape.window="openModalDetalle = false"', false);
+        $response->assertSee('x-ref="dialogoDetalleSolicitud"', false);
+        $response->assertSee('$refs.dialogoDetalleSolicitud.focus()', false);
     }
 
     /**

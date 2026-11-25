@@ -130,10 +130,85 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <div class="md:hidden px-4 py-2 text-xs text-slate-400 bg-slate-50/60 border-b border-slate-100">
-                Desliza la tabla para ver todas las columnas.
-            </div>
+        @php
+            // Los datos se preparan una sola vez para la tabla (escritorio) y las
+            // tarjetas (móvil), y para el modal de detalle.
+            $filasSolicitud = collect($solicitudes)->map(function ($item) {
+                $solic = $item['solicitante']['name'] ?? ($item['usuario']['name'] ?? 'Usuario');
+                $doc = $item['solicitante']['email'] ?? ($item['usuario']['email'] ?? 'N/D');
+                $eqNom = $item['equipo']['nombre'] ?? 'Equipo';
+                $eqCod = $item['equipo']['codigo'] ?? 'S/C';
+                $eqDisp = strtolower($item['equipo']['estado'] ?? 'disponible') === 'disponible';
+                $eqCat = $item['equipo']['categoria']['nombre'] ?? 'N/D';
+                // El backend entrega ISO 8601 con desplazamiento (FechaNegocio) y la
+                // app corre en UTC: hay que convertir a la zona de negocio, si no
+                // una solicitud de las 22:00 de Bogotá aparece con el día siguiente.
+                $fSol = ! empty($item['fecha_solicitud'])
+                    ? \Illuminate\Support\Carbon::parse($item['fecha_solicitud'])->timezone('America/Bogota')->toDateString()
+                    : now()->timezone('America/Bogota')->toDateString();
+                $fIni = ! empty($item['fecha_inicio'])
+                    ? \Illuminate\Support\Carbon::parse($item['fecha_inicio'])->timezone('America/Bogota')->toDateString()
+                    : '—';
+                $fFin = ! empty($item['fecha_devolucion_estimada'])
+                    ? \Illuminate\Support\Carbon::parse($item['fecha_devolucion_estimada'])->timezone('America/Bogota')->toDateString()
+                    : '—';
+                $st = strtolower($item['estado'] ?? 'solicitado');
+
+                // RN-03: solicitud de una categoría restringida que todavía
+                // no ha sido autorizada por el personal.
+                $requiereAutorizacion = filter_var($item['requiere_autorizacion'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $autorizado = filter_var($item['autorizado'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $autorizadoPor = $item['autorizado_por']['name'] ?? (is_string($item['autorizado_por'] ?? null) ? $item['autorizado_por'] : '');
+
+                return [
+                    'id' => $item['id'],
+                    'solicitante' => $solic,
+                    'documento' => $doc,
+                    'equipo' => $eqNom,
+                    'codigo' => $eqCod,
+                    'estado' => $st,
+                    'estado_etiqueta' => ucfirst($st),
+                    // H-20: un solo formato de fecha en la app, d/m/Y.
+                    'fecha_solicitud' => $fSol,
+                    'fecha_inicio' => $fIni,
+                    'fecha_devolucion' => $fFin,
+                    'fecha_solicitud_fmt' => \Illuminate\Support\Carbon::parse($fSol)->format('d/m/Y'),
+                    'fecha_inicio_fmt' => $fIni !== '—' ? \Illuminate\Support\Carbon::parse($fIni)->format('d/m/Y') : '—',
+                    'fecha_devolucion_fmt' => $fFin !== '—' ? \Illuminate\Support\Carbon::parse($fFin)->format('d/m/Y') : '—',
+                    'requiere_autorizacion' => $requiereAutorizacion,
+                    'autorizado' => $autorizado,
+                    'busqueda' => [
+                        'solicitante' => strtolower($solic),
+                        'equipo' => strtolower($eqNom).' '.strtolower($eqCod),
+                    ],
+                    // Datos del modal de detalle (HU-08).
+                    'json' => [
+                        'id' => $item['id'],
+                        'solicitante' => $solic,
+                        'documento' => $doc,
+                        // H-20: el modal mostraba la fecha en ISO (2026-10-14).
+                        'fecha_solicitud' => \Illuminate\Support\Carbon::parse($fSol)->format('d/m/Y'),
+                        'fecha_inicio' => $fIni !== '—' ? \Illuminate\Support\Carbon::parse($fIni)->format('d/m/Y') : '—',
+                        'fecha_devolucion' => $fFin !== '—' ? \Illuminate\Support\Carbon::parse($fFin)->format('d/m/Y') : '—',
+                        'estado' => ucfirst($st),
+                        'equipo_nombre' => $eqNom,
+                        'equipo_codigo' => $eqCod,
+                        'equipo_disponibilidad' => $eqDisp ? 'Disponible' : 'No disponible',
+                        'categoria' => $eqCat,
+                        'requiere_autorizacion' => $requiereAutorizacion,
+                        'autorizado' => $autorizado,
+                        'autorizado_por' => $autorizadoPor,
+                        // Misma píldora que usa <x-estado> (guía UI/UX §15).
+                        'estado_clases' => \App\Support\EstadoPildora::clases('prestamo', $st)['pildora'],
+                        'estado_punto' => \App\Support\EstadoPildora::clases('prestamo', $st)['punto'],
+                        'disponibilidad_clases' => \App\Support\EstadoPildora::clases('equipo', $eqDisp ? 'disponible' : 'no_disponible'),
+                    ],
+                ];
+            });
+        @endphp
+
+        {{-- Escritorio: tabla con la acción fija a la derecha --}}
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left border-collapse text-sm">
                 <thead>
                     <tr class="border-b border-borde text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
@@ -150,95 +225,38 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @forelse($solicitudes as $item)
-                        @php
-                            $id = $item['id'];
-                            $solic = $item['solicitante']['name'] ?? ($item['usuario']['name'] ?? 'Usuario');
-                            $doc = $item['solicitante']['email'] ?? ($item['usuario']['email'] ?? 'N/D');
-                            $eqNom = $item['equipo']['nombre'] ?? 'Equipo';
-                            $eqCod = $item['equipo']['codigo'] ?? 'S/C';
-                            $eqDisp = strtolower($item['equipo']['estado'] ?? 'disponible') === 'disponible';
-                            $eqCat = $item['equipo']['categoria']['nombre'] ?? 'N/D';
-                            // El backend entrega ISO 8601 con desplazamiento (FechaNegocio) y la
-                            // app corre en UTC: hay que convertir a la zona de negocio, si no
-                            // una solicitud de las 22:00 de Bogotá aparece con el día siguiente.
-                            $fSol = !empty($item['fecha_solicitud'])
-                                ? \Illuminate\Support\Carbon::parse($item['fecha_solicitud'])->timezone('America/Bogota')->toDateString()
-                                : now()->timezone('America/Bogota')->toDateString();
-                            $fIni = !empty($item['fecha_inicio'])
-                                ? \Illuminate\Support\Carbon::parse($item['fecha_inicio'])->timezone('America/Bogota')->toDateString()
-                                : '—';
-                            $fFin = !empty($item['fecha_devolucion_estimada'])
-                                ? \Illuminate\Support\Carbon::parse($item['fecha_devolucion_estimada'])->timezone('America/Bogota')->toDateString()
-                                : '—';
-                            $st = strtolower($item['estado'] ?? 'solicitado');
-
-                            // RN-03: solicitud de una categoría restringida que todavía
-                            // no ha sido autorizada por el personal.
-                            $requiereAutorizacion = filter_var($item['requiere_autorizacion'] ?? false, FILTER_VALIDATE_BOOLEAN);
-                            $autorizado = filter_var($item['autorizado'] ?? false, FILTER_VALIDATE_BOOLEAN);
-                            $autorizadoPor = $item['autorizado_por']['name'] ?? (is_string($item['autorizado_por'] ?? null) ? $item['autorizado_por'] : '');
-
-                            $itemJson = [
-                                'id' => $id,
-                                'solicitante' => $solic,
-                                'documento' => $doc,
-                                // H-20: el modal mostraba la fecha en ISO (2026-10-14).
-                                'fecha_solicitud' => \Illuminate\Support\Carbon::parse($fSol)->format('d/m/Y'),
-                                'fecha_inicio' => $fIni !== '—' ? \Illuminate\Support\Carbon::parse($fIni)->format('d/m/Y') : '—',
-                                'fecha_devolucion' => $fFin !== '—' ? \Illuminate\Support\Carbon::parse($fFin)->format('d/m/Y') : '—',
-                                'estado' => ucfirst($st),
-                                'equipo_nombre' => $eqNom,
-                                'equipo_codigo' => $eqCod,
-                            'equipo_disponibilidad' => $eqDisp ? 'Disponible' : 'No disponible',
-                            'categoria' => $eqCat,
-                            'requiere_autorizacion' => $requiereAutorizacion,
-                            'autorizado' => $autorizado,
-                            'autorizado_por' => $autorizadoPor,
-                                // Misma píldora que usa <x-estado> (guía UI/UX §15).
-                                'estado_clases' => \App\Support\EstadoPildora::clases('prestamo', $st)['pildora'],
-                                'estado_punto' => \App\Support\EstadoPildora::clases('prestamo', $st)['punto'],
-                                'disponibilidad_clases' => \App\Support\EstadoPildora::clases('equipo', $eqDisp ? 'disponible' : 'no_disponible'),
-                            ];
-                            $solicitanteNorm = strtolower($solic);
-                            $equipoNorm = strtolower($eqNom).' '.strtolower($eqCod);
-                        @endphp
+                    @forelse($filasSolicitud as $fila)
                         <tr
-                            x-show="filaVisible(@js($fSol), @js($solicitanteNorm), @js($equipoNorm))"
-                            x-init="registrarFila({ fecha: @js($fSol), solicitante: @js($solicitanteNorm), equipo: @js($equipoNorm) })"
+                            x-show="filaVisible(@js($fila['fecha_solicitud']), @js($fila['busqueda']['solicitante']), @js($fila['busqueda']['equipo']))"
+                            x-init="registrarFila({ fecha: @js($fila['fecha_solicitud']), solicitante: @js($fila['busqueda']['solicitante']), equipo: @js($fila['busqueda']['equipo']) })"
                             class="hover:bg-slate-50/80 transition"
                         >
-                            <td class="py-3.5 px-6 font-mono text-slate-400">#{{ $id }}</td>
+                            <td class="py-3.5 px-6 font-mono text-slate-400">#{{ $fila['id'] }}</td>
                             <td class="py-3.5 px-6">
-                                <p class="font-bold text-slate-800">{{ $solic }}</p>
-                                <p class="text-xs text-slate-400">{{ $doc }}</p>
-                                @if($requiereAutorizacion && ! $autorizado)
-                                    <span class="md:hidden inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                        Requiere autorización
-                                    </span>
-                                @endif
+                                <p class="font-bold text-slate-800">{{ $fila['solicitante'] }}</p>
+                                <p class="text-xs text-slate-400">{{ $fila['documento'] }}</p>
                             </td>
                             <td class="py-3.5 px-6">
-                                <p class="font-semibold text-slate-700">{{ $eqNom }}</p>
-                                <span class="font-mono text-slate-400 text-xs">{{ $eqCod }}</span>
+                                <p class="font-semibold text-slate-700">{{ $fila['equipo'] }}</p>
+                                <span class="font-mono text-slate-400 text-xs">{{ $fila['codigo'] }}</span>
                             </td>
                             <td class="py-3.5 px-6">
-                                <x-estado :estado="$st" />
+                                <x-estado :estado="$fila['estado']" />
 
-                                @if($requiereAutorizacion && ! $autorizado)
+                                @if($fila['requiere_autorizacion'] && ! $fila['autorizado'])
                                     <span class="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                                         Requiere autorización
                                     </span>
                                 @endif
                             </td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ date('d/m/Y', strtotime($fSol)) }}</td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ $fIni !== '—' ? date('d/m/Y', strtotime($fIni)) : '—' }}</td>
-                            <td class="py-3.5 px-6 text-slate-600">{{ $fFin !== '—' ? date('d/m/Y', strtotime($fFin)) : '—' }}</td>
+                            <td class="py-3.5 px-6 text-slate-600">{{ $fila['fecha_solicitud_fmt'] }}</td>
+                            <td class="py-3.5 px-6 text-slate-600">{{ $fila['fecha_inicio_fmt'] }}</td>
+                            <td class="py-3.5 px-6 text-slate-600">{{ $fila['fecha_devolucion_fmt'] }}</td>
                             <td class="py-3.5 px-6 text-right sticky right-0 bg-white">
                                 <button
                                     type="button"
-                                    @click="abrirModal(@js($itemJson))"
+                                    @click="abrirModal(@js($fila['json']))"
                                     class="h-9 px-3.5 bg-slate-100 hover:bg-marca-700 hover:text-white text-slate-700 text-sm font-semibold rounded-[10px] transition inline-flex items-center gap-1.5"
                                 >
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -265,6 +283,79 @@
                     @endif
                 </tbody>
             </table>
+        </div>
+
+        {{-- Móvil: una tarjeta por solicitud, con el estado en su propia línea
+             para que se lea sin desplazar la pantalla (guía UI/UX §9). --}}
+        <div class="md:hidden divide-y divide-slate-100">
+            @forelse($filasSolicitud as $fila)
+                <div
+                    x-show="filaVisible(@js($fila['fecha_solicitud']), @js($fila['busqueda']['solicitante']), @js($fila['busqueda']['equipo']))"
+                    class="p-4 space-y-3"
+                >
+                    {{-- Solicitante --}}
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-slate-800 break-words">{{ $fila['solicitante'] }}</p>
+                        <p class="text-xs text-slate-400 break-words">{{ $fila['documento'] }}</p>
+                    </div>
+
+                    {{-- Equipo con su código --}}
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-700 break-words">{{ $fila['equipo'] }}</p>
+                        <span class="font-mono text-xs text-slate-400">{{ $fila['codigo'] }}</span>
+                    </div>
+
+                    {{-- Estado: misma píldora que la tabla (guía UI/UX §15) --}}
+                    <div class="flex flex-wrap items-center gap-2">
+                        <x-estado :estado="$fila['estado']" />
+
+                        @if($fila['requiere_autorizacion'] && ! $fila['autorizado'])
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                Requiere autorización
+                            </span>
+                        @endif
+                    </div>
+
+                    {{-- Fechas en d/m/Y, como en la tabla --}}
+                    <dl class="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <dt class="text-slate-400">F. solicitud</dt>
+                            <dd class="text-slate-600">{{ $fila['fecha_solicitud_fmt'] }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-slate-400">F. inicio</dt>
+                            <dd class="text-slate-600">{{ $fila['fecha_inicio_fmt'] }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-slate-400">F. devolución</dt>
+                            <dd class="text-slate-600">{{ $fila['fecha_devolucion_fmt'] }}</dd>
+                        </div>
+                    </dl>
+
+                    {{-- Misma acción que la fila: abre el modal de detalle --}}
+                    <button
+                        type="button"
+                        @click="abrirModal(@js($fila['json']))"
+                        class="w-full h-12 bg-slate-100 hover:bg-marca-700 hover:text-white text-slate-700 text-sm font-semibold rounded-[10px] transition inline-flex items-center justify-center gap-1.5"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <span>Ver detalle</span>
+                    </button>
+                </div>
+            @empty
+                <div class="px-4 py-12 text-center text-slate-400">
+                    No hay solicitudes pendientes.
+                </div>
+            @endforelse
+
+            {{-- Sin resultados por filtros (KAN-114), igual que la fila de la tabla --}}
+            @if(count($solicitudes) > 0)
+                <div x-show="filasVisibles === 0" x-cloak class="px-4 py-8 text-center text-slate-400 text-xs">
+                    No hay solicitudes que coincidan con los filtros aplicados.
+                    <button type="button" @click="limpiarFiltros()" class="ml-2 text-marca-700 underline">Limpiar filtros</button>
+                </div>
+            @endif
         </div>
     </div>
 
