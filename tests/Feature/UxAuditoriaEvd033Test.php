@@ -78,10 +78,9 @@ class UxAuditoriaEvd033Test extends TestCase
                         'mora.escala' => [['desde' => 1, 'hasta' => null, 'dias_sancion' => 3]],
                         'mora.dias_bloqueo' => 2,
                         'danos.dias_restriccion' => 5,
-                        'elegibilidad.requiere_capacitacion' => false,
                         'registro.correos_permitidos' => ['@ecci.edu.co'],
                     ],
-                    'categorias' => [['id' => 1, 'nombre' => 'Portátil', 'nivel_restriccion' => 0]],
+                    'categorias' => [['id' => 1, 'nombre' => 'Portátil', 'nivel_restriccion' => 0, 'requiere_capacitacion' => false]],
                 ],
             ], 200),
             '*/roles*' => Http::response(['data' => [[

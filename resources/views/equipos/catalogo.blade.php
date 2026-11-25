@@ -13,7 +13,9 @@
         categoria: '',
         estado: 'disponible',
         descripcion: '',
-        observaciones: ''
+        observaciones: '',
+        requiereCapacitacion: false,
+        bloqueadoPorCapacitacion: false
     },
     abrirDetalle(equipo) {
         this.selectedEquipo = { ...equipo };
@@ -106,6 +108,11 @@
 
                 $isDisponible = ($rawEstado === 'disponible');
 
+                // Capacitación por categoría: solo bloquea si la categoría la exige y el
+                // backend dice explícitamente que el usuario no está capacitado.
+                $requiereCapacitacion = (bool) ($equipo['categoria']['requiere_capacitacion'] ?? false);
+                $bloqueadoPorCapacitacion = $requiereCapacitacion && ($equipo['usuario_capacitado'] ?? true) === false;
+
                 $equipoJson = [
                     'id' => $id,
                     'codigo' => $codigo,
@@ -114,6 +121,8 @@
                     'estado' => $rawEstado,
                     'descripcion' => $equipo['descripcion'] ?? 'Sin descripción detallada.',
                     'observaciones' => $equipo['observaciones'] ?? '',
+                    'requiereCapacitacion' => $requiereCapacitacion,
+                    'bloqueadoPorCapacitacion' => $bloqueadoPorCapacitacion,
                 ];
             @endphp
             <div 
@@ -141,6 +150,19 @@
                         <h4 class="text-sm font-bold text-slate-800 line-clamp-1">{{ $nombre }}</h4>
                         <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ $equipo['descripcion'] ?? 'Equipo asignado al inventario institucional.' }}</p>
                     </div>
+
+                    {{-- Capacitación por categoría --}}
+                    @if($requiereCapacitacion)
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold border bg-aviso-suave text-aviso-texto border-amber-200" data-requiere-capacitacion="{{ $id }}">
+                            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m-6-9.5V16c0 1.1 2.7 3 6 3s6-1.9 6-3v-5.5"/></svg>
+                            Requiere capacitación
+                        </span>
+                    @endif
+                    @if($bloqueadoPorCapacitacion)
+                        <p class="text-xs text-aviso-texto bg-aviso-suave border border-amber-200 rounded-[10px] px-3 py-2" data-aviso-capacitacion="{{ $id }}">
+                            Necesitas capacitación en {{ $categoria }} para solicitar este equipo. Pídela al encargado.
+                        </p>
+                    @endif
 
                     {{-- Código --}}
                     <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 font-mono">
@@ -222,20 +244,42 @@
                     </div>
                 </div>
 
+                <p x-show="selectedEquipo.requiereCapacitacion && !selectedEquipo.bloqueadoPorCapacitacion" x-cloak class="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-[10px] px-3 py-2">
+                    Esta categoría requiere capacitación; ya la tienes registrada.
+                </p>
+                <p id="aviso-capacitacion-modal" x-show="selectedEquipo.bloqueadoPorCapacitacion" x-cloak class="text-sm text-aviso-texto bg-aviso-suave border border-amber-200 rounded-[10px] px-3 py-2" role="note">
+                    Necesitas capacitación en <span class="font-semibold" x-text="selectedEquipo.categoria"></span> para solicitar este equipo. Pídela al encargado.
+                </p>
+
                 <div>
                     <span class="text-slate-400 block font-medium">Descripción técnica</span>
                     <p class="text-slate-600 mt-1 bg-slate-50 p-2.5 rounded-lg border border-slate-100" x-text="selectedEquipo.descripcion || 'Sin descripción detallada.'"></p>
                 </div>
 
-                <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                <div class="flex flex-wrap justify-between items-center gap-2 pt-3 border-t border-slate-100">
                     <button type="button" @click="openModalView = false" class="h-10 px-4 border border-borde text-slate-700 text-sm font-semibold rounded-[10px] hover:bg-slate-50 transition">
                         Cerrar
                     </button>
 
-                    <template x-if="selectedEquipo.estado === 'disponible'">
+                    <template x-if="selectedEquipo.estado === 'disponible' && !selectedEquipo.bloqueadoPorCapacitacion">
                         <a :href="'{{ url('/prestamos/solicitar') }}/' + selectedEquipo.id" class="h-12 px-5 bg-marca-500 hover:bg-marca-700 text-white text-sm font-semibold rounded-[10px] transition shadow-sm flex items-center justify-center">
                             Solicitar préstamo
                         </a>
+                    </template>
+
+                    {{-- Sin capacitación en la categoría: el botón queda deshabilitado con texto visible. --}}
+                    <template x-if="selectedEquipo.estado === 'disponible' && selectedEquipo.bloqueadoPorCapacitacion">
+                        <button
+                            type="button"
+                            aria-disabled="true"
+                            aria-describedby="aviso-capacitacion-modal"
+                            @click.prevent
+                            data-solicitar-bloqueado
+                            class="h-12 px-5 bg-slate-100 text-slate-500 border border-slate-300 text-sm font-semibold rounded-[10px] cursor-not-allowed flex items-center justify-center gap-1.5"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            <span>Solicitar préstamo · Requiere capacitación</span>
+                        </button>
                     </template>
                 </div>
             </div>

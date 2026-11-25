@@ -7,6 +7,9 @@
     $nombre = $equipo['nombre'] ?? 'Sin nombre';
     $categoria = $equipo['categoria']['nombre'] ?? ($equipo['categoria_nombre'] ?? 'General');
     $descripcion = $equipo['descripcion'] ?? 'Sin descripción detallada.';
+    // Capacitación por categoría: el backend dice si el usuario puede pedirlo.
+    $bloqueadoPorCapacitacion = (bool) ($equipo['categoria']['requiere_capacitacion'] ?? false)
+        && ($equipo['usuario_capacitado'] ?? true) === false;
     $usuario = session('user') ?? [];
 
     // RN-06: límite que expone el detalle del equipo; 7 días si no viene.
@@ -140,6 +143,14 @@
         <h2 class="text-2xl font-bold text-texto">Solicitar préstamo</h2>
         <p class="text-sm text-texto-suave">Indica el período de préstamo para registrar formalmente tu solicitud.</p>
     </div>
+
+    {{-- Capacitación por categoría: aviso antes de llenar el formulario (el backend lo vuelve a validar) --}}
+    @if($bloqueadoPorCapacitacion && $motivosElegibilidad === [])
+        <div class="p-4 bg-aviso-suave border border-amber-200 text-aviso-texto text-sm rounded-xl flex items-start gap-3 shadow-sm" data-aviso-capacitacion>
+            <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <p>Necesitas capacitación en {{ $categoria }} para solicitar este equipo. Pídela al encargado.</p>
+        </div>
+    @endif
 
     {{-- KAN-188: Mensajes de disponibilidad del backend por campo --}}
     @if($erroresCampo['disponibilidad'])

@@ -46,7 +46,7 @@
                             'Revisa el equipo y sus accesorios al recibirlo, y avisa en ese momento si algo no está bien.',
                             'El catálogo muestra qué equipos están disponibles antes de que hagas la solicitud.',
                             'Toda solicitud pasa por una aprobación antes de la entrega; sigue su estado en «Mis préstamos».',
-                            'Algunos equipos requieren autorización del personal o una capacitación previa.',
+                            'Algunos equipos requieren autorización del personal o estar capacitado en su categoría.',
                             'Pide solo el tiempo que necesitas: la duración máxima depende de la categoría del equipo y de tu rol.',
                             'Si olvidaste tu contraseña, pide al administrador que la restablezca.',
                         ];
