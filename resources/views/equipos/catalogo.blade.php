@@ -36,6 +36,9 @@
         @endif
     </div>
 
+    {{-- Alertas de la solicitud y de los errores de validación (BUG-0012) --}}
+    @include('equipos._alertas')
+
     {{-- Banner de error de carga --}}
     @if(isset($errorConexion))
         <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-[10px] flex items-center gap-3 shadow-sm">
