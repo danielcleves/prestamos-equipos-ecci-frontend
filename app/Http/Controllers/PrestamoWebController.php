@@ -160,14 +160,19 @@ class PrestamoWebController extends Controller
         $fechaInicioRaw = $request->input('fecha_inicio');
         $fechaDevolucionRaw = $request->input('fecha_devolucion');
 
+        // BUG-0013: «hoy» y «ahora» se calculan en la zona del campus, no en la del
+        // servidor (UTC). Entre las 19:00 y las 23:59 de Bogotá, date() ya devolvía el
+        // día siguiente y la hora de inicio quedaba corrida cinco horas.
+        $ahoraBogota = now('America/Bogota');
+
         // El backend exige Y-m-d H:i:s y rechaza fechas pasadas. Si el input date solo
         // trae 'Y-m-d': para hoy usamos la hora actual (nunca en el pasado); para fechas
         // futuras usamos el inicio del horario laboral (08:00).
         if (str_contains($fechaInicioRaw, ':')) {
             $fechaInicio = date('Y-m-d H:i:s', strtotime($fechaInicioRaw));
         } else {
-            $fechaInicio = $fechaInicioRaw === date('Y-m-d')
-                ? date('Y-m-d H:i:s')
+            $fechaInicio = $fechaInicioRaw === $ahoraBogota->toDateString()
+                ? $ahoraBogota->format('Y-m-d H:i:s')
                 : date('Y-m-d 08:00:00', strtotime($fechaInicioRaw));
         }
 
