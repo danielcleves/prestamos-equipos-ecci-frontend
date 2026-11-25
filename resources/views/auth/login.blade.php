@@ -19,7 +19,7 @@
         {{-- Contenedor Principal --}}
         <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 max-w-7xl w-full mx-auto p-4 lg:p-8 gap-8 items-center">
 
-            {{-- Columna Izquierda: reloj y consejos (solo escritorio ≥1024 px) --}}
+            {{-- Columna Izquierda: consejos (solo escritorio ≥1024 px) --}}
             <section id="panel-login" class="login-panel hidden lg:flex lg:col-span-7 relative overflow-hidden flex-col justify-between text-white rounded-3xl p-10 min-h-[34rem] border border-white/10" aria-label="Información de bienvenida">
                 {{-- Decoración: cuadrícula tenue y anillos geométricos que giran muy despacio --}}
                 <div class="login-decor" aria-hidden="true">
@@ -33,26 +33,6 @@
                     <p class="mt-3 text-blue-100 max-w-md text-sm">
                         Solicita y gestiona los equipos que necesitas para tus actividades académicas.
                     </p>
-                </div>
-
-                {{-- Reloj: hora de Bogotá en vivo, anillo de segundos --}}
-                <div class="relative flex items-center gap-6" role="timer" aria-label="Hora actual en Bogotá">
-                    <div class="relative w-36 h-36 shrink-0">
-                        <svg viewBox="0 0 120 120" class="w-full h-full -rotate-90" aria-hidden="true">
-                            <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="3"/>
-                            <circle id="reloj-anillo" cx="60" cy="60" r="54" fill="none" stroke="#a9c2ec" stroke-width="3" stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="339.29"/>
-                        </svg>
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <span id="reloj-hm" class="text-3xl font-semibold tabular-nums tracking-tight">--:--</span>
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-4xl font-light tabular-nums tracking-tight">
-                            <span id="reloj-hms" aria-hidden="true">--:--:--</span>
-                        </p>
-                        <p id="reloj-fecha" class="mt-1 text-sm text-blue-100 first-letter:uppercase">&nbsp;</p>
-                        <p class="text-xs text-blue-100/90 mt-0.5">Hora de Bogotá</p>
-                    </div>
                 </div>
 
                 {{-- Consejos que rotan solos --}}
@@ -160,33 +140,12 @@
             © {{ date('Y') }} Universidad ECCI · Sistema de Préstamo de Equipos — Bogotá, Colombia
         </footer>
 
-        {{-- Reloj y consejos del panel (JS mínimo, sin dependencias) --}}
+        {{-- Consejos que rotan en el panel (JS mínimo, sin dependencias) --}}
         <script>
             (function () {
                 var panel = document.getElementById('panel-login');
                 if (!panel) return;
                 var reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                var tz = 'America/Bogota';
-                var fHms = new Intl.DateTimeFormat('es-CO', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-                var fHm = new Intl.DateTimeFormat('es-CO', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
-                var fFecha = new Intl.DateTimeFormat('es-CO', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-                var hms = document.getElementById('reloj-hms');
-                var hm = document.getElementById('reloj-hm');
-                var fecha = document.getElementById('reloj-fecha');
-                var anillo = document.getElementById('reloj-anillo');
-                var largo = 339.29;
-                function tick() {
-                    var d = new Date();
-                    hms.textContent = fHms.format(d);
-                    hm.textContent = fHm.format(d);
-                    fecha.textContent = fFecha.format(d);
-                    if (reducir) { anillo.style.strokeDashoffset = largo; return; }
-                    var seg = Number(new Intl.DateTimeFormat('en-US', { timeZone: tz, second: 'numeric' }).format(d)) + d.getMilliseconds() / 1000;
-                    anillo.style.strokeDashoffset = String(largo * (1 - seg / 60));
-                }
-                tick();
-                setInterval(tick, reducir ? 1000 : 250);
-
                 var items = panel.querySelectorAll('[data-consejo]');
                 var puntos = panel.querySelectorAll('[data-punto]');
                 var actual = 0, pausado = false, timer = null;
