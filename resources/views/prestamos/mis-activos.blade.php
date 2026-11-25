@@ -66,13 +66,10 @@
 
                             // KAN-121: solo un préstamo ya entregado puede estar retrasado;
                             // una solicitud o un préstamo aprobado sin entregar tiene la
-                            // fecha estimada en el pasado por antigüedad, no por mora.
+                            // fecha estimada en el pasado por antigüedad, no por mora. El
+                            // cálculo vive en FechaNegocio y cuenta días de Bogotá.
                             $estado = strtolower($item['estado'] ?? '');
-                            $estaRetrasado = false;
-                            if ($estado === 'entregado' && $fechaDevolucionRaw) {
-                                $devCarbon = \Carbon\Carbon::parse($fechaDevolucionRaw)->timezone('America/Bogota');
-                                $estaRetrasado = $devCarbon->isPast();
-                            }
+                            $estaRetrasado = \App\Support\FechaNegocio::diasDeRetraso($estado, $fechaDevolucionRaw) > 0;
                         @endphp
                         <tr class="hover:bg-slate-50/80 transition {{ $estaRetrasado ? 'bg-rose-50/30' : '' }}">
                             <td class="py-3.5 px-6 font-mono text-slate-400">#{{ $item['id'] ?? '—' }}</td>

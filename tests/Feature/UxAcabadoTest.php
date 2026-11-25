@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Support\EstadoPildora;
+use App\Support\FechaNegocio;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -492,5 +495,200 @@ class UxAcabadoTest extends TestCase
             ->get('/solicitudes')
             ->assertOk()
             ->assertSee('<html lang="es"', false);
+    }
+
+    /**
+     * A 1024 px la tabla de devoluciones mide 953 px, desborda el contenedor y
+     * la columna fija «Acciones» tapaba la píldora de estado por completo. Se
+     * mueve «Estado» antes de las fechas y el encabezado fijo deja de ser
+     * translúcido: con bg-slate-50/70 se veía el rótulo «ESTADO» por debajo.
+     */
+    public function test_devoluciones_pone_el_estado_antes_de_las_fechas(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-25 10:00', FechaNegocio::ZONA));
+        $this->unaDevolucionPendiente();
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/devoluciones')
+            ->assertOk();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        $encabezados = [];
+        foreach ($xpath->query('(//table)[1]/thead/tr/th') as $th) {
+            $encabezados[] = $limpiar($th->textContent);
+        }
+
+        $this->assertSame(
+            ['Solicitante', 'Equipo', 'Estado', 'F. Entrega', 'F. Devolución Esperada', 'Acciones'],
+            $encabezados,
+            '«Estado» debe ir después del equipo y antes de las fechas'
+        );
+
+        $celdas = [];
+        foreach ($xpath->query('(//table)[1]/tbody/tr[1]/td') as $td) {
+            $celdas[] = $limpiar($td->textContent);
+        }
+
+        $this->assertCount(6, $celdas, 'La fila debe tener las mismas celdas que encabezados');
+        $this->assertStringContainsString('Entregado', $celdas[2], 'La tercera celda es la píldora de estado');
+        $this->assertSame('20/11/2026', $celdas[3]);
+        $this->assertSame('27/11/2026', $celdas[4]);
+
+        // El <th> fijo no puede ser translúcido o deja ver el rótulo de debajo.
+        $thAcciones = $xpath->query('(//table)[1]/thead/tr/th[last()]')->item(0);
+        $this->assertMatchesRegularExpression('/\bbg-slate-50\b/', $thAcciones->getAttribute('class'));
+        $this->assertDoesNotMatchRegularExpression('/bg-slate-50\/\d+/', $thAcciones->getAttribute('class'));
+    }
+
+    /**
+     * La tabla no cabe entre 1024 y 1279 px: debajo de 1280 px se pintan
+     * tarjetas con el estado en la primera línea y la acción a ancho completo.
+     */
+    public function test_devoluciones_usa_tarjetas_por_debajo_de_1280(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-25 10:00', FechaNegocio::ZONA));
+        $this->unaDevolucionPendiente();
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/devoluciones')
+            ->assertOk();
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $limpiar = fn (string $texto) => trim(preg_replace('/\s+/', ' ', $texto));
+
+        $this->assertSame(
+            1,
+            $xpath->query('//div[contains(@class, "hidden xl:block")]//table')->length,
+            'La tabla debe quedar dentro de un contenedor «hidden xl:block»'
+        );
+
+        $contenedor = $xpath->query('//div[contains(@class, "xl:hidden")]');
+        $this->assertSame(1, $contenedor->length, 'Debe existir una vista de tarjetas «xl:hidden»');
+
+        $tarjeta = $limpiar($contenedor->item(0)->textContent);
+
+        foreach (['Emmanuel Valencia', 'TAB-002', 'Entregado', '20/11/2026', '27/11/2026', 'Registrar devolución'] as $dato) {
+            $this->assertStringContainsString($dato, $tarjeta, "La tarjeta no muestra «{$dato}»");
+        }
+
+        // El estado va en la primera línea, antes del equipo.
+        $this->assertLessThan(
+            mb_strpos($tarjeta, 'TAB-002'),
+            mb_strpos($tarjeta, 'Entregado'),
+            'El estado debe verse antes que el equipo'
+        );
+
+        // La acción de la tarjeta ocupa todo el ancho y abre el mismo modal.
+        $botones = $xpath->query('.//button[contains(@class, "w-full")]', $contenedor->item(0));
+        $this->assertSame(1, $botones->length, 'La tarjeta debe tener una acción a ancho completo');
+        $this->assertStringContainsString('Registrar devolución', $limpiar($botones->item(0)->textContent));
+
+        preg_match_all("/abrirModal\(JSON\.parse\('(\{.*?\})'\)\)/", $response->getContent(), $acciones);
+        $this->assertCount(2, $acciones[1], 'Fila y tarjeta deben ofrecer «Registrar devolución»');
+        $this->assertSame($acciones[1][0], $acciones[1][1], 'Tarjeta y fila deben abrir la misma devolución');
+    }
+
+    /**
+     * KAN-121: en plazo, la píldora dice «Entregado» y no hay aviso de mora.
+     */
+    public function test_devoluciones_en_plazo_se_ve_entregado_sin_aviso_de_mora(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-25 10:00', FechaNegocio::ZONA));
+        $this->unaDevolucionPendiente('2026-11-27T18:00:00-05:00');
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/devoluciones')
+            ->assertOk()
+            ->assertSee('Emmanuel Valencia')
+            ->assertSee('Entregado')
+            ->assertDontSee('Retrasado');
+
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $fila = trim(preg_replace('/\s+/', ' ', (new \DOMXPath($dom))->query('//table/tbody/tr[1]')->item(0)->textContent));
+
+        $this->assertStringNotContainsString('retraso', mb_strtolower($fila), 'En plazo no debe verse ningún aviso de mora');
+    }
+
+    /**
+     * Un día de mora: la píldora cambia a «Retrasado» y se dice cuántos días son.
+     */
+    public function test_devoluciones_marca_un_dia_de_retraso(): void
+    {
+        // Venció a las 23:30 de Bogotá del día anterior: un solo día calendario.
+        $this->travelTo(Carbon::parse('2026-11-25 00:30', FechaNegocio::ZONA));
+        $this->unaDevolucionPendiente('2026-11-24T23:30:00-05:00');
+
+        $response = $this->withSession($this->sesionEncargado)
+            ->get('/devoluciones')
+            ->assertOk()
+            ->assertSee('Retrasado')
+            ->assertSee('1 día de retraso')
+            ->assertDontSee('2 días de retraso');
+
+        // El modal de la préstamo atrasado lleva el aviso, con el número en singular.
+        $response->assertSee('Este préstamo lleva', false);
+        $this->assertStringContainsString(
+            'selectedPrestamo.dias_retraso === 1 ? \'1 día de retraso\' : selectedPrestamo.dias_retraso + \' días de retraso\'',
+            $response->getContent()
+        );
+    }
+
+    /**
+     * N días de mora contados en calendario de Bogotá: vence el 24 a las 23:30 y
+     * se consulta el 27 a las 00:30 → 3 días, no los 2 que saldrían en UTC.
+     */
+    public function test_devoluciones_muestra_los_dias_de_retraso_en_calendario_de_bogota(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-27 00:30', FechaNegocio::ZONA));
+        $this->unaDevolucionPendiente('2026-11-24T23:30:00-05:00');
+
+        $this->withSession($this->sesionEncargado)
+            ->get('/devoluciones')
+            ->assertOk()
+            ->assertSee('Retrasado')
+            ->assertSee('3 días de retraso')
+            ->assertDontSee('2 días de retraso')
+            ->assertSee('bg-rose-50/30', false);
+    }
+
+    public function test_el_umbral_de_mora_se_cuenta_en_dias_calendario_de_bogota(): void
+    {
+        $ahora = CarbonImmutable::parse('2026-11-27 00:30', FechaNegocio::ZONA);
+
+        // 0 días: en plazo, sin fecha o un préstamo que aún no se entregó.
+        $this->assertSame(0, FechaNegocio::diasDeRetraso('entregado', '2026-11-27T23:30:00-05:00', $ahora));
+        $this->assertSame(0, FechaNegocio::diasDeRetraso('entregado', null, $ahora));
+        $this->assertSame(0, FechaNegocio::diasDeRetraso('aprobado', '2026-11-20T23:30:00-05:00', $ahora));
+
+        // 1 día: venció ayer en Bogotá aunque en UTC ya sea hoy.
+        $this->assertSame(1, FechaNegocio::diasDeRetraso('entregado', '2026-11-26T23:30:00-05:00', $ahora));
+
+        // N días: tres días calendario de Bogotá (en UTC serían dos).
+        $this->assertSame(3, FechaNegocio::diasDeRetraso('entregado', '2026-11-24T23:30:00-05:00', $ahora));
+
+        // Vencido por horas del mismo día: ya es mora, mínimo 1 día.
+        $this->assertSame(1, FechaNegocio::diasDeRetraso('entregado', '2026-11-27T00:00:00-05:00', $ahora));
+    }
+
+    /**
+     * Un préstamo entregado pendiente de devolución, como lo sirve el backend.
+     */
+    private function unaDevolucionPendiente(string $fechaEstimada = '2026-11-27T18:00:00-05:00'): void
+    {
+        Http::fake(['*' => Http::response(['data' => [[
+            'id' => 12,
+            'estado' => 'entregado',
+            'solicitante' => ['name' => 'Emmanuel Valencia', 'email' => 'emmanuel@ecci.edu.co'],
+            'equipo' => ['nombre' => 'Tablet Wacom', 'codigo' => 'TAB-002'],
+            'fecha_entrega_real' => '2026-11-20T08:00:00-05:00',
+            'fecha_devolucion_estimada' => $fechaEstimada,
+        ]]], 200)]);
     }
 }

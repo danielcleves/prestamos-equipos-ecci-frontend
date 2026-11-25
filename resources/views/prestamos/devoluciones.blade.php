@@ -11,7 +11,8 @@
         equipo: '',
         codigo: '',
         fecha_entrega: '',
-        fecha_devolucion: ''
+        fecha_devolucion: '',
+        dias_retraso: 0
     },
     condicion: 'bueno',
     observaciones: '',
@@ -121,19 +122,23 @@
 
         @php
             // H-27: los datos se preparan una sola vez para la tabla (escritorio) y las
-            // tarjetas (móvil), y para el modal de devolución.
+            // tarjetas (< 1280 px), y para el modal de devolución.
             $filasDevolucion = collect($pendientes)->map(function ($item) {
                 $solicitanteNombre = $item['solicitante']['name'] ?? ($item['usuario']['name'] ?? 'Solicitante');
                 $solicitanteEmail = $item['solicitante']['email'] ?? ($item['usuario']['email'] ?? 'N/D');
                 $equipoNombre = $item['equipo']['nombre'] ?? 'Equipo';
                 $equipoCodigo = $item['equipo']['codigo'] ?? 'S/C';
-                // H-20: un solo formato de fecha en la app, d/m/Y con Carbon.
-                $fechaEntrega = ! empty($item['fecha_entrega_real'])
-                    ? \Illuminate\Support\Carbon::parse($item['fecha_entrega_real'])->format('d/m/Y')
-                    : (! empty($item['fecha_inicio']) ? \Illuminate\Support\Carbon::parse($item['fecha_inicio'])->format('d/m/Y') : '—');
-                $fechaEsperada = ! empty($item['fecha_devolucion_estimada'])
-                    ? \Illuminate\Support\Carbon::parse($item['fecha_devolucion_estimada'])->format('d/m/Y')
-                    : '—';
+                // H-20: un solo formato de fecha en la app, d/m/Y con Carbon en la
+                // zona de negocio, para que la fecha y la mora hablen del mismo día.
+                $fechaEntrega = \App\Support\FechaNegocio::fecha($item['fecha_entrega_real'] ?? $item['fecha_inicio'] ?? null);
+                $fechaEsperada = \App\Support\FechaNegocio::fecha($item['fecha_devolucion_estimada'] ?? null);
+
+                // KAN-121: un préstamo entregado con la fecha estimada vencida está
+                // en mora; los días se cuentan en calendario de Bogotá.
+                $diasRetraso = \App\Support\FechaNegocio::diasDeRetraso(
+                    strtolower($item['estado'] ?? 'entregado'),
+                    $item['fecha_devolucion_estimada'] ?? null
+                );
 
                 return [
                     'solicitante' => $solicitanteNombre,
@@ -143,6 +148,9 @@
                     'codigo' => $equipoCodigo,
                     'fecha_entrega' => $fechaEntrega,
                     'fecha_devolucion' => $fechaEsperada,
+                    'estado' => $diasRetraso > 0 ? 'retrasado' : 'entregado',
+                    'retraso' => $diasRetraso,
+                    'dias_retraso_texto' => $diasRetraso === 1 ? '1 día de retraso' : $diasRetraso.' días de retraso',
                     'busqueda' => [
                         'solicitante' => strtolower($solicitanteNombre),
                         'equipo' => strtolower($equipoNombre),
@@ -155,13 +163,14 @@
                         'codigo' => $equipoCodigo,
                         'fecha_entrega' => $fechaEntrega,
                         'fecha_devolucion' => $fechaEsperada,
+                        'dias_retraso' => $diasRetraso,
                     ],
                 ];
             });
         @endphp
 
-        {{-- Escritorio: tabla compacta con la acción fija a la derecha (H-27) --}}
-        <div class="hidden md:block overflow-x-auto">
+        {{-- Escritorio (≥1280 px): tabla compacta con la acción fija a la derecha (H-27) --}}
+        <div class="hidden xl:block overflow-x-auto">
             <table class="w-full text-left border-collapse text-sm">
                 {{-- H-22: sin filas no se muestra el encabezado de columnas --}}
                 @if($filasDevolucion->isNotEmpty())
@@ -169,10 +178,14 @@
                     <tr class="border-b border-borde text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
                         <th class="py-3 px-3">Solicitante</th>
                         <th class="py-3 px-3">Equipo</th>
+                        {{-- El estado va antes de las fechas: es el dato que se mira
+                             primero y a la derecha quedaba tapado por la columna fija. --}}
+                        <th class="py-3 px-3">Estado</th>
                         <th class="py-3 px-3">F. Entrega</th>
                         <th class="py-3 px-3">F. Devolución Esperada</th>
-                        <th class="py-3 px-3">Estado</th>
-                        <th class="py-3 px-3 text-right sticky right-0 bg-slate-50/70">Acciones</th>
+                        {{-- Fondo opaco: translúcido dejaba ver el rótulo «ESTADO»
+                             por debajo de la columna fija al desplazar la tabla. --}}
+                        <th class="py-3 px-3 text-right sticky right-0 bg-slate-50">Acciones</th>
                     </tr>
                 </thead>
                 @endif
@@ -183,7 +196,7 @@
                                     @js($fila['busqueda']['solicitante']).includes(search.toLowerCase()) ||
                                     @js($fila['busqueda']['equipo']).includes(search.toLowerCase()) ||
                                     @js($fila['busqueda']['codigo']).includes(search.toLowerCase())"
-                            class="hover:bg-slate-50/80 transition"
+                            class="hover:bg-slate-50/80 transition {{ $fila['retraso'] > 0 ? 'bg-rose-50/30' : '' }}"
                         >
                             <td class="py-3.5 px-3">
                                 <div class="flex items-center gap-2.5">
@@ -202,12 +215,15 @@
                                 <span class="font-mono text-xs text-slate-400">{{ $fila['codigo'] }}</span>
                             </td>
 
-                            <td class="py-3.5 px-3 text-slate-600 whitespace-nowrap">{{ $fila['fecha_entrega'] }}</td>
-                            <td class="py-3.5 px-3 text-slate-600 whitespace-nowrap">{{ $fila['fecha_devolucion'] }}</td>
-
                             <td class="py-3.5 px-3">
-                                <x-estado estado="entregado" />
+                                <x-estado :estado="$fila['estado']" />
+                                @if($fila['retraso'] > 0)
+                                    <p class="mt-1 text-xs font-semibold text-rose-600">{{ $fila['dias_retraso_texto'] }}</p>
+                                @endif
                             </td>
+
+                            <td class="py-3.5 px-3 text-slate-600 whitespace-nowrap">{{ $fila['fecha_entrega'] }}</td>
+                            <td class="py-3.5 px-3 whitespace-nowrap {{ $fila['retraso'] > 0 ? 'font-semibold text-rose-700' : 'text-slate-600' }}">{{ $fila['fecha_devolucion'] }}</td>
 
                             <td class="py-3.5 px-3 text-right sticky right-0 bg-white">
                                 <button
@@ -235,15 +251,17 @@
             </table>
         </div>
 
-        {{-- Móvil: una tarjeta por devolución pendiente (H-27) --}}
-        <div class="md:hidden divide-y divide-slate-100">
+        {{-- Tarjetas por debajo de 1280 px: una por devolución, con el estado en la
+             primera línea. A 1024 px la tabla mide 953 px, desborda el contenedor y
+             la columna fija de acciones tapaba la píldora de estado por completo. --}}
+        <div class="xl:hidden divide-y divide-slate-100">
             @forelse($filasDevolucion as $fila)
                 <div
                     x-show="search === '' ||
                             @js($fila['busqueda']['solicitante']).includes(search.toLowerCase()) ||
                             @js($fila['busqueda']['equipo']).includes(search.toLowerCase()) ||
                             @js($fila['busqueda']['codigo']).includes(search.toLowerCase())"
-                    class="p-4 space-y-3"
+                    class="p-4 space-y-3 {{ $fila['retraso'] > 0 ? 'bg-rose-50/40' : '' }}"
                 >
                     <div class="flex items-start gap-3">
                         <div class="w-9 h-9 rounded-full bg-marca-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
@@ -253,7 +271,7 @@
                             <p class="text-sm font-semibold text-slate-900 truncate">{{ $fila['solicitante'] }}</p>
                             <p class="text-xs text-slate-500 truncate">{{ $fila['email'] }}</p>
                         </div>
-                        <x-estado estado="entregado" class="shrink-0" />
+                        <x-estado :estado="$fila['estado']" class="shrink-0" />
                     </div>
 
                     <dl class="grid grid-cols-2 gap-3 text-xs">
@@ -268,9 +286,17 @@
                         </div>
                         <div>
                             <dt class="text-slate-400">F. devolución esperada</dt>
-                            <dd class="text-slate-600">{{ $fila['fecha_devolucion'] }}</dd>
+                            <dd class="{{ $fila['retraso'] > 0 ? 'font-semibold text-rose-700' : 'text-slate-600' }}">{{ $fila['fecha_devolucion'] }}</dd>
                         </div>
                     </dl>
+
+                    {{-- KAN-121: la mora no puede verse igual que un préstamo en plazo. --}}
+                    @if($fila['retraso'] > 0)
+                        <div class="flex items-start gap-2 p-3 rounded-[10px] bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <p>Este préstamo lleva <strong>{{ $fila['dias_retraso_texto'] }}</strong>.</p>
+                        </div>
+                    @endif
 
                     <button
                         type="button"
@@ -379,6 +405,20 @@
                     <p><strong class="text-slate-700">Solicitante:</strong> <span class="text-marca-700 font-bold" x-text="selectedPrestamo.solicitante"></span></p>
                     <p><strong class="text-slate-700">Equipo:</strong> <span class="text-slate-800 font-semibold" x-text="selectedPrestamo.equipo + ' (' + selectedPrestamo.codigo + ')'"></span></p>
                     <p><strong class="text-slate-700">F. Devolución esperada:</strong> <span class="text-slate-600" x-text="selectedPrestamo.fecha_devolucion"></span></p>
+                </div>
+
+                {{-- KAN-121: aviso de mora en el propio modal de devolución. --}}
+                <div
+                    x-show="selectedPrestamo.dias_retraso > 0"
+                    x-cloak
+                    class="flex items-start gap-2 p-3 rounded-[10px] bg-rose-50 border border-rose-200 text-xs text-rose-700"
+                >
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p>
+                        Este préstamo lleva
+                        <strong x-text="selectedPrestamo.dias_retraso === 1 ? '1 día de retraso' : selectedPrestamo.dias_retraso + ' días de retraso'"></strong>.
+                        Registra la devolución para cerrar la mora.
+                    </p>
                 </div>
 
                 {{-- Condición física del equipo --}}
