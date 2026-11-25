@@ -135,13 +135,22 @@
     </div>
 
     {{-- Modal de edición --}}
-    <div x-show="openModalEdit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40" @keydown.escape.window="openModalEdit = false">
-        <div @click.outside="openModalEdit = false" class="w-full max-w-md bg-white rounded-xl shadow-xl border border-[#D9DEE7]">
+    <div x-show="openModalEdit" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40" @keydown.escape.window="openModalEdit = false">
+        <div
+            @click.outside="openModalEdit = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-editar-rol-titulo"
+            x-ref="dialogoEditarRol"
+            tabindex="-1"
+            x-effect="openModalEdit && $nextTick(() => $refs.dialogoEditarRol.focus())"
+            class="w-full max-w-md bg-white rounded-xl shadow-xl border border-[#D9DEE7]"
+        >
             <form :action="'{{ url('/roles') }}/' + rolEditado.id" method="POST" class="p-6 space-y-4">
                 @csrf
                 @method('PUT')
                 <div>
-                    <h3 class="text-sm font-bold text-slate-800">Editar rol</h3>
+                    <h3 id="modal-editar-rol-titulo" class="text-sm font-bold text-slate-800">Editar rol</h3>
                     <p class="text-[11px] text-slate-400 mt-0.5" x-show="rolEditado.es_sistema">Rol de sistema: puedes cambiar su nombre visible y su cupo, pero no eliminarlo.</p>
                 </div>
                 <div>

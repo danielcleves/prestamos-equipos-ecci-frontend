@@ -276,18 +276,27 @@
     </div>
 
     {{-- MODAL DETALLE DE SOLICITUD (HU-08) --}}
-    <div x-show="openModalDetalle" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalDetalle = false" class="bg-white rounded-2xl shadow-2xl border border-[#D9DEE7] w-full max-w-xl overflow-hidden animate-fade-in">
+    <div x-show="openModalDetalle" x-cloak @keydown.escape.window="openModalDetalle = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalDetalle = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-detalle-solicitud-titulo"
+            x-ref="dialogoDetalleSolicitud"
+            tabindex="-1"
+            x-effect="openModalDetalle && $nextTick(() => $refs.dialogoDetalleSolicitud.focus())"
+            class="bg-white rounded-2xl shadow-2xl border border-[#D9DEE7] w-full max-w-xl overflow-hidden animate-fade-in"
+        >
 
             {{-- Header Modal --}}
             <div class="px-6 py-5 border-b border-[#D9DEE7] flex justify-between items-start bg-white">
                 <div>
-                    <h3 class="font-bold text-slate-900 text-base">Detalle de solicitud</h3>
+                    <h3 id="modal-detalle-solicitud-titulo" class="font-bold text-slate-900 text-base">Detalle de solicitud</h3>
                     <p class="text-xs text-slate-400 mt-0.5">
                         Solicitud #<span x-text="selected.id"></span> · <span x-text="selected.estado"></span>
                     </p>
                 </div>
-                <button @click="openModalDetalle = false" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+                <button @click="openModalDetalle = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
             </div>
 
             <div class="p-6 space-y-6 text-xs">
@@ -393,8 +402,10 @@
                             </div>
 
                             <div class="flex flex-wrap items-center justify-end gap-3">
-                                <button type="button" @click="openModalDetalle = false" class="h-10 px-4 border border-[#D9DEE7] text-slate-600 text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition">
-                                    Cancelar
+                                {{-- H-21: «Cancelar» solo aparece mientras se rechaza y deshace el rechazo;
+                                     antes cerraba el modal y competía con «Cerrar». --}}
+                                <button type="button" x-show="openRechazo" x-cloak @click="openRechazo = false" class="h-10 px-4 border border-[#D9DEE7] text-slate-600 text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition">
+                                    Cancelar rechazo
                                 </button>
 
                                 {{-- Formulario Rechazar --}}

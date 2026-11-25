@@ -295,11 +295,20 @@
     </div>
 
     {{-- MODAL CREAR USUARIO --}}
-    <div x-show="openModalCreate" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalCreate = false" class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+    <div x-show="openModalCreate" x-cloak @keydown.escape.window="openModalCreate = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalCreate = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-nuevo-usuario-titulo"
+            x-ref="dialogoNuevoUsuario"
+            tabindex="-1"
+            x-effect="openModalCreate && $nextTick(() => $refs.dialogoNuevoUsuario.focus())"
+            class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden"
+        >
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Registrar Nuevo Usuario</h3>
-                <button @click="openModalCreate = false" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
+                <h3 id="modal-nuevo-usuario-titulo" class="font-bold text-slate-800 text-sm">Registrar Nuevo Usuario</h3>
+                <button @click="openModalCreate = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
             </div>
             <form action="{{ route('usuarios.store') }}" method="POST" class="p-6 space-y-4">
                 @csrf
@@ -340,11 +349,20 @@
     </div>
 
     {{-- MODAL EDITAR USUARIO --}}
-    <div x-show="openModalEdit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalEdit = false" class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+    <div x-show="openModalEdit" x-cloak @keydown.escape.window="openModalEdit = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalEdit = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-editar-usuario-titulo"
+            x-ref="dialogoEditarUsuario"
+            tabindex="-1"
+            x-effect="openModalEdit && $nextTick(() => $refs.dialogoEditarUsuario.focus())"
+            class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden"
+        >
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Editar Usuario</h3>
-                <button @click="openModalEdit = false" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
+                <h3 id="modal-editar-usuario-titulo" class="font-bold text-slate-800 text-sm">Editar Usuario</h3>
+                <button @click="openModalEdit = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
             </div>
 
             <form :action="'{{ url('/usuarios') }}/' + editUser.id" method="POST" class="p-6 space-y-4">

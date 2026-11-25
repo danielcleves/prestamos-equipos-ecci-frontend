@@ -263,11 +263,20 @@
     </div>
 
     {{-- MODAL 1: VER DETALLE DEL EQUIPO --}}
-    <div x-show="openModalView" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalView = false" class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-lg overflow-hidden">
+    <div x-show="openModalView" x-cloak @keydown.escape.window="openModalView = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalView = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-detalle-equipo-titulo"
+            x-ref="dialogoDetalleEquipo"
+            tabindex="-1"
+            x-effect="openModalView && $nextTick(() => $refs.dialogoDetalleEquipo.focus())"
+            class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-lg overflow-hidden"
+        >
             <div class="px-6 py-4 border-b border-[#D9DEE7] flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Detalle del Equipo</h3>
-                <button @click="openModalView = false" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+                <h3 id="modal-detalle-equipo-titulo" class="font-bold text-slate-800 text-sm">Detalle del Equipo</h3>
+                <button @click="openModalView = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
             </div>
             <div class="p-6 space-y-4 text-xs">
                 <div class="grid grid-cols-2 gap-4">
@@ -322,11 +331,20 @@
     </div>
 
     {{-- MODAL 2: ACTUALIZAR ESTADO (4 ESTADOS REQUERIDOS POR HU-04) --}}
-    <div x-show="openModalEdit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalEdit = false" class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-md overflow-hidden">
+    <div x-show="openModalEdit" x-cloak @keydown.escape.window="openModalEdit = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalEdit = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-estado-equipo-titulo"
+            x-ref="dialogoEstadoEquipo"
+            tabindex="-1"
+            x-effect="openModalEdit && $nextTick(() => $refs.dialogoEstadoEquipo.focus())"
+            class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-md overflow-hidden"
+        >
             <div class="px-6 py-4 border-b border-[#D9DEE7] flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Actualizar Estado del Equipo</h3>
-                <button @click="openModalEdit = false" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+                <h3 id="modal-estado-equipo-titulo" class="font-bold text-slate-800 text-sm">Actualizar Estado del Equipo</h3>
+                <button @click="openModalEdit = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
             </div>
 
             <form :action="'{{ url('/equipos') }}/' + selectedEquipo.id + '/estado'" method="POST" class="p-6 space-y-4">

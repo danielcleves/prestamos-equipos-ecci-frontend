@@ -266,11 +266,20 @@
     </div>
 
     {{-- MODAL PARA REGISTRAR ENTREGA (HU-09) --}}
-    <div x-show="openModalEntrega" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalEntrega = false" class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-md overflow-hidden">
+    <div x-show="openModalEntrega" x-cloak @keydown.escape.window="openModalEntrega = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalEntrega = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-entrega-titulo"
+            x-ref="dialogoEntrega"
+            tabindex="-1"
+            x-effect="openModalEntrega && $nextTick(() => $refs.dialogoEntrega.focus())"
+            class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-md overflow-hidden"
+        >
             <div class="px-6 py-4 border-b border-[#D9DEE7] flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Confirmar Entrega de Equipo</h3>
-                <button @click="openModalEntrega = false" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+                <h3 id="modal-entrega-titulo" class="font-bold text-slate-800 text-sm">Confirmar Entrega de Equipo</h3>
+                <button @click="openModalEntrega = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
             </div>
 
             <form :action="'{{ url('/prestamos') }}/' + selectedPrestamo.id + '/entrega'" method="POST" class="p-6 space-y-4">
