@@ -150,3 +150,72 @@ textarea:focus-visible,
 html[data-entrada='puntero'] :focus-visible {
     outline: 0;
 }
+
+
+/* ---------------------------------------------------------------------
+   Panel del login (solo ≥1024 px): consejos rotativos, reloj y decoración
+   --------------------------------------------------------------------- */
+.login-panel {
+    background:
+        radial-gradient(120% 90% at 100% 0%, rgba(29, 95, 208, 0.55) 0%, transparent 60%),
+        linear-gradient(160deg, #0b3d91 0%, #0a3480 100%);
+}
+.login-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse at 70% 30%, #000 0%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at 70% 30%, #000 0%, transparent 75%);
+}
+.login-decor { position: absolute; inset: 0; pointer-events: none; }
+.login-anillo {
+    position: absolute;
+    border-radius: 9999px;
+    border: 1px solid rgba(169, 194, 236, 0.22);
+    animation: login-girar 90s linear infinite;
+}
+.login-anillo::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: rgba(169, 194, 236, 0.55);
+}
+.login-anillo-1 { width: 26rem; height: 26rem; right: -8rem; top: -9rem; }
+.login-anillo-2 { width: 18rem; height: 18rem; right: -3rem; top: -4rem; animation-direction: reverse; animation-duration: 120s; border-style: dashed; }
+.login-anillo-3 { width: 22rem; height: 22rem; left: -10rem; bottom: -11rem; animation-duration: 150s; }
+@keyframes login-girar { to { transform: rotate(360deg); } }
+
+.consejos-lista > .consejo {
+    grid-area: 1 / 1;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+}
+.consejos-lista > .consejo.is-activo { opacity: 1; transform: none; pointer-events: auto; }
+.consejo-punto {
+    height: 6px;
+    width: 6px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.4);
+    transition: width 0.4s ease, background-color 0.4s ease;
+    position: relative;
+}
+/* área de toque mayor sin agrandar el punto */
+.consejo-punto::before { content: ''; position: absolute; inset: -9px -4px; }
+.consejo-punto.is-activo { width: 24px; background: #fff; }
+.consejo-punto:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .login-anillo { animation: none; }
+    .consejos-lista > .consejo { transition: none; transform: none; }
+    .consejo-punto { transition: none; }
+}
