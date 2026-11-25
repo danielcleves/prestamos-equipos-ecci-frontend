@@ -267,7 +267,7 @@
     </div>
 
     {{-- MODAL DETALLE DE SOLICITUD (HU-08) --}}
-    <div x-show="openModalDetalle" x-cloak @keydown.escape.window="openModalDetalle = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div x-show="openModalDetalle" x-cloak @keydown.escape.window="openModalDetalle = false" class="fixed inset-0 m-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div
             @click.away="openModalDetalle = false"
             role="dialog"

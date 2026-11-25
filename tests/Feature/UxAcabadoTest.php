@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -118,7 +119,7 @@ class UxAcabadoTest extends TestCase
             ->get('/equipos')
             ->assertOk();
 
-        $dom = new \DOMDocument();
+        $dom = new \DOMDocument;
         @$dom->loadHTML($response->getContent());
         $xpath = new \DOMXPath($dom);
         $nodos = $xpath->query('//header//span[contains(@class, "text-slate-700")]');
@@ -155,5 +156,42 @@ class UxAcabadoTest extends TestCase
             ->assertOk()
             ->assertSee('Desliza la tabla para ver estado y acciones.')
             ->assertSee('Restringido hasta');
+    }
+
+    /**
+     * El velo de un modal es hijo del contenedor `space-y-*` de la página, que
+     * reparte 24 px de margen entre hermanos; en un elemento `fixed` ese margen
+     * encoge la caja y deja una franja del viewport sin oscurecer. Todas las
+     * raíces `fixed inset-0` llevan `m-0` para que el velo mida el viewport.
+     */
+    public function test_los_velos_de_los_modales_ocupan_todo_el_viewport(): void
+    {
+        $vistas = collect(File::allFiles(resource_path('views')))
+            ->filter(fn ($archivo) => str_ends_with($archivo->getFilename(), '.blade.php'))
+            ->reject(fn ($archivo) => str_starts_with($archivo->getRelativePathname(), 'layouts'));
+
+        $velos = 0;
+
+        foreach ($vistas as $vista) {
+            preg_match_all('/class="([^"]*)"/', $vista->getContents(), $coincidencias);
+
+            foreach ($coincidencias[1] as $clases) {
+                if (! preg_match('/\bfixed\b/', $clases) || ! preg_match('/\binset-0\b/', $clases)) {
+                    continue;
+                }
+
+                $velos++;
+
+                $this->assertMatchesRegularExpression(
+                    '/\bm-0\b/',
+                    $clases,
+                    $vista->getRelativePathname().' tiene un velo fijo sin «m-0»: el margen del contenedor «space-y-*» lo encoge y deja una franja del viewport sin oscurecer'
+                );
+            }
+        }
+
+        // 9 velos: usuarios (2), equipos (2), catálogo, entregas, devoluciones,
+        // solicitudes y roles.
+        $this->assertSame(9, $velos, 'Cambió el número de velos de modal: revisa que cada uno lleve «m-0»');
     }
 }

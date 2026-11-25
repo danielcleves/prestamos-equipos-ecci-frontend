@@ -135,7 +135,7 @@
     </div>
 
     {{-- Modal de edición --}}
-    <div x-show="openModalEdit" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40" @keydown.escape.window="openModalEdit = false">
+    <div x-show="openModalEdit" x-cloak class="fixed inset-0 m-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40" @keydown.escape.window="openModalEdit = false">
         <div
             @click.outside="openModalEdit = false"
             role="dialog"

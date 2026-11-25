@@ -356,7 +356,7 @@
     </div>
 
     {{-- MODAL PARA REGISTRAR DEVOLUCIÓN (HU-11) --}}
-    <div x-show="openModalDevolucion" x-cloak @keydown.escape.window="openModalDevolucion = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div x-show="openModalDevolucion" x-cloak @keydown.escape.window="openModalDevolucion = false" class="fixed inset-0 m-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div
             @click.away="openModalDevolucion = false"
             role="dialog"

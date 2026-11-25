@@ -295,7 +295,7 @@
     </div>
 
     {{-- MODAL CREAR USUARIO --}}
-    <div x-show="openModalCreate" x-cloak @keydown.escape.window="openModalCreate = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div x-show="openModalCreate" x-cloak @keydown.escape.window="openModalCreate = false" class="fixed inset-0 m-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div
             @click.away="openModalCreate = false"
             role="dialog"
@@ -349,7 +349,7 @@
     </div>
 
     {{-- MODAL EDITAR USUARIO --}}
-    <div x-show="openModalEdit" x-cloak @keydown.escape.window="openModalEdit = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div x-show="openModalEdit" x-cloak @keydown.escape.window="openModalEdit = false" class="fixed inset-0 m-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div
             @click.away="openModalEdit = false"
             role="dialog"

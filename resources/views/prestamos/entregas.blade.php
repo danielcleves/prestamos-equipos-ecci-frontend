@@ -260,7 +260,7 @@
     </div>
 
     {{-- MODAL PARA REGISTRAR ENTREGA (HU-09) --}}
-    <div x-show="openModalEntrega" x-cloak @keydown.escape.window="openModalEntrega = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div x-show="openModalEntrega" x-cloak @keydown.escape.window="openModalEntrega = false" class="fixed inset-0 m-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div
             @click.away="openModalEntrega = false"
             role="dialog"
