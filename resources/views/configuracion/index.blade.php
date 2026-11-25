@@ -27,11 +27,6 @@
 
     {{-- Encabezado --}}
     <div>
-        <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Administración</span>
-            <span>></span>
-            <span class="text-slate-700 font-medium">Configuración</span>
-        </div>
         <h2 class="text-xl font-bold text-[#1F2937]">Configuración de reglas de negocio</h2>
         <p class="text-xs text-[#6B7280]">Parámetros de cupos, duración, mora, daños y elegibilidad. Los cambios aplican a las solicitudes nuevas.</p>
     </div>
@@ -138,8 +133,9 @@
                     <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Escala de mora (RN-04)</h3>
                     <p class="text-[11px] text-slate-400 mt-0.5">Días de retraso → días de sanción. Deja «hasta» vacío para el último tramo (sin tope).</p>
                 </div>
-                <button type="button" @click="agregarTramo()" class="h-9 px-3.5 bg-slate-100 hover:bg-[#0B3D91] hover:text-white text-slate-700 text-xs font-semibold rounded-[10px] transition shrink-0">
-                    + Añadir tramo
+                <button type="button" @click="agregarTramo()" class="h-9 px-3.5 bg-slate-100 hover:bg-[#0B3D91] hover:text-white text-slate-700 text-xs font-semibold rounded-[10px] transition shrink-0 inline-flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <span>Añadir tramo</span>
                 </button>
             </div>
 

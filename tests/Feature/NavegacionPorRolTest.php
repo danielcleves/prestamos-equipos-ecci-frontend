@@ -40,7 +40,7 @@ class NavegacionPorRolTest extends TestCase
             ->assertSee('Usuarios')
             ->assertSee('Solicitudes')
             ->assertSee('Devoluciones')
-            ->assertSee('Préstamos');
+            ->assertSee('Entregas');
     }
 
     public function test_usuario_ve_solo_el_menu_de_solicitante(): void
@@ -64,7 +64,7 @@ class NavegacionPorRolTest extends TestCase
         $this->withSession($this->sesion('admin'))
             ->get('/equipos?vista=catalogo')
             ->assertOk()
-            ->assertSee('Ver como administrador')
+            ->assertSee('Volver a gestión')
             ->assertSee('Catálogo de equipos');
     }
 
@@ -77,7 +77,7 @@ class NavegacionPorRolTest extends TestCase
             ->assertOk()
             ->assertSee('Encargado')
             ->assertSee('Catálogo de equipos')
-            ->assertSee('Préstamos')
+            ->assertSee('Entregas')
             ->assertSee('Devoluciones')
             ->assertSee('Solicitudes')
             ->assertDontSee('Usuarios');

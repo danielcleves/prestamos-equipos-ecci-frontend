@@ -101,7 +101,13 @@ class PrestamoWebController extends Controller
             $duracionMaxima = 7;
         }
 
-        return view('prestamos.create', compact('equipo', 'usuario', 'duracionMaxima'));
+        return view('prestamos.create', [
+            'equipo' => $equipo,
+            'usuario' => $usuario,
+            'duracionMaxima' => $duracionMaxima,
+            // H-19: la miga del encabezado debe nombrar la pantalla, no «Gestión de equipos».
+            'title' => 'Solicitar préstamo',
+        ]);
     }
 
     /**
@@ -199,11 +205,11 @@ class PrestamoWebController extends Controller
             // El backend puede usar fecha_inicio, fecha_devolucion_estimada, equipo_id, motivo, etc.
             $erroresMapeados = [];
             $campoPresentacion = [
-                'fecha_inicio'              => 'fecha_inicio',
+                'fecha_inicio' => 'fecha_inicio',
                 'fecha_devolucion_estimada' => 'fecha_devolucion',
-                'fecha_devolucion'          => 'fecha_devolucion',
-                'equipo_id'                 => 'equipo_id',
-                'motivo'                    => 'motivo',
+                'fecha_devolucion' => 'fecha_devolucion',
+                'equipo_id' => 'equipo_id',
+                'motivo' => 'motivo',
             ];
 
             foreach ($errores as $campo => $msgs) {

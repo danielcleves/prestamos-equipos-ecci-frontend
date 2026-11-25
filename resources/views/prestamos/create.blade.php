@@ -309,11 +309,6 @@
                             <p class="text-[11px] text-slate-400 truncate">{{ $usuario['email'] ?? 'usuario@ecci.edu.co' }}</p>
                         </div>
                     </div>
-
-                    <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-medium text-emerald-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Usuario autenticado</span>
-                    </div>
                 </div>
 
                 {{-- Resumen de Solicitud en tiempo real --}}
@@ -321,9 +316,13 @@
                     <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Resumen de solicitud</span>
 
                     <div class="space-y-2.5 text-xs">
-                        <div class="flex justify-between items-center text-slate-600">
+                        <div class="flex justify-between items-center gap-3 text-slate-600">
                             <span class="text-slate-400">Equipo</span>
-                            <span class="font-mono font-bold text-slate-800">{{ $codigo }}</span>
+                            {{-- H-23: el resumen muestra el nombre del equipo, no el serial. --}}
+                            <span class="text-right font-semibold text-slate-800">
+                                {{ $nombre }}
+                                <span class="block font-mono text-[11px] text-slate-500">{{ $codigo }}</span>
+                            </span>
                         </div>
 
                         <div class="flex justify-between items-center text-slate-600">

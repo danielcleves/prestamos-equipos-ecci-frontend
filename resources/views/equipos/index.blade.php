@@ -28,14 +28,9 @@
     }
 }" class="space-y-6 max-w-7xl mx-auto">
 
-    {{-- Breadcrumb y Cabecera Institucional --}}
+    {{-- Cabecera --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                <span>Sistema</span>
-                <span>></span>
-                <span class="text-slate-700 font-medium">Equipos</span>
-            </div>
             <h2 class="text-xl font-bold text-[#1F2937]">Gestión de equipos</h2>
             <p class="text-xs text-[#6B7280]">Administra el inventario de equipos tecnológicos y audiovisuales disponibles para préstamo.</p>
         </div>
@@ -110,7 +105,7 @@
             @if($esAdmin ?? false)
                 <a href="{{ route('equipos.create') }}" class="h-12 px-5 bg-[#0B3D91] hover:bg-[#1D5FD0] text-white text-xs font-semibold rounded-[10px] flex items-center gap-2 transition shadow-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    <span>+ Nuevo equipo</span>
+                    <span>Nuevo equipo</span>
                 </a>
             @endif
         </div>
@@ -268,11 +263,20 @@
     </div>
 
     {{-- MODAL 1: VER DETALLE DEL EQUIPO --}}
-    <div x-show="openModalView" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalView = false" class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-lg overflow-hidden">
+    <div x-show="openModalView" x-cloak @keydown.escape.window="openModalView = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalView = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-detalle-equipo-titulo"
+            x-ref="dialogoDetalleEquipo"
+            tabindex="-1"
+            x-effect="openModalView && $nextTick(() => $refs.dialogoDetalleEquipo.focus())"
+            class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-lg overflow-hidden"
+        >
             <div class="px-6 py-4 border-b border-[#D9DEE7] flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Detalle del Equipo</h3>
-                <button @click="openModalView = false" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+                <h3 id="modal-detalle-equipo-titulo" class="font-bold text-slate-800 text-sm">Detalle del equipo</h3>
+                <button @click="openModalView = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
             </div>
             <div class="p-6 space-y-4 text-xs">
                 <div class="grid grid-cols-2 gap-4">
@@ -327,11 +331,20 @@
     </div>
 
     {{-- MODAL 2: ACTUALIZAR ESTADO (4 ESTADOS REQUERIDOS POR HU-04) --}}
-    <div x-show="openModalEdit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalEdit = false" class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-md overflow-hidden">
+    <div x-show="openModalEdit" x-cloak @keydown.escape.window="openModalEdit = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalEdit = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-estado-equipo-titulo"
+            x-ref="dialogoEstadoEquipo"
+            tabindex="-1"
+            x-effect="openModalEdit && $nextTick(() => $refs.dialogoEstadoEquipo.focus())"
+            class="bg-white rounded-xl shadow-xl border border-[#D9DEE7] w-full max-w-md overflow-hidden"
+        >
             <div class="px-6 py-4 border-b border-[#D9DEE7] flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Actualizar Estado del Equipo</h3>
-                <button @click="openModalEdit = false" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+                <h3 id="modal-estado-equipo-titulo" class="font-bold text-slate-800 text-sm">Actualizar estado del equipo</h3>
+                <button @click="openModalEdit = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
             </div>
 
             <form :action="'{{ url('/equipos') }}/' + selectedEquipo.id + '/estado'" method="POST" class="p-6 space-y-4">
@@ -344,7 +357,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-2">Nuevo Estado <span class="text-rose-500">*</span></label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-2">Nuevo estado <span class="text-rose-500">*</span></label>
                         <select name="estado" x-model="selectedEquipo.estado_crudo" required class="w-full h-12 px-3 text-xs bg-white border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                             <option value="disponible">Disponible (Apto para préstamo)</option>
                             <option value="en_prestamo">En préstamo</option>

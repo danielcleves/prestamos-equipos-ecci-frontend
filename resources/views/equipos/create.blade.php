@@ -6,16 +6,12 @@
     nombre: @js(old('nombre', '')),
     categoriaId: @js(old('categoria_id', ''))
 }">
-    {{-- Breadcrumb y Título --}}
+    {{-- H-19: la miga la pinta el encabezado del layout; aquí solo el enlace de vuelta --}}
     <div>
-        <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <a href="{{ route('equipos.index') }}" class="hover:text-[#0B3D91] transition flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                Equipos
-            </a>
-            <span>/</span>
-            <span class="text-slate-700 font-medium">Registrar equipo</span>
-        </div>
+        <a href="{{ route('equipos.index') }}" class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-[#0B3D91] transition font-medium mb-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            <span>Volver a equipos</span>
+        </a>
         <h2 class="text-xl font-bold text-[#1F2937]">Registrar equipo</h2>
         <p class="text-xs text-[#6B7280]">Registra un nuevo equipo para mantener actualizado el catálogo</p>
     </div>

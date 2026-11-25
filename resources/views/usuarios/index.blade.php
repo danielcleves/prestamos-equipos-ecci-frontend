@@ -22,11 +22,6 @@
 }" class="space-y-6">
 
     <div>
-        <div class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Administración</span>
-            <span>></span>
-            <span class="text-slate-700 font-medium">Usuarios</span>
-        </div>
         <h2 class="text-xl font-bold text-[#1F2937]">Gestión de usuarios</h2>
         <p class="text-sm text-slate-500">Administra los usuarios, roles y permisos de acceso al sistema.</p>
     </div>
@@ -121,8 +116,8 @@
                 <thead>
                     <tr class="border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/70">
                         <th class="py-3 px-6">Usuario</th>
-                        <th class="py-3 px-6">Nombre Completo</th>
-                        <th class="py-3 px-6">Correo Electrónico</th>
+                        <th class="py-3 px-6">Nombre completo</th>
+                        <th class="py-3 px-6">Correo electrónico</th>
                         <th class="py-3 px-6">Rol</th>
                         <th class="py-3 px-6">Estado</th>
                         <th class="py-3 px-6 text-right">Acciones</th>
@@ -300,16 +295,25 @@
     </div>
 
     {{-- MODAL CREAR USUARIO --}}
-    <div x-show="openModalCreate" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalCreate = false" class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+    <div x-show="openModalCreate" x-cloak @keydown.escape.window="openModalCreate = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalCreate = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-nuevo-usuario-titulo"
+            x-ref="dialogoNuevoUsuario"
+            tabindex="-1"
+            x-effect="openModalCreate && $nextTick(() => $refs.dialogoNuevoUsuario.focus())"
+            class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden"
+        >
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Registrar Nuevo Usuario</h3>
-                <button @click="openModalCreate = false" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
+                <h3 id="modal-nuevo-usuario-titulo" class="font-bold text-slate-800 text-sm">Registrar nuevo usuario</h3>
+                <button @click="openModalCreate = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
             </div>
             <form action="{{ route('usuarios.store') }}" method="POST" class="p-6 space-y-4">
                 @csrf
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre completo</label>
                     <input type="text" name="name" required class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>
@@ -317,7 +321,7 @@
                     <input type="email" name="email" required class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Rol en el Sistema</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Rol en el sistema</label>
                     <select name="role" required class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none bg-white">
                         @foreach($roles as $opcionRol)
                             <option value="{{ $opcionRol['nombre'] }}" @selected(old('role', $rolPredeterminado) === $opcionRol['nombre'])>{{ $opcionRol['etiqueta'] }}</option>
@@ -325,7 +329,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Contraseña Inicial</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Contraseña inicial</label>
                     <input type="password" name="password" required minlength="8" class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>
@@ -338,18 +342,27 @@
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" @click="openModalCreate = false" class="h-12 px-4 border border-[#D9DEE7] text-[#0B3D91] text-xs font-semibold rounded-[10px] hover:bg-slate-50 transition">Cancelar</button>
-                    <button type="submit" class="h-12 px-5 bg-[#0B3D91] text-white text-xs font-semibold rounded-[10px] hover:bg-[#1D5FD0] transition">Guardar Usuario</button>
+                    <button type="submit" class="h-12 px-5 bg-[#0B3D91] text-white text-xs font-semibold rounded-[10px] hover:bg-[#1D5FD0] transition">Guardar usuario</button>
                 </div>
             </form>
         </div>
     </div>
 
     {{-- MODAL EDITAR USUARIO --}}
-    <div x-show="openModalEdit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-        <div @click.away="openModalEdit = false" class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+    <div x-show="openModalEdit" x-cloak @keydown.escape.window="openModalEdit = false" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div
+            @click.away="openModalEdit = false"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-editar-usuario-titulo"
+            x-ref="dialogoEditarUsuario"
+            tabindex="-1"
+            x-effect="openModalEdit && $nextTick(() => $refs.dialogoEditarUsuario.focus())"
+            class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden"
+        >
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-800 text-sm">Editar Usuario</h3>
-                <button @click="openModalEdit = false" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
+                <h3 id="modal-editar-usuario-titulo" class="font-bold text-slate-800 text-sm">Editar usuario</h3>
+                <button @click="openModalEdit = false" aria-label="Cerrar" class="text-slate-400 hover:text-slate-600 text-base leading-none">&times;</button>
             </div>
 
             <form :action="'{{ url('/usuarios') }}/' + editUser.id" method="POST" class="p-6 space-y-4">
@@ -357,11 +370,11 @@
                 @method('PUT')
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre completo</label>
                     <input type="text" name="name" x-model="editUser.name" required class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Correo Electrónico</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Correo electrónico</label>
                     <input type="email" name="email" x-model="editUser.email" required class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>
@@ -373,7 +386,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nueva Contraseña (opcional)</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nueva contraseña (opcional)</label>
                     <input type="password" name="password" minlength="8" placeholder="Dejar en blanco para no cambiarla" class="w-full h-12 text-xs px-3 border border-[#D9DEE7] rounded-[10px] focus:ring-1 focus:ring-[#0B3D91] outline-none">
                 </div>
                 <div>

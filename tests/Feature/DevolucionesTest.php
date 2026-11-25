@@ -72,7 +72,9 @@ class DevolucionesTest extends TestCase
         $response->assertSee('Osciloscopio');
         $response->assertSee('Ana Ruiz');
         $response->assertSee('Con daños');
-        $response->assertSee('2026-11-20 15:30');
+        // H-20 (EVD-033): las fechas de la app se muestran d/m/Y; aquí la devolución
+        // real conserva la hora. Antes se pintaba el ISO '2026-11-20 15:30'.
+        $response->assertSee('20/11/2026 15:30');
         // Un préstamo aprobado todavía no se ha entregado: no aparece en ninguna lista.
         $response->assertDontSee('Pedro Gil');
     }
