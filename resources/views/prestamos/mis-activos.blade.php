@@ -77,6 +77,12 @@
                                 <p class="font-semibold text-slate-700">{{ $equipoNombre }}</p>
                                 <span class="font-mono text-slate-400 text-xs">{{ $equipoCodigo }}</span>
                                 <span class="text-slate-400 text-xs ml-1">· {{ $equipoCategoria }}</span>
+                                @if($estado === 'rechazado' && ! empty($item['motivo_rechazo']))
+                                    {{-- El solicitante tiene que ver POR QUÉ le rechazaron la solicitud. --}}
+                                    <p class="mt-1 text-xs text-rose-700" data-motivo-rechazo>
+                                        Motivo del rechazo: {{ $item['motivo_rechazo'] }}
+                                    </p>
+                                @endif
                             </td>
                             <td class="py-3.5 px-6 text-slate-600">{{ $fechaEntrega }}</td>
 
